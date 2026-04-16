@@ -1,0 +1,1 @@
+/home/robotics-club/agrobot_ws/build/epos2_bridge_interfaces/ament_cmake_environment_hooks/local_setup.zsh

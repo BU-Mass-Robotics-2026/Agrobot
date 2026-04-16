@@ -1,0 +1,1 @@
+/home/robotics-club/agrobot_ws/src/ros2_canopen/canopen_interfaces/msg/COData.msg

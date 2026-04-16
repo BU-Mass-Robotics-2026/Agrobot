@@ -1,0 +1,256 @@
+[0.010s] Invoking command in '/home/robotics-club/agrobot_ws/build/epos2_bridge_interfaces': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/robotics-club/agrobot_ws/install/epos2_bridge:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/robotics-club/agrobot_ws/src/epos2_bridge_interfaces -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces
+[0.050s] -- The C compiler identification is GNU 13.3.0
+[0.088s] -- The CXX compiler identification is GNU 13.3.0
+[0.102s] -- Detecting C compiler ABI info
+[0.165s] -- Detecting C compiler ABI info - done
+[0.171s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.171s] -- Detecting C compile features
+[0.172s] -- Detecting C compile features - done
+[0.178s] -- Detecting CXX compiler ABI info
+[0.242s] -- Detecting CXX compiler ABI info - done
+[0.248s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.248s] -- Detecting CXX compile features
+[0.248s] -- Detecting CXX compile features - done
+[0.251s] -- Found ament_cmake: 2.5.5 (/opt/ros/jazzy/share/ament_cmake/cmake)
+[0.344s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+[0.389s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[0.416s] -- Found rosidl_default_generators: 1.6.0 (/opt/ros/jazzy/share/rosidl_default_generators/cmake)
+[0.420s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.454s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[0.481s] -- Found rosidl_adapter: 4.6.7 (/opt/ros/jazzy/share/rosidl_adapter/cmake)
+[0.831s] -- Found ament_cmake_ros: 0.12.0 (/opt/ros/jazzy/share/ament_cmake_ros/cmake)
+[1.101s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[1.457s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[1.460s] -- Found python_cmake_module: 0.11.1 (/opt/ros/jazzy/share/python_cmake_module/cmake)
+[1.541s] -- Found PythonExtra: /usr/bin/python3  
+[1.814s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter Development NumPy Development.Module Development.Embed 
+[1.837s] -- Configuring done (1.8s)
+[1.853s] -- Generating done (0.0s)
+[1.858s] -- Build files have been written to: /home/robotics-club/agrobot_ws/build/epos2_bridge_interfaces
+[1.865s] Invoked command in '/home/robotics-club/agrobot_ws/build/epos2_bridge_interfaces' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/robotics-club/agrobot_ws/install/epos2_bridge:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/robotics-club/agrobot_ws/src/epos2_bridge_interfaces -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces
+[1.866s] Invoking command in '/home/robotics-club/agrobot_ws/build/epos2_bridge_interfaces': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/robotics-club/agrobot_ws/install/epos2_bridge:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/robotics-club/agrobot_ws/build/epos2_bridge_interfaces -- -j32 -l32
+[1.907s] [  1%] [34m[1mGenerating type hashes for ROS interfaces[0m
+[1.909s] [  1%] Built target ament_cmake_python_symlink_epos2_bridge_interfaces
+[2.021s] running egg_info
+[2.022s] creating epos2_bridge_interfaces.egg-info
+[2.023s] [  1%] Built target epos2_bridge_interfaces__rosidl_generator_type_description
+[2.029s] [  3%] [34m[1mGenerating C code for ROS interfaces[0m
+[2.031s] writing epos2_bridge_interfaces.egg-info/PKG-INFO
+[2.031s] writing dependency_links to epos2_bridge_interfaces.egg-info/dependency_links.txt
+[2.031s] writing top-level names to epos2_bridge_interfaces.egg-info/top_level.txt
+[2.031s] writing manifest file 'epos2_bridge_interfaces.egg-info/SOURCES.txt'
+[2.038s] [  5%] [34m[1mGenerating C++ code for ROS interfaces[0m
+[2.061s] reading manifest file 'epos2_bridge_interfaces.egg-info/SOURCES.txt'
+[2.061s] writing manifest file 'epos2_bridge_interfaces.egg-info/SOURCES.txt'
+[2.083s] [  5%] Built target ament_cmake_python_build_epos2_bridge_interfaces_egg
+[2.238s] [  5%] Built target epos2_bridge_interfaces__cpp
+[2.254s] [  9%] [32mBuilding C object CMakeFiles/epos2_bridge_interfaces__rosidl_generator_c.dir/rosidl_generator_c/epos2_bridge_interfaces/srv/detail/move_delta__type_support.c.o[0m
+[2.254s] [  9%] [32mBuilding C object CMakeFiles/epos2_bridge_interfaces__rosidl_generator_c.dir/rosidl_generator_c/epos2_bridge_interfaces/srv/detail/move_delta__description.c.o[0m
+[2.254s] [ 11%] [32mBuilding C object CMakeFiles/epos2_bridge_interfaces__rosidl_generator_c.dir/rosidl_generator_c/epos2_bridge_interfaces/srv/detail/move_absolute__functions.c.o[0m
+[2.254s] [ 14%] [32mBuilding C object CMakeFiles/epos2_bridge_interfaces__rosidl_generator_c.dir/rosidl_generator_c/epos2_bridge_interfaces/srv/detail/move_absolute__description.c.o[0m
+[2.254s] [ 14%] [32mBuilding C object CMakeFiles/epos2_bridge_interfaces__rosidl_generator_c.dir/rosidl_generator_c/epos2_bridge_interfaces/srv/detail/move_absolute_timed__type_support.c.o[0m
+[2.254s] [ 16%] [32mBuilding C object CMakeFiles/epos2_bridge_interfaces__rosidl_generator_c.dir/rosidl_generator_c/epos2_bridge_interfaces/srv/detail/move_absolute_timed__description.c.o[0m
+[2.255s] [ 18%] [32mBuilding C object CMakeFiles/epos2_bridge_interfaces__rosidl_generator_c.dir/rosidl_generator_c/epos2_bridge_interfaces/srv/detail/move_delta__functions.c.o[0m
+[2.255s] [ 20%] [32mBuilding C object CMakeFiles/epos2_bridge_interfaces__rosidl_generator_c.dir/rosidl_generator_c/epos2_bridge_interfaces/srv/detail/move_absolute__type_support.c.o[0m
+[2.255s] [ 22%] [32mBuilding C object CMakeFiles/epos2_bridge_interfaces__rosidl_generator_c.dir/rosidl_generator_c/epos2_bridge_interfaces/srv/detail/move_absolute_timed__functions.c.o[0m
+[2.298s] [ 24%] [32m[1mLinking C shared library libepos2_bridge_interfaces__rosidl_generator_c.so[0m
+[2.321s] [ 24%] Built target epos2_bridge_interfaces__rosidl_generator_c
+[2.327s] [ 29%] [34m[1mGenerating C introspection for ROS interfaces[0m
+[2.328s] [ 29%] [34m[1mGenerating C++ type support dispatch for ROS interfaces[0m
+[2.328s] [ 29%] [34m[1mGenerating C++ type support for eProsima Fast-RTPS[0m
+[2.328s] [ 31%] [34m[1mGenerating C type support for eProsima Fast-RTPS[0m
+[2.329s] [ 33%] [34m[1mGenerating C++ introspection for ROS interfaces[0m
+[2.329s] [ 35%] [34m[1mGenerating C type support dispatch for ROS interfaces[0m
+[2.482s] [ 37%] [32mBuilding CXX object CMakeFiles/epos2_bridge_interfaces__rosidl_typesupport_c.dir/rosidl_typesupport_c/epos2_bridge_interfaces/srv/move_delta__type_support.cpp.o[0m
+[2.482s] [ 38%] [32mBuilding CXX object CMakeFiles/epos2_bridge_interfaces__rosidl_typesupport_c.dir/rosidl_typesupport_c/epos2_bridge_interfaces/srv/move_absolute__type_support.cpp.o[0m
+[2.483s] [ 40%] [32mBuilding CXX object CMakeFiles/epos2_bridge_interfaces__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/epos2_bridge_interfaces/srv/move_absolute_timed__type_support.cpp.o[0m
+[2.483s] [ 46%] [32mBuilding CXX object CMakeFiles/epos2_bridge_interfaces__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/epos2_bridge_interfaces/srv/move_absolute__type_support.cpp.o[0m
+[2.483s] [ 46%] [32mBuilding CXX object CMakeFiles/epos2_bridge_interfaces__rosidl_typesupport_c.dir/rosidl_typesupport_c/epos2_bridge_interfaces/srv/move_absolute_timed__type_support.cpp.o[0m
+[2.483s] [ 46%] [32mBuilding CXX object CMakeFiles/epos2_bridge_interfaces__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/epos2_bridge_interfaces/srv/move_delta__type_support.cpp.o[0m
+[2.500s] [ 48%] [32mBuilding CXX object CMakeFiles/epos2_bridge_interfaces__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/epos2_bridge_interfaces/srv/detail/move_delta__type_support.cpp.o[0m
+[2.500s] [ 50%] [32mBuilding CXX object CMakeFiles/epos2_bridge_interfaces__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/epos2_bridge_interfaces/srv/detail/move_absolute_timed__type_support.cpp.o[0m
+[2.500s] [ 51%] [32mBuilding CXX object CMakeFiles/epos2_bridge_interfaces__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/epos2_bridge_interfaces/srv/detail/move_absolute__type_support.cpp.o[0m
+[2.508s] [ 53%] [32mBuilding C object CMakeFiles/epos2_bridge_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/epos2_bridge_interfaces/srv/detail/move_delta__type_support.c.o[0m
+[2.508s] [ 59%] [32m[1mLinking CXX shared library libepos2_bridge_interfaces__rosidl_typesupport_c.so[0m
+[2.508s] [ 59%] [32mBuilding C object CMakeFiles/epos2_bridge_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/epos2_bridge_interfaces/srv/detail/move_absolute__type_support.c.o[0m
+[2.508s] [ 59%] [32mBuilding C object CMakeFiles/epos2_bridge_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/epos2_bridge_interfaces/srv/detail/move_absolute_timed__type_support.c.o[0m
+[2.537s] [ 59%] Built target epos2_bridge_interfaces__rosidl_typesupport_c
+[2.538s] [ 61%] [32m[1mLinking C shared library libepos2_bridge_interfaces__rosidl_typesupport_introspection_c.so[0m
+[2.552s] [ 66%] [32mBuilding CXX object CMakeFiles/epos2_bridge_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/epos2_bridge_interfaces/srv/detail/dds_fastrtps/move_delta__type_support.cpp.o[0m
+[2.552s] [ 66%] [32mBuilding CXX object CMakeFiles/epos2_bridge_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/epos2_bridge_interfaces/srv/detail/dds_fastrtps/move_absolute_timed__type_support.cpp.o[0m
+[2.552s] [ 66%] [32mBuilding CXX object CMakeFiles/epos2_bridge_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/epos2_bridge_interfaces/srv/detail/dds_fastrtps/move_absolute__type_support.cpp.o[0m
+[2.560s] [ 66%] Built target epos2_bridge_interfaces__rosidl_typesupport_introspection_c
+[2.566s] [ 70%] [32mBuilding CXX object CMakeFiles/epos2_bridge_interfaces__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/epos2_bridge_interfaces/srv/detail/move_absolute__type_support_c.cpp.o[0m
+[2.566s] [ 70%] [32mBuilding CXX object CMakeFiles/epos2_bridge_interfaces__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/epos2_bridge_interfaces/srv/detail/move_absolute_timed__type_support_c.cpp.o[0m
+[2.566s] [ 72%] [32mBuilding CXX object CMakeFiles/epos2_bridge_interfaces__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/epos2_bridge_interfaces/srv/detail/move_delta__type_support_c.cpp.o[0m
+[2.715s] [ 74%] [32m[1mLinking CXX shared library libepos2_bridge_interfaces__rosidl_typesupport_cpp.so[0m
+[2.734s] [ 75%] [32m[1mLinking CXX shared library libepos2_bridge_interfaces__rosidl_typesupport_introspection_cpp.so[0m
+[2.763s] [ 75%] Built target epos2_bridge_interfaces__rosidl_typesupport_cpp
+[2.784s] [ 75%] Built target epos2_bridge_interfaces__rosidl_typesupport_introspection_cpp
+[2.841s] [ 77%] [32m[1mLinking CXX shared library libepos2_bridge_interfaces__rosidl_typesupport_fastrtps_c.so[0m
+[2.860s] [ 79%] [32m[1mLinking CXX shared library libepos2_bridge_interfaces__rosidl_typesupport_fastrtps_cpp.so[0m
+[2.881s] [ 79%] Built target epos2_bridge_interfaces__rosidl_typesupport_fastrtps_c
+[2.905s] [ 79%] Built target epos2_bridge_interfaces__rosidl_typesupport_fastrtps_cpp
+[2.917s] [ 79%] Built target epos2_bridge_interfaces
+[2.929s] [ 81%] [34m[1mGenerating Python code for ROS interfaces[0m
+[3.204s] [ 81%] Built target epos2_bridge_interfaces__py
+[3.217s] [ 83%] [32mBuilding C object CMakeFiles/epos2_bridge_interfaces__rosidl_generator_py.dir/rosidl_generator_py/epos2_bridge_interfaces/srv/_move_absolute_timed_s.c.o[0m
+[3.217s] [ 85%] [32mBuilding C object CMakeFiles/epos2_bridge_interfaces__rosidl_generator_py.dir/rosidl_generator_py/epos2_bridge_interfaces/srv/_move_absolute_s.c.o[0m
+[3.219s] [ 87%] [32mBuilding C object CMakeFiles/epos2_bridge_interfaces__rosidl_generator_py.dir/rosidl_generator_py/epos2_bridge_interfaces/srv/_move_delta_s.c.o[0m
+[3.287s] [ 88%] [32m[1mLinking C shared library libepos2_bridge_interfaces__rosidl_generator_py.so[0m
+[3.315s] [ 88%] Built target epos2_bridge_interfaces__rosidl_generator_py
+[3.327s] [ 90%] [32mBuilding C object CMakeFiles/epos2_bridge_interfaces_s__rosidl_typesupport_c.dir/rosidl_generator_py/epos2_bridge_interfaces/_epos2_bridge_interfaces_s.ep.rosidl_typesupport_c.c.o[0m
+[3.327s] [ 92%] [32mBuilding C object CMakeFiles/epos2_bridge_interfaces_s__rosidl_typesupport_fastrtps_c.dir/rosidl_generator_py/epos2_bridge_interfaces/_epos2_bridge_interfaces_s.ep.rosidl_typesupport_fastrtps_c.c.o[0m
+[3.329s] [ 94%] [32mBuilding C object CMakeFiles/epos2_bridge_interfaces_s__rosidl_typesupport_introspection_c.dir/rosidl_generator_py/epos2_bridge_interfaces/_epos2_bridge_interfaces_s.ep.rosidl_typesupport_introspection_c.c.o[0m
+[3.386s] [ 96%] [32m[1mLinking C shared module rosidl_generator_py/epos2_bridge_interfaces/epos2_bridge_interfaces_s__rosidl_typesupport_introspection_c.so[0m
+[3.387s] [ 98%] [32m[1mLinking C shared module rosidl_generator_py/epos2_bridge_interfaces/epos2_bridge_interfaces_s__rosidl_typesupport_c.so[0m
+[3.387s] [100%] [32m[1mLinking C shared module rosidl_generator_py/epos2_bridge_interfaces/epos2_bridge_interfaces_s__rosidl_typesupport_fastrtps_c.so[0m
+[3.405s] [100%] Built target epos2_bridge_interfaces_s__rosidl_typesupport_c
+[3.406s] [100%] Built target epos2_bridge_interfaces_s__rosidl_typesupport_fastrtps_c
+[3.406s] [100%] Built target epos2_bridge_interfaces_s__rosidl_typesupport_introspection_c
+[3.414s] Invoked command in '/home/robotics-club/agrobot_ws/build/epos2_bridge_interfaces' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/robotics-club/agrobot_ws/install/epos2_bridge:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/robotics-club/agrobot_ws/build/epos2_bridge_interfaces -- -j32 -l32
+[3.415s] Invoking command in '/home/robotics-club/agrobot_ws/build/epos2_bridge_interfaces': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/robotics-club/agrobot_ws/install/epos2_bridge:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/robotics-club/agrobot_ws/build/epos2_bridge_interfaces
+[3.420s] -- Install configuration: ""
+[3.420s] -- Execute custom install script
+[3.420s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/ament_index/resource_index/rosidl_interfaces/epos2_bridge_interfaces
+[3.426s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/srv/MoveDelta.json
+[3.431s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/srv/MoveAbsolute.json
+[3.436s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/srv/MoveAbsoluteTimed.json
+[3.440s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/msg/rosidl_generator_c__visibility_control.h
+[3.444s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_absolute__functions.h
+[3.449s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_absolute__struct.h
+[3.453s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_absolute__type_support.h
+[3.459s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_absolute_timed__functions.h
+[3.464s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_absolute_timed__struct.h
+[3.468s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_absolute_timed__type_support.h
+[3.472s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_delta__functions.h
+[3.478s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_delta__struct.h
+[3.482s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_delta__type_support.h
+[3.488s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/move_absolute.h
+[3.493s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/move_absolute_timed.h
+[3.499s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/move_delta.h
+[3.504s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/environment/library_path.sh
+[3.510s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/environment/library_path.dsv
+[3.514s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/msg/rosidl_typesupport_fastrtps_c__visibility_control.h
+[3.519s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_absolute__rosidl_typesupport_fastrtps_c.h
+[3.524s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_absolute_timed__rosidl_typesupport_fastrtps_c.h
+[3.528s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_delta__rosidl_typesupport_fastrtps_c.h
+[3.533s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/msg/rosidl_typesupport_introspection_c__visibility_control.h
+[3.538s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_absolute__rosidl_typesupport_introspection_c.h
+[3.544s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_absolute_timed__rosidl_typesupport_introspection_c.h
+[3.548s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_delta__rosidl_typesupport_introspection_c.h
+[3.552s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/msg/rosidl_generator_cpp__visibility_control.hpp
+[3.557s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_absolute__builder.hpp
+[3.562s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_absolute__struct.hpp
+[3.567s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_absolute__traits.hpp
+[3.573s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_absolute__type_support.hpp
+[3.578s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_absolute_timed__builder.hpp
+[3.583s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_absolute_timed__struct.hpp
+[3.588s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_absolute_timed__traits.hpp
+[3.594s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_absolute_timed__type_support.hpp
+[3.599s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_delta__builder.hpp
+[3.604s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_delta__struct.hpp
+[3.610s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_delta__traits.hpp
+[3.616s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_delta__type_support.hpp
+[3.621s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/move_absolute.hpp
+[3.627s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/move_absolute_timed.hpp
+[3.631s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/move_delta.hpp
+[3.636s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/msg/rosidl_typesupport_fastrtps_cpp__visibility_control.h
+[3.640s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_absolute__rosidl_typesupport_fastrtps_cpp.hpp
+[3.645s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_absolute_timed__rosidl_typesupport_fastrtps_cpp.hpp
+[3.650s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_delta__rosidl_typesupport_fastrtps_cpp.hpp
+[3.655s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_absolute__rosidl_typesupport_introspection_cpp.hpp
+[3.660s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_absolute_timed__rosidl_typesupport_introspection_cpp.hpp
+[3.665s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/include/epos2_bridge_interfaces/epos2_bridge_interfaces/srv/detail/move_delta__rosidl_typesupport_introspection_cpp.hpp
+[3.669s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/environment/pythonpath.sh
+[3.673s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/environment/pythonpath.dsv
+[3.678s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/python3.12/site-packages/epos2_bridge_interfaces-0.0.1-py3.12.egg-info/PKG-INFO
+[3.684s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/python3.12/site-packages/epos2_bridge_interfaces-0.0.1-py3.12.egg-info/SOURCES.txt
+[3.690s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/python3.12/site-packages/epos2_bridge_interfaces-0.0.1-py3.12.egg-info/dependency_links.txt
+[3.695s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/python3.12/site-packages/epos2_bridge_interfaces-0.0.1-py3.12.egg-info/top_level.txt
+[3.701s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/python3.12/site-packages/epos2_bridge_interfaces/__init__.py
+[3.706s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/python3.12/site-packages/epos2_bridge_interfaces/_epos2_bridge_interfaces_s.ep.rosidl_typesupport_c.c
+[3.711s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/python3.12/site-packages/epos2_bridge_interfaces/_epos2_bridge_interfaces_s.ep.rosidl_typesupport_fastrtps_c.c
+[3.717s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/python3.12/site-packages/epos2_bridge_interfaces/_epos2_bridge_interfaces_s.ep.rosidl_typesupport_introspection_c.c
+[3.721s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/python3.12/site-packages/epos2_bridge_interfaces/epos2_bridge_interfaces_s__rosidl_typesupport_c.so
+[3.725s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/python3.12/site-packages/epos2_bridge_interfaces/epos2_bridge_interfaces_s__rosidl_typesupport_fastrtps_c.so
+[3.729s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/python3.12/site-packages/epos2_bridge_interfaces/epos2_bridge_interfaces_s__rosidl_typesupport_introspection_c.so
+[3.733s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/python3.12/site-packages/epos2_bridge_interfaces/srv/__init__.py
+[3.737s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/python3.12/site-packages/epos2_bridge_interfaces/srv/_move_absolute.py
+[3.742s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/python3.12/site-packages/epos2_bridge_interfaces/srv/_move_absolute_s.c
+[3.747s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/python3.12/site-packages/epos2_bridge_interfaces/srv/_move_absolute_timed.py
+[3.753s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/python3.12/site-packages/epos2_bridge_interfaces/srv/_move_absolute_timed_s.c
+[3.758s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/python3.12/site-packages/epos2_bridge_interfaces/srv/_move_delta.py
+[3.763s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/python3.12/site-packages/epos2_bridge_interfaces/srv/_move_delta_s.c
+[3.769s] -- Up-to-date symlink: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/python3.12/site-packages/epos2_bridge_interfaces/epos2_bridge_interfaces_s__rosidl_typesupport_fastrtps_c.so
+[3.769s] -- Up-to-date symlink: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/python3.12/site-packages/epos2_bridge_interfaces/epos2_bridge_interfaces_s__rosidl_typesupport_introspection_c.so
+[3.769s] -- Up-to-date symlink: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/python3.12/site-packages/epos2_bridge_interfaces/epos2_bridge_interfaces_s__rosidl_typesupport_c.so
+[3.769s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/srv/MoveDelta.idl
+[3.774s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/srv/MoveAbsolute.idl
+[3.779s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/srv/MoveAbsoluteTimed.idl
+[3.784s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/srv/MoveDelta.srv
+[3.790s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/srv/MoveAbsolute.srv
+[3.794s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/srv/MoveAbsoluteTimed.srv
+[3.799s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/ament_index/resource_index/package_run_dependencies/epos2_bridge_interfaces
+[3.804s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/ament_index/resource_index/parent_prefix_path/epos2_bridge_interfaces
+[3.808s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/environment/ament_prefix_path.sh
+[3.814s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/environment/ament_prefix_path.dsv
+[3.818s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/environment/path.sh
+[3.823s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/environment/path.dsv
+[3.827s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/local_setup.bash
+[3.831s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/local_setup.sh
+[3.836s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/local_setup.zsh
+[3.842s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/local_setup.dsv
+[3.847s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/package.dsv
+[3.852s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/ament_index/resource_index/packages/epos2_bridge_interfaces
+[3.858s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/cmake/rosidl_cmake-extras.cmake
+[3.863s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/cmake/ament_cmake_export_dependencies-extras.cmake
+[3.868s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/cmake/ament_cmake_export_include_directories-extras.cmake
+[3.873s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/cmake/ament_cmake_export_libraries-extras.cmake
+[3.879s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/cmake/ament_cmake_export_targets-extras.cmake
+[3.884s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/cmake/rosidl_cmake_export_typesupport_targets-extras.cmake
+[3.889s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/cmake/rosidl_cmake_export_typesupport_libraries-extras.cmake
+[3.894s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/cmake/epos2_bridge_interfacesConfig.cmake
+[3.899s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/cmake/epos2_bridge_interfacesConfig-version.cmake
+[3.906s] -- Symlinking: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/package.xml
+[3.911s] -- Installing: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/libepos2_bridge_interfaces__rosidl_generator_c.so
+[3.912s] -- Set non-toolchain portion of runtime path of "/home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/libepos2_bridge_interfaces__rosidl_generator_c.so" to ""
+[3.912s] -- Installing: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/libepos2_bridge_interfaces__rosidl_typesupport_fastrtps_c.so
+[3.912s] -- Set non-toolchain portion of runtime path of "/home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/libepos2_bridge_interfaces__rosidl_typesupport_fastrtps_c.so" to ""
+[3.912s] -- Installing: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/libepos2_bridge_interfaces__rosidl_typesupport_introspection_c.so
+[3.912s] -- Set non-toolchain portion of runtime path of "/home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/libepos2_bridge_interfaces__rosidl_typesupport_introspection_c.so" to ""
+[3.912s] -- Installing: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/libepos2_bridge_interfaces__rosidl_typesupport_c.so
+[3.912s] -- Set non-toolchain portion of runtime path of "/home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/libepos2_bridge_interfaces__rosidl_typesupport_c.so" to ""
+[3.912s] -- Installing: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/libepos2_bridge_interfaces__rosidl_typesupport_fastrtps_cpp.so
+[3.912s] -- Set non-toolchain portion of runtime path of "/home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/libepos2_bridge_interfaces__rosidl_typesupport_fastrtps_cpp.so" to ""
+[3.912s] -- Installing: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/libepos2_bridge_interfaces__rosidl_typesupport_introspection_cpp.so
+[3.912s] -- Set non-toolchain portion of runtime path of "/home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/libepos2_bridge_interfaces__rosidl_typesupport_introspection_cpp.so" to ""
+[3.912s] -- Installing: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/libepos2_bridge_interfaces__rosidl_typesupport_cpp.so
+[3.912s] -- Set non-toolchain portion of runtime path of "/home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/libepos2_bridge_interfaces__rosidl_typesupport_cpp.so" to ""
+[3.936s] Listing '/home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/python3.12/site-packages/epos2_bridge_interfaces'...
+[3.936s] Compiling '/home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/python3.12/site-packages/epos2_bridge_interfaces/__init__.py'...
+[3.937s] Listing '/home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/python3.12/site-packages/epos2_bridge_interfaces/srv'...
+[3.937s] Compiling '/home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/python3.12/site-packages/epos2_bridge_interfaces/srv/__init__.py'...
+[3.937s] Compiling '/home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/python3.12/site-packages/epos2_bridge_interfaces/srv/_move_absolute.py'...
+[3.937s] Compiling '/home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/python3.12/site-packages/epos2_bridge_interfaces/srv/_move_absolute_timed.py'...
+[3.937s] Compiling '/home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/python3.12/site-packages/epos2_bridge_interfaces/srv/_move_delta.py'...
+[3.940s] -- Installing: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/libepos2_bridge_interfaces__rosidl_generator_py.so
+[3.940s] -- Set non-toolchain portion of runtime path of "/home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/lib/libepos2_bridge_interfaces__rosidl_generator_py.so" to ""
+[3.940s] -- Installing: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/cmake/export_epos2_bridge_interfaces__rosidl_generator_cExport.cmake
+[3.940s] -- Installing: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/cmake/export_epos2_bridge_interfaces__rosidl_generator_cExport-noconfig.cmake
+[3.940s] -- Installing: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/cmake/export_epos2_bridge_interfaces__rosidl_typesupport_fastrtps_cExport.cmake
+[3.940s] -- Installing: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/cmake/export_epos2_bridge_interfaces__rosidl_typesupport_fastrtps_cExport-noconfig.cmake
+[3.940s] -- Installing: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/cmake/epos2_bridge_interfaces__rosidl_typesupport_introspection_cExport.cmake
+[3.940s] -- Installing: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/cmake/epos2_bridge_interfaces__rosidl_typesupport_introspection_cExport-noconfig.cmake
+[3.940s] -- Installing: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/cmake/epos2_bridge_interfaces__rosidl_typesupport_cExport.cmake
+[3.940s] -- Installing: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/cmake/epos2_bridge_interfaces__rosidl_typesupport_cExport-noconfig.cmake
+[3.940s] -- Installing: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/cmake/export_epos2_bridge_interfaces__rosidl_generator_cppExport.cmake
+[3.940s] -- Installing: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/cmake/export_epos2_bridge_interfaces__rosidl_typesupport_fastrtps_cppExport.cmake
+[3.940s] -- Installing: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/cmake/export_epos2_bridge_interfaces__rosidl_typesupport_fastrtps_cppExport-noconfig.cmake
+[3.940s] -- Installing: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/cmake/epos2_bridge_interfaces__rosidl_typesupport_introspection_cppExport.cmake
+[3.940s] -- Installing: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/cmake/epos2_bridge_interfaces__rosidl_typesupport_introspection_cppExport-noconfig.cmake
+[3.940s] -- Installing: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/cmake/epos2_bridge_interfaces__rosidl_typesupport_cppExport.cmake
+[3.940s] -- Installing: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/cmake/epos2_bridge_interfaces__rosidl_typesupport_cppExport-noconfig.cmake
+[3.940s] -- Installing: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/cmake/export_epos2_bridge_interfaces__rosidl_generator_pyExport.cmake
+[3.940s] -- Installing: /home/robotics-club/agrobot_ws/install/epos2_bridge_interfaces/share/epos2_bridge_interfaces/cmake/export_epos2_bridge_interfaces__rosidl_generator_pyExport-noconfig.cmake
+[3.942s] Invoked command in '/home/robotics-club/agrobot_ws/build/epos2_bridge_interfaces' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/robotics-club/agrobot_ws/install/epos2_bridge:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/robotics-club/agrobot_ws/build/epos2_bridge_interfaces

@@ -1,0 +1,1 @@
+/home/robotics-club/agrobot_ws/build/epos2_bridge_interfaces/rosidl_typesupport_introspection_c/epos2_bridge_interfaces/srv/detail/move_delta__rosidl_typesupport_introspection_c.h

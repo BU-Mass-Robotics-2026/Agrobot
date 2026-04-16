@@ -1,0 +1,1 @@
+/home/robotics-club/agrobot_ws/src/moveit_config/launch/j3_canopen_jtc.launch.py

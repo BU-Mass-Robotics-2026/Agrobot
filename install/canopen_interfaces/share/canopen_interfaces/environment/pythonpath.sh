@@ -1,0 +1,1 @@
+/home/robotics-club/agrobot_ws/build/canopen_interfaces/ament_cmake_environment_hooks/pythonpath.sh

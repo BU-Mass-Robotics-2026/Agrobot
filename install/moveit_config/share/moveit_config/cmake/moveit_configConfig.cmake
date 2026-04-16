@@ -1,0 +1,1 @@
+/home/robotics-club/agrobot_ws/build/moveit_config/ament_cmake_core/moveit_configConfig.cmake

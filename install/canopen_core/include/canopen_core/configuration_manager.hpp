@@ -1,0 +1,1 @@
+/home/robotics-club/agrobot_ws/src/ros2_canopen/canopen_core/include/canopen_core/configuration_manager.hpp

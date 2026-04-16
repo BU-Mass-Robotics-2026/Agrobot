@@ -1,0 +1,1 @@
+/home/robotics-club/agrobot_ws/build/epos2_bridge_interfaces/rosidl_generator_cpp/epos2_bridge_interfaces/srv/move_absolute.hpp
