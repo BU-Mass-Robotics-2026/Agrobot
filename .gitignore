@@ -52,3 +52,6 @@ CATKIN_IGNORE
 
 # vscode generated files
 .vscode/
+
+# log files
+*.log

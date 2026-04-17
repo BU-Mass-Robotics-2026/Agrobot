@@ -44,8 +44,6 @@
   <exec_depend>tf2_ros</exec_depend>
   <exec_depend>warehouse_ros_mongo</exec_depend>
   <exec_depend>xacro</exec_depend>
-  <exec_depend>ros2_canopen</exec_depend>
-  <exec_depend>canopen_ros2_control</exec_depend>
 
 
   <export>
