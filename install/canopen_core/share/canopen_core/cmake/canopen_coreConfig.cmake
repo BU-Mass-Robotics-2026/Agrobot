@@ -1,1 +1,0 @@
-/home/robotics-club/agrobot_ws/build/canopen_core/ament_cmake_core/canopen_coreConfig.cmake

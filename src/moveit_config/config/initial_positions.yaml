@@ -1,4 +1,4 @@
-# Default initial positions for my_robot's ros2_control fake system
+# Default initial positions for robot's ros2_control fake system
 
 initial_positions:
   joint0: 0

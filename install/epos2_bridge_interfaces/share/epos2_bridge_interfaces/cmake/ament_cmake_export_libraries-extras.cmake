@@ -1,1 +1,0 @@
-/home/robotics-club/agrobot_ws/build/epos2_bridge_interfaces/ament_cmake_export_libraries/ament_cmake_export_libraries-extras.cmake

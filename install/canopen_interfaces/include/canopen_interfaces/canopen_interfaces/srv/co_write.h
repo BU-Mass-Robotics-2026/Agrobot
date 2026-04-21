@@ -1,1 +1,0 @@
-/home/robotics-club/agrobot_ws/build/canopen_interfaces/rosidl_generator_c/canopen_interfaces/srv/co_write.h

@@ -1,9 +1,9 @@
 moveit_setup_assistant_config:
   urdf:
-    package: my_robot_description
-    relative_path: urdf/arm.urdf.xacro
+    package: robot_description
+    relative_path: urdf/robot.urdf.xacro
   srdf:
-    relative_path: config/my_robot.srdf
+    relative_path: config/robot.srdf
   package_settings:
     author_name: Emily Warenda
     author_email: ewarenda@bu.edu

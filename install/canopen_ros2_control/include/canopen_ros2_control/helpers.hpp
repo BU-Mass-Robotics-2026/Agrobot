@@ -1,1 +1,0 @@
-/home/robotics-club/agrobot_ws/src/ros2_canopen/canopen_ros2_control/include/canopen_ros2_control/helpers.hpp

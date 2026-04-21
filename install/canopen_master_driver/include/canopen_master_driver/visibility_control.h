@@ -1,1 +1,0 @@
-/home/robotics-club/agrobot_ws/src/ros2_canopen/canopen_master_driver/include/canopen_master_driver/visibility_control.h

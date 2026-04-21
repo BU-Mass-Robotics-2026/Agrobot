@@ -1,1 +1,0 @@
-/home/robotics-club/agrobot_ws/build/epos2_bridge_interfaces/rosidl_cmake/rosidl_cmake_export_typesupport_targets-extras.cmake

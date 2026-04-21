@@ -1,1 +1,0 @@
-/home/robotics-club/agrobot_ws/src/ros2_canopen/canopen_402_driver/include/canopen_402_driver/lifecycle_cia402_driver.hpp

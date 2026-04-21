@@ -1,1 +1,0 @@
-/home/robotics-club/agrobot_ws/src/ros2_canopen/lely_core_libraries/cmake/lely_core_libraries-extras.cmake

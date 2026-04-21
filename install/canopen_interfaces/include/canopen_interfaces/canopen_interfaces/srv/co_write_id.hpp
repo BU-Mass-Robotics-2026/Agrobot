@@ -1,1 +1,0 @@
-/home/robotics-club/agrobot_ws/build/canopen_interfaces/rosidl_generator_cpp/canopen_interfaces/srv/co_write_id.hpp

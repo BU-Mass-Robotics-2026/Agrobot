@@ -1,1 +1,0 @@
-/home/robotics-club/agrobot_ws/build/epos2_bridge_interfaces/rosidl_typesupport_fastrtps_c/epos2_bridge_interfaces/srv/detail/move_absolute_timed__rosidl_typesupport_fastrtps_c.h

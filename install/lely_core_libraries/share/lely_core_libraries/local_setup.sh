@@ -1,1 +1,0 @@
-/home/robotics-club/agrobot_ws/build/lely_core_libraries/ament_cmake_environment_hooks/local_setup.sh

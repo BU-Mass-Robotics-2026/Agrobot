@@ -1,1 +1,0 @@
-/home/robotics-club/agrobot_ws/build/canopen_interfaces/rosidl_typesupport_fastrtps_cpp/canopen_interfaces/srv/detail/co_read_id__rosidl_typesupport_fastrtps_cpp.hpp

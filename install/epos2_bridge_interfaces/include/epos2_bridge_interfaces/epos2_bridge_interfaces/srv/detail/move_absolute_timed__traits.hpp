@@ -1,1 +1,0 @@
-/home/robotics-club/agrobot_ws/build/epos2_bridge_interfaces/rosidl_generator_cpp/epos2_bridge_interfaces/srv/detail/move_absolute_timed__traits.hpp

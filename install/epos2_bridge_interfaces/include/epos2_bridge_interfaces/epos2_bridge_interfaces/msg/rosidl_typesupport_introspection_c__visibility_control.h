@@ -1,1 +1,0 @@
-/home/robotics-club/agrobot_ws/build/epos2_bridge_interfaces/rosidl_typesupport_introspection_c/epos2_bridge_interfaces/msg/rosidl_typesupport_introspection_c__visibility_control.h

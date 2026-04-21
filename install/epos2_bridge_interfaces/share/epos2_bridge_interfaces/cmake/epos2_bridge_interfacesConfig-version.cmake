@@ -1,1 +1,0 @@
-/home/robotics-club/agrobot_ws/build/epos2_bridge_interfaces/ament_cmake_core/epos2_bridge_interfacesConfig-version.cmake

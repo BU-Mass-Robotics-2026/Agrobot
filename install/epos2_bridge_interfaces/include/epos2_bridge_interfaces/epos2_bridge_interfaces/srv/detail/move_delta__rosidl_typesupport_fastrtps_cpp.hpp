@@ -1,1 +1,0 @@
-/home/robotics-club/agrobot_ws/build/epos2_bridge_interfaces/rosidl_typesupport_fastrtps_cpp/epos2_bridge_interfaces/srv/detail/move_delta__rosidl_typesupport_fastrtps_cpp.hpp

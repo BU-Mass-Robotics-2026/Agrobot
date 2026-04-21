@@ -1,1 +1,0 @@
-/home/robotics-club/agrobot_ws/src/moveit_config/launch/j3_canopen_driver_only_ppm.launch.py
