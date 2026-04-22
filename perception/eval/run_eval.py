@@ -220,6 +220,21 @@ def main() -> None:
         ),
     )
     parser.add_argument(
+        "--mlp-confidence",
+        type=float,
+        default=None,
+        help=(
+            "[--fusion-mlp] Confidence threshold applied AFTER MLP re-scoring "
+            "(0–1, MLP probability). Separate from --confidence which gates the "
+            "inner SAM2+DINOv2 detector before the MLP sees detections. "
+            "Use --confidence 0.0 --mlp-confidence 0.40 to let all SAM2 proposals "
+            "reach the MLP, then keep only those the MLP scores ≥ 0.40. "
+            "This is the correct way to threshold the P2.2 fusion pipeline. "
+            "Defaults to --confidence value when --fusion-mlp is not set, and to "
+            "0.0 (no gate) when --fusion-mlp is set but --mlp-confidence is omitted."
+        ),
+    )
+    parser.add_argument(
         "--mask-refine",
         action="store_true",
         default=False,
@@ -410,6 +425,11 @@ def main() -> None:
         detector = MaskRefineWrapper(detector)
         print("  Mask refine enabled (centroid re-prompt + score guardrail)")
 
+    # When --fusion-mlp is active, the SigLIP wrapper must NOT gate by confidence —
+    # that gate must be applied by the MLP wrapper so it fires on MLP probabilities,
+    # not on the intermediate DINOv2+SigLIP blended score. Passing confidence_threshold=0
+    # to SigLIP here lets every proposal through to the MLP.
+    siglip_conf = 0.0 if args.fusion_mlp else args.confidence
     if args.siglip:
         from eval.siglip_rescoring import SigLIPRescoringWrapper
         detector = SigLIPRescoringWrapper(
@@ -420,14 +440,18 @@ def main() -> None:
             w_pred_iou=args.siglip_w_pred_iou,
             nms_iou_threshold=args.nms_iou if args.nms_iou > 0 else 0.5,
             max_detections=args.max_detections,
-            confidence_threshold=args.confidence,
+            confidence_threshold=siglip_conf,
         )
         print(f"  SigLIP enabled (w_dino={args.siglip_w_dino}, "
               f"w_siglip={args.siglip_w_siglip}, w_pred_iou={args.siglip_w_pred_iou})")
 
     if args.fusion_mlp:
-        # Replaces the score with a learned MLP probability. Expects
-        # SigLIP-attached siglip_sim — compose with --siglip.
+        # --mlp-confidence gates on MLP probability (0–1).
+        # Falls back to --confidence if --mlp-confidence was not explicitly set,
+        # and to 0.0 (no gate) if neither was set. This lets users write:
+        #   --confidence 0.0 --mlp-confidence 0.40
+        # to let all SAM2 proposals reach the MLP, then threshold on MLP output.
+        mlp_conf = args.mlp_confidence if args.mlp_confidence is not None else args.confidence
         from eval.fusion_mlp import FusionMLPWrapper
         detector = FusionMLPWrapper(
             detector,
@@ -435,9 +459,9 @@ def main() -> None:
                          else repo_root / args.fusion_mlp),
             nms_iou_threshold=args.nms_iou if args.nms_iou > 0 else 0.5,
             max_detections=args.max_detections,
-            confidence_threshold=args.confidence,
+            confidence_threshold=mlp_conf,
         )
-        print(f"  Fusion MLP loaded: {args.fusion_mlp}")
+        print(f"  Fusion MLP loaded: {args.fusion_mlp}  (mlp-confidence={mlp_conf:.2f})")
 
     if args.fusion_features_out:
         # Wrap last so the dump captures whatever the upstream chain produced.

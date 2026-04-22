@@ -249,7 +249,8 @@ AGROBOT_FORCE_CPU=1 HIP_VISIBLE_DEVICES="" PYTHONPATH=perception \
   --detector sam2_amg \
   --amg-points 28 \
   --max-detections 30 \
-  --confidence 0.40 \
+  --confidence 0.0 \
+  --mlp-confidence 0.40 \
   --nms-iou 0.40 \
   --dino-weight 0.7 \
   --query-embedding models/query_embedding_k4.pt \
@@ -259,6 +260,11 @@ AGROBOT_FORCE_CPU=1 HIP_VISIBLE_DEVICES="" PYTHONPATH=perception \
   --metric coco \
   --visualize-dir eval_reports/p2_2_mlp
 ```
+
+> `--confidence 0.0` lets all SAM2 proposals reach the MLP.
+> `--mlp-confidence 0.40` then gates on the MLP's own probability (0–1).
+> Do **not** pass `--confidence 0.40` alone — that applies the threshold on the
+> raw DINOv2 score before the MLP sees anything, producing 0 detections.
 
 **Result:**
 
