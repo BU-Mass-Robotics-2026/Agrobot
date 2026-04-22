@@ -16,13 +16,13 @@ ament_target_dependencies(named_goal rclcpp moveit_ros_planning_interface)
 add_executable(joint_goal src/tests/joint_goal.cpp)
 ament_target_dependencies(joint_goal rclcpp moveit_ros_planning_interface)
 
-add_executable(pose_goal src/tests/pose_goal.cpp)
-ament_target_dependencies(pose_goal rclcpp moveit_ros_planning_interface)
+add_executable(position_goal src/tests/position_goal.cpp)
+ament_target_dependencies(position_goal rclcpp moveit_ros_planning_interface)
 
 install(TARGETS
   named_goal
   joint_goal
-  pose_goal
+  position_goal
   DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
