@@ -1,0 +1,6 @@
+srv/MoveAbsolute.idl
+srv/MoveAbsolute.srv
+srv/MoveAbsoluteTimed.idl
+srv/MoveAbsoluteTimed.srv
+srv/MoveDelta.idl
+srv/MoveDelta.srv

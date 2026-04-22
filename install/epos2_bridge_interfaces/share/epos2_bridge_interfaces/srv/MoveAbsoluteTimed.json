@@ -1,0 +1,222 @@
+{
+  "type_description_msg": {
+    "type_description": {
+      "type_name": "epos2_bridge_interfaces/srv/MoveAbsoluteTimed",
+      "fields": [
+        {
+          "name": "request_message",
+          "type": {
+            "type_id": 1,
+            "capacity": 0,
+            "string_capacity": 0,
+            "nested_type_name": "epos2_bridge_interfaces/srv/MoveAbsoluteTimed_Request"
+          },
+          "default_value": ""
+        },
+        {
+          "name": "response_message",
+          "type": {
+            "type_id": 1,
+            "capacity": 0,
+            "string_capacity": 0,
+            "nested_type_name": "epos2_bridge_interfaces/srv/MoveAbsoluteTimed_Response"
+          },
+          "default_value": ""
+        },
+        {
+          "name": "event_message",
+          "type": {
+            "type_id": 1,
+            "capacity": 0,
+            "string_capacity": 0,
+            "nested_type_name": "epos2_bridge_interfaces/srv/MoveAbsoluteTimed_Event"
+          },
+          "default_value": ""
+        }
+      ]
+    },
+    "referenced_type_descriptions": [
+      {
+        "type_name": "builtin_interfaces/msg/Time",
+        "fields": [
+          {
+            "name": "sec",
+            "type": {
+              "type_id": 6,
+              "capacity": 0,
+              "string_capacity": 0,
+              "nested_type_name": ""
+            },
+            "default_value": ""
+          },
+          {
+            "name": "nanosec",
+            "type": {
+              "type_id": 7,
+              "capacity": 0,
+              "string_capacity": 0,
+              "nested_type_name": ""
+            },
+            "default_value": ""
+          }
+        ]
+      },
+      {
+        "type_name": "epos2_bridge_interfaces/srv/MoveAbsoluteTimed_Event",
+        "fields": [
+          {
+            "name": "info",
+            "type": {
+              "type_id": 1,
+              "capacity": 0,
+              "string_capacity": 0,
+              "nested_type_name": "service_msgs/msg/ServiceEventInfo"
+            },
+            "default_value": ""
+          },
+          {
+            "name": "request",
+            "type": {
+              "type_id": 97,
+              "capacity": 1,
+              "string_capacity": 0,
+              "nested_type_name": "epos2_bridge_interfaces/srv/MoveAbsoluteTimed_Request"
+            },
+            "default_value": ""
+          },
+          {
+            "name": "response",
+            "type": {
+              "type_id": 97,
+              "capacity": 1,
+              "string_capacity": 0,
+              "nested_type_name": "epos2_bridge_interfaces/srv/MoveAbsoluteTimed_Response"
+            },
+            "default_value": ""
+          }
+        ]
+      },
+      {
+        "type_name": "epos2_bridge_interfaces/srv/MoveAbsoluteTimed_Request",
+        "fields": [
+          {
+            "name": "target_rad",
+            "type": {
+              "type_id": 11,
+              "capacity": 0,
+              "string_capacity": 0,
+              "nested_type_name": ""
+            },
+            "default_value": ""
+          },
+          {
+            "name": "duration_sec",
+            "type": {
+              "type_id": 11,
+              "capacity": 0,
+              "string_capacity": 0,
+              "nested_type_name": ""
+            },
+            "default_value": ""
+          }
+        ]
+      },
+      {
+        "type_name": "epos2_bridge_interfaces/srv/MoveAbsoluteTimed_Response",
+        "fields": [
+          {
+            "name": "success",
+            "type": {
+              "type_id": 15,
+              "capacity": 0,
+              "string_capacity": 0,
+              "nested_type_name": ""
+            },
+            "default_value": ""
+          },
+          {
+            "name": "message",
+            "type": {
+              "type_id": 17,
+              "capacity": 0,
+              "string_capacity": 0,
+              "nested_type_name": ""
+            },
+            "default_value": ""
+          }
+        ]
+      },
+      {
+        "type_name": "service_msgs/msg/ServiceEventInfo",
+        "fields": [
+          {
+            "name": "event_type",
+            "type": {
+              "type_id": 3,
+              "capacity": 0,
+              "string_capacity": 0,
+              "nested_type_name": ""
+            },
+            "default_value": ""
+          },
+          {
+            "name": "stamp",
+            "type": {
+              "type_id": 1,
+              "capacity": 0,
+              "string_capacity": 0,
+              "nested_type_name": "builtin_interfaces/msg/Time"
+            },
+            "default_value": ""
+          },
+          {
+            "name": "client_gid",
+            "type": {
+              "type_id": 51,
+              "capacity": 16,
+              "string_capacity": 0,
+              "nested_type_name": ""
+            },
+            "default_value": ""
+          },
+          {
+            "name": "sequence_number",
+            "type": {
+              "type_id": 8,
+              "capacity": 0,
+              "string_capacity": 0,
+              "nested_type_name": ""
+            },
+            "default_value": ""
+          }
+        ]
+      }
+    ]
+  },
+  "type_hashes": [
+    {
+      "type_name": "epos2_bridge_interfaces/srv/MoveAbsoluteTimed",
+      "hash_string": "RIHS01_c0f2f42394ef98f188006f48a409f97ee2dd871fdd1abd3c55435970b67bdcde"
+    },
+    {
+      "type_name": "builtin_interfaces/msg/Time",
+      "hash_string": "RIHS01_b106235e25a4c5ed35098aa0a61a3ee9c9b18d197f398b0e4206cea9acf9c197"
+    },
+    {
+      "type_name": "epos2_bridge_interfaces/srv/MoveAbsoluteTimed_Event",
+      "hash_string": "RIHS01_8c9fc5d8a36c433e2523f54e7cf358617adae503d615c6b7a64b4bf452ab89d3"
+    },
+    {
+      "type_name": "epos2_bridge_interfaces/srv/MoveAbsoluteTimed_Request",
+      "hash_string": "RIHS01_f4591b9c0b9e9b65a8f12be473d0cd0e7aea211ae0c57292084cfb2c8fdd3845"
+    },
+    {
+      "type_name": "epos2_bridge_interfaces/srv/MoveAbsoluteTimed_Response",
+      "hash_string": "RIHS01_7374bc9d4ecd883c5717f1354f136acc2bf14b624264246dd710be7683aee456"
+    },
+    {
+      "type_name": "service_msgs/msg/ServiceEventInfo",
+      "hash_string": "RIHS01_41bcbbe07a75c9b52bc96bfd5c24d7f0fc0a08c0cb7921b3373c5732345a6f45"
+    }
+  ]
+}
