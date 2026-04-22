@@ -1,1 +1,0 @@
-/home/robotics-club/agrobot_ws/src/moveit_config/launch/move_group.launch.py
