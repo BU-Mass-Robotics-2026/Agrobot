@@ -199,6 +199,98 @@ def main() -> None:
         help="[sam2_semantic] Number of top-scoring DINOv2 heatmap patches to use as semantic prompts.",
     )
     parser.add_argument(
+        "--fusion-features-out",
+        type=Path,
+        default=None,
+        help=(
+            "Phase 2.2 step 1: dump per-detection fusion features to this JSONL "
+            "file (one line per image). Pair with --siglip and a low --confidence "
+            "to get a dense feature dump suitable for training a fusion MLP via "
+            "perception/tools/train_fusion_mlp.py."
+        ),
+    )
+    parser.add_argument(
+        "--fusion-mlp",
+        type=Path,
+        default=None,
+        help=(
+            "Phase 2.2 step 3: load a trained FusionMLP checkpoint and re-score "
+            "every detection with it. Replaces the SigLIP fixed-weight fusion. "
+            "Compose with --siglip to populate siglip_sim before MLP scoring."
+        ),
+    )
+    parser.add_argument(
+        "--mask-refine",
+        action="store_true",
+        default=False,
+        help=(
+            "Enable second-pass SAM2 mask refinement (Phase 2.3): re-prompt "
+            "SAM2 with each surviving detection's centroid and replace the "
+            "mask if the refined version scores higher AND has IoU>=0.5 with "
+            "the original. Adds ~30 ms per surviving detection. Expected mAP "
+            "gain on borderline-IoU cases: +0.005-0.020."
+        ),
+    )
+    parser.add_argument(
+        "--metric",
+        choices=["mAP50", "coco"],
+        default="mAP50",
+        help=(
+            "Metric to report. mAP50 = single-IoU 0.5 (legacy, sprint-tracking). "
+            "coco = COCO mAP@[.5:.95] + AP50 + AP75 + AP_small/medium/large "
+            "(paper-grade; required for any peer-reviewed publication)."
+        ),
+    )
+    parser.add_argument(
+        "--siglip",
+        action="store_true",
+        default=False,
+        help=(
+            "Enable SigLIP per-detection re-scoring (Phase 1.3). "
+            "Wraps the detector to crop each detection's bbox, run SigLIP "
+            "image encoder + cached text embeddings, fuse with DINOv2 scores. "
+            "Default fusion: 0.4*dino + 0.4*siglip + 0.2*pred_iou."
+        ),
+    )
+    parser.add_argument(
+        "--siglip-model", type=str, default="google/siglip-base-patch16-224",
+        help="HuggingFace SigLIP model id. Default: google/siglip-base-patch16-224 (~370 MB).",
+    )
+    parser.add_argument(
+        "--siglip-w-dino", type=float, default=0.4,
+        help="[--siglip] DINO weight in late fusion. Default 0.4.",
+    )
+    parser.add_argument(
+        "--siglip-w-siglip", type=float, default=0.4,
+        help="[--siglip] SigLIP weight in late fusion. Default 0.4.",
+    )
+    parser.add_argument(
+        "--siglip-w-pred-iou", type=float, default=0.2,
+        help="[--siglip] SAM2 pred_iou weight in late fusion. Default 0.2.",
+    )
+    parser.add_argument(
+        "--tta",
+        action="store_true",
+        default=False,
+        help=(
+            "Enable test-time augmentation (Phase 1.2): wrap the detector to also "
+            "run on a horizontally-flipped input and NMS-merge the results. "
+            "Compose with --amg-crops for crop-augmentation as well. "
+            "Roughly doubles per-frame latency. Expected mAP gain: +0.015-0.030."
+        ),
+    )
+    parser.add_argument(
+        "--detections-jsonl",
+        type=Path,
+        default=None,
+        help=(
+            "Dump raw detections (box, score, label) per image to a JSONL file. "
+            "Pair with --confidence 0 --nms-iou 0 --max-detections 1000 to capture "
+            "the full pre-filter detection set so a post-hoc sweep over (conf, nms, max_det) "
+            "can be replayed cheaply via perception/eval/sweep_post_filter.py."
+        ),
+    )
+    parser.add_argument(
         "--sparse-grid",
         type=int,
         default=4,
@@ -305,6 +397,66 @@ def main() -> None:
         )
     input_size = (518, 518)
 
+    # Wrapper composition order (innermost → outermost):
+    #   base detector  →  mask-refine  →  SigLIP re-score  →  TTA
+    # Rationale:
+    #   - mask-refine improves IoU and re-scores with the same DINOv2 formula;
+    #     must happen before SigLIP because SigLIP scores the cropped *bbox*
+    #     and we want SigLIP to see the refined bbox.
+    #   - SigLIP re-scores with a richer fusion; must be inside TTA so each
+    #     TTA pass's NMS keeps the best of *fused* scores, not raw DINOv2.
+    if args.mask_refine:
+        from eval.mask_refine import MaskRefineWrapper
+        detector = MaskRefineWrapper(detector)
+        print("  Mask refine enabled (centroid re-prompt + score guardrail)")
+
+    if args.siglip:
+        from eval.siglip_rescoring import SigLIPRescoringWrapper
+        detector = SigLIPRescoringWrapper(
+            detector,
+            model_id=args.siglip_model,
+            w_dino=args.siglip_w_dino,
+            w_siglip=args.siglip_w_siglip,
+            w_pred_iou=args.siglip_w_pred_iou,
+            nms_iou_threshold=args.nms_iou if args.nms_iou > 0 else 0.5,
+            max_detections=args.max_detections,
+            confidence_threshold=args.confidence,
+        )
+        print(f"  SigLIP enabled (w_dino={args.siglip_w_dino}, "
+              f"w_siglip={args.siglip_w_siglip}, w_pred_iou={args.siglip_w_pred_iou})")
+
+    if args.fusion_mlp:
+        # Replaces the score with a learned MLP probability. Expects
+        # SigLIP-attached siglip_sim — compose with --siglip.
+        from eval.fusion_mlp import FusionMLPWrapper
+        detector = FusionMLPWrapper(
+            detector,
+            mlp_path=str(args.fusion_mlp if args.fusion_mlp.is_absolute()
+                         else repo_root / args.fusion_mlp),
+            nms_iou_threshold=args.nms_iou if args.nms_iou > 0 else 0.5,
+            max_detections=args.max_detections,
+            confidence_threshold=args.confidence,
+        )
+        print(f"  Fusion MLP loaded: {args.fusion_mlp}")
+
+    if args.fusion_features_out:
+        # Wrap last so the dump captures whatever the upstream chain produced.
+        from eval.fusion_mlp import FeatureDumpWrapper
+        out_p = args.fusion_features_out if args.fusion_features_out.is_absolute() \
+            else repo_root / args.fusion_features_out
+        detector = FeatureDumpWrapper(detector, output_path=out_p)
+        print(f"  Feature dump enabled: {out_p}")
+
+    if args.tta:
+        from eval.tta import TTAWrapper
+        detector = TTAWrapper(
+            detector,
+            nms_iou_threshold=args.nms_iou if args.nms_iou > 0 else 0.5,
+            max_detections=args.max_detections,
+            do_hflip=True,
+        )
+        print(f"  TTA enabled (hflip; final NMS@{args.nms_iou or 0.5}, max={args.max_detections})")
+
     # Load ground truth if provided
     gt_by_image: dict[str, list[tuple[float, float, float, float]]] = {}
     if args.gt_csv:
@@ -396,15 +548,21 @@ def main() -> None:
     print(f"  p99:    {p99_ms:.2f} ms")
     print(f"  Detector: {args.detector}")
 
-    # mAP@0.5 if we have GT
+    # mAP if we have GT — legacy mAP50 always computed for sprint comparability;
+    # COCO suite computed additionally when --metric coco is set.
     ap, prec, rec = 0.0, 0.0, 0.0
+    coco_metrics: dict[str, float] = {}
     if gt_by_image:
         from eval.metrics import compute_ap_iou_threshold
         ap, prec, rec = compute_ap_iou_threshold(all_detections, gt_by_image, iou_threshold=0.5)
-        print("── mAP@0.5 ──")
+        print("── mAP@0.5 (legacy) ──")
         print(f"  mAP:        {ap:.4f}")
         print(f"  Precision:  {prec:.4f}")
         print(f"  Recall:     {rec:.4f}")
+        if args.metric == "coco":
+            from eval.metrics_coco import compute_coco_metrics, format_coco_table
+            coco_metrics = compute_coco_metrics(all_detections, gt_by_image)
+            print(format_coco_table(coco_metrics))
     else:
         total_dets = sum(len(d) for _, d in all_detections)
         print("── Detections ──")
@@ -429,6 +587,30 @@ def main() -> None:
             vis_dir, all_detections, gt_by_image, metrics, config, max_images=80,
         )
         print(f"  Visualizations: {html_path}")
+
+    if args.detections_jsonl:
+        # JSONL is the right format here: one line per image, append-friendly,
+        # streaming-readable. Each line carries the image's resolved path so the
+        # downstream sweep can join against gt_by_image without re-reading val_list.
+        import json
+        out_path = args.detections_jsonl if args.detections_jsonl.is_absolute() \
+            else repo_root / args.detections_jsonl
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(out_path, "w") as f:
+            for img_path, dets in all_detections:
+                payload = {
+                    "image_path": str(Path(img_path).resolve()),
+                    "detections": [
+                        {
+                            "box": [float(b) for b in d["box"]],
+                            "score": float(d["score"]),
+                            "label": d.get("label", "tomato"),
+                        }
+                        for d in dets
+                    ],
+                }
+                f.write(json.dumps(payload) + "\n")
+        print(f"  Wrote raw detections: {out_path} ({len(all_detections)} images)")
 
     if args.output_csv:
         out_path = args.output_csv if args.output_csv.is_absolute() else repo_root / args.output_csv

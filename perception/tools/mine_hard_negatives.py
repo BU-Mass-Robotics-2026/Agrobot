@@ -1,6 +1,20 @@
 #!/usr/bin/env python3
 """
-mine_hard_negatives.py — Build a hard-negative DINOv2 embedding from false-positive detections.
+mine_hard_negatives.py — DEPRECATED (Sprint 4 Phase 2.1, val-leak risk).
+
+THIS TOOL MINES NEGATIVES USING THE VAL SET'S GROUND TRUTH. The resulting
+embedding is therefore not validation-independent and using it inflates val
+mAP. Any artifact built by this script (e.g. models/hard_negative_embedding.pt)
+has been moved to models/quarantine/ and must NOT be used in eval runs that
+will be reported in the paper.
+
+Replacement (Phase 2.2 / Phase 3): mine hard negatives on the TRAIN set using
+either (a) the train COCO polygons to define what counts as background, or
+(b) self-training pseudo-labels for a strict label-free variant.
+
+Original docstring follows for historical reference only:
+
+  Build a hard-negative DINOv2 embedding from false-positive detections.
 
 Why this replaces the all-background negative:
   build_query_embedding.py builds the negative from ~patch_mask: every patch

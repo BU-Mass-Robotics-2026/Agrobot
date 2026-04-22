@@ -385,6 +385,7 @@ class SAM2AMGDetector:
                 tomato_sim = float(per_proto.max())
 
             # Contrastive: coverage-weighted negative similarity.
+            neg_sim = 0.0
             if self._negative_embedding is not None and self._negative_weight > 0:
                 if self._negative_embedding.dim() == 1:
                     neg_sims = patch_norms @ self._negative_embedding  # (1369,)
@@ -399,10 +400,11 @@ class SAM2AMGDetector:
                 dino_sim = tomato_sim
 
             # Fuse with SAM2 predicted_iou when available (mask shape quality).
-            pred_iou = mask_info.get("predicted_iou") or mask_info.get("pred_iou")
-            if pred_iou is not None and isinstance(pred_iou, (int, float)):
+            pred_iou_raw = mask_info.get("predicted_iou") or mask_info.get("pred_iou")
+            pred_iou_val = float(pred_iou_raw) if isinstance(pred_iou_raw, (int, float)) else 0.0
+            if isinstance(pred_iou_raw, (int, float)):
                 alpha = self._dino_score_weight
-                score = alpha * dino_sim + (1.0 - alpha) * float(pred_iou)
+                score = alpha * dino_sim + (1.0 - alpha) * pred_iou_val
             else:
                 score = dino_sim
 
@@ -413,11 +415,20 @@ class SAM2AMGDetector:
             x, y, w, h = bbox_xywh
             x1, y1, x2, y2 = float(x), float(y), float(x + w), float(y + h)
 
+            # Attach raw scoring components so downstream wrappers (TTA, SigLIP
+            # rescoring, learned MLP fusion in Phase 2) can re-fuse without
+            # recomputing the heavy DINOv2/SAM2 forwards. Existing consumers
+            # (visualize.py, metrics.py) read only box/score/label/mask and
+            # ignore the extra keys.
             detections.append({
                 "box": [x1, y1, x2, y2],
                 "score": score,
                 "label": "tomato",
                 "mask": seg.astype(np.uint8),
+                "tomato_sim": float(tomato_sim),
+                "neg_sim": float(neg_sim),
+                "dino_sim": float(dino_sim),
+                "pred_iou": pred_iou_val,
             })
 
         # NMS to remove overlapping detections for the same tomato.

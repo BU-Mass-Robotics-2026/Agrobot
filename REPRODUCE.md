@@ -229,7 +229,60 @@ python3 tools/test_qwen_vl.py --policy largest_first
 
 ## Quick start (eval only, no camera)
 
-### Current best (mAP 0.377 — Sprint 4, S4.12)
+> **All model weights are already on NucBox** — no re-training needed.
+> `transformers` and `sentencepiece` must be installed inside the container
+> on first use (one-time, ~15 sec):
+> ```bash
+> pip install transformers sentencepiece Pillow --break-system-packages
+> ```
+
+### Current best — P2.2 SigLIP + MLP fusion
+
+```bash
+./deployment/docker/run_rocm.sh bash
+pip install transformers sentencepiece Pillow --break-system-packages  # first time only
+
+AGROBOT_FORCE_CPU=1 HIP_VISIBLE_DEVICES="" PYTHONPATH=perception \
+  python3 perception/eval/run_eval.py \
+  --val-list data/val_list.txt \
+  --gt-csv data/val_gt.csv \
+  --detector sam2_amg \
+  --amg-points 28 \
+  --max-detections 30 \
+  --confidence 0.40 \
+  --nms-iou 0.40 \
+  --dino-weight 0.7 \
+  --query-embedding models/query_embedding_k4.pt \
+  --negative-embedding models/negative_embedding.pt \
+  --negative-weight 1.0 \
+  --siglip --fusion-mlp models/fusion_mlp.pt \
+  --metric coco \
+  --visualize-dir eval_reports/p2_2_mlp
+```
+
+**Result:**
+
+| Metric | Value | Δ vs S4.12 |
+|---|---|---|
+| **Legacy mAP@0.5** | **0.492** | **+0.115** |
+| Precision | **0.871** | +0.231 |
+| Recall | 0.574 | −0.042 |
+| COCO mAP@[.5:.95] | 0.409 | +0.071 |
+| COCO AP@0.50 | 0.559 | +0.070 |
+| COCO AP@0.75 | 0.439 | +0.088 |
+| AP_small | 0.093 | +0.039 |
+| AP_medium | 0.571 | +0.082 |
+| AP_large | 0.671 | +0.066 |
+| Mean latency | ~21 s/frame (CPU) | +2 s vs baseline |
+
+**Alternative — PR-curve config (no confidence gate; use for paper COCO numbers):**
+
+```bash
+# Same as above but add:  --confidence 0.0 --max-detections 60
+# Result: COCO mAP@[.5:.95]=0.438 (+0.100), AP50=0.621 (+0.132), AP_small=0.117 (2.2×)
+```
+
+### Legacy S4.12 baseline (for comparison)
 
 ```bash
 AGROBOT_FORCE_CPU=1 HIP_VISIBLE_DEVICES="" PYTHONPATH=perception \
@@ -245,10 +298,11 @@ AGROBOT_FORCE_CPU=1 HIP_VISIBLE_DEVICES="" PYTHONPATH=perception \
   --query-embedding models/query_embedding_k4.pt \
   --negative-embedding models/negative_embedding.pt \
   --negative-weight 1.0 \
+  --metric coco \
   --visualize-dir eval_reports/s4_final
 ```
 
-**Result:** mAP=0.377 | Precision=0.640 | Recall=0.616 | ~19 s/frame (CPU)
+**Result:** Legacy mAP@0.5=0.377 | COCO mAP[.5:.95]=0.338 | AP50=0.489 | ~19 s/frame (CPU)
 
 View report: `cd eval_reports/s4_final && python3 -m http.server 8000` → http://localhost:8000
 
@@ -259,14 +313,18 @@ View report: `cd eval_reports/s4_final && python3 -m http.server 8000` → http:
 
 ## Models
 
-| Model | Path | How to get |
-|-------|------|-----------|
-| DINOv2 ViT-B/14 | `~/.cache/torch/hub/` | Auto-downloaded on first run |
-| SAM2.1 hiera-small | `models/sam2/sam2.1_hiera_small.pt` | [Download](https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_small.pt) |
-| Query embedding (k=4) | `models/query_embedding_k4.pt` | `build_query_embedding.py --num-prototypes 4` |
-| Negative embedding | `models/negative_embedding.pt` | `build_query_embedding.py --output-negative` |
-| SAM2 fine-tuned (point prompts) | `models/sam2/sam2_tomato_finetuned.pt` | `finetune_sam2_polygon.py` |
-| Qwen2.5-VL-3B | `~/.cache/huggingface/` or `models/qwen_vl/` | Auto-downloaded on first `ros2 run agrobot_perception qwen_vl` |
+**Tick = already on NucBox at `/home/robotics-club/AgrobotV2/`.**
+
+| Model | Path | On NucBox? | How to (re)build |
+|-------|------|---|---|
+| DINOv2 ViT-B/14 | `~/.cache/torch/hub/` | auto-dl on first run | — |
+| SAM2.1 hiera-small | `models/sam2/sam2.1_hiera_small.pt` | ✅ | [Download](https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_small.pt) |
+| SAM2 fine-tuned | `models/sam2/sam2_tomato_finetuned.pt` | ✅ | `finetune_sam2_polygon.py --epochs 5` |
+| Query embedding (k=4) | `models/query_embedding_k4.pt` | ✅ | `build_query_embedding.py --num-prototypes 4` |
+| Negative embedding | `models/negative_embedding.pt` | ✅ | `build_query_embedding.py --output-negative` |
+| **Fusion MLP** | **`models/fusion_mlp.pt`** | **✅** | **See P2.2 setup below** |
+| SigLIP base-patch16-224 | `~/.cache/huggingface/` | auto-dl on first `--siglip` | `pip install transformers sentencepiece Pillow --break-system-packages` |
+| Qwen2.5-VL-3B | `~/.cache/huggingface/` or `models/qwen_vl/` | auto-dl on first `ros2 run` | — |
 
 **Save Qwen-VL locally after first download (avoids re-fetching):**
 ```bash
@@ -284,8 +342,12 @@ print('Saved to models/qwen_vl/')
 
 ## One-time setup
 
+> **Skip this entire section** if you are on NucBox — all models are already built and present.
+> Only run these steps if you are starting from scratch on a new machine.
+
+### Step 1 — SAM2 fine-tune with point prompts (~60–90 min NucBox CPU)
+
 ```bash
-# Step 1 — SAM2 fine-tune with point prompts (~60-90 min on NucBox CPU)
 AGROBOT_FORCE_CPU=1 HIP_VISIBLE_DEVICES="" PYTHONPATH=perception \
   python3 perception/tools/finetune_sam2_polygon.py \
   --coco-json data/Laboro-Tomato/annotations/train.json \
@@ -293,8 +355,11 @@ AGROBOT_FORCE_CPU=1 HIP_VISIBLE_DEVICES="" PYTHONPATH=perception \
   --sam2-checkpoint models/sam2/sam2.1_hiera_small.pt \
   --output models/sam2/sam2_tomato_finetuned.pt \
   --epochs 5
+```
 
-# Step 2 — k=4 prototype query + background-mean negative (~8 min)
+### Step 2 — k=4 prototype query + background-mean negative (~8 min)
+
+```bash
 AGROBOT_FORCE_CPU=1 HIP_VISIBLE_DEVICES="" PYTHONPATH=perception \
   python3 perception/tools/build_query_embedding.py \
   --train-images data/Laboro-Tomato/train/images \
@@ -302,50 +367,57 @@ AGROBOT_FORCE_CPU=1 HIP_VISIBLE_DEVICES="" PYTHONPATH=perception \
   --output models/query_embedding_k4.pt \
   --num-prototypes 4 \
   --output-negative models/negative_embedding.pt
+```
 
-# Step 3 — Mine hard negatives (~25 min)
-AGROBOT_FORCE_CPU=1 HIP_VISIBLE_DEVICES="" PYTHONPATH=perception \
-  python3 perception/tools/mine_hard_negatives.py \
-  --val-list data/val_list.txt --gt-csv data/val_gt.csv \
-  --output models/hard_negative_embedding.pt \
-  --query-embedding models/query_embedding_k4.pt \
-  --amg-points 20 --confidence 0.2 --negative-weight 0.0 --nms-iou 0.5
+### Step 3 — P2.2 fusion MLP (~3.5 h NucBox CPU total; ~30 sec for the MLP train itself)
 
-# Step 4 (E6) — LoRA DINOv2 fine-tune on Mac MPS (~2-4 h for 643 images, 10 epochs)
-PYTHONPATH=perception \
-  python3 perception/tools/finetune_dino_lora.py \
-  --train-images data/Laboro-Tomato/train/images \
-  --train-labels data/Laboro-Tomato/train/labels \
-  --output models/dino_lora.pt \
-  --epochs 10 --rank 8 --lora-blocks 4
+```bash
+# 3a. Build train_list.txt + train_gt.csv (instant)
+python3 -c "
+from pathlib import Path
+imgs = sorted(Path('data/Laboro-Tomato/train/images').glob('*.jpg'))
+Path('data/train_list.txt').write_text('\n'.join(str(p) for p in imgs) + '\n')
+print(f'Wrote {len(imgs)} lines')
+"
+PYTHONPATH=perception python3 perception/tools/build_val_gt_csv.py \
+  --val-images data/Laboro-Tomato/train/images \
+  --val-labels data/Laboro-Tomato/train/labels \
+  --output data/train_gt.csv \
+  --val-list data/train_list.txt
 
-# Step 5 (E6) — Rebuild query embedding with LoRA backbone (~10 min on MPS)
-PYTHONPATH=perception \
-  python3 perception/tools/build_query_embedding.py \
-  --train-images data/Laboro-Tomato/train/images \
-  --train-labels data/Laboro-Tomato/train/labels \
-  --output models/query_embedding_lora_k4.pt \
-  --num-prototypes 4 \
-  --output-negative models/negative_embedding_lora.pt \
-  --dino-lora-path models/dino_lora.pt
+# 3b. Install SigLIP deps (once per container)
+pip install transformers sentencepiece Pillow --break-system-packages
 
-# Step 6 (E6) — Eval with LoRA (run on NucBox)
+# 3c. Dump per-detection features from the train set (~3.5 h NucBox CPU)
 AGROBOT_FORCE_CPU=1 HIP_VISIBLE_DEVICES="" PYTHONPATH=perception \
   python3 perception/eval/run_eval.py \
-  --val-list data/val_list.txt --gt-csv data/val_gt.csv \
-  --detector sam2_amg --amg-points 28 --max-detections 30 \
-  --confidence 0.35 --nms-iou 0.5 --dino-weight 0.7 \
-  --query-embedding models/query_embedding_lora_k4.pt \
-  --negative-embedding models/negative_embedding_lora.pt \
-  --negative-weight 1.0 \
-  --dino-lora-path models/dino_lora.pt \
-  --visualize-dir eval_reports/e6_lora
+    --val-list data/train_list.txt --gt-csv data/train_gt.csv \
+    --detector sam2_amg --amg-points 28 --max-detections 60 \
+    --confidence 0.0 --nms-iou 0.50 --dino-weight 0.7 \
+    --query-embedding models/query_embedding_k4.pt \
+    --negative-embedding models/negative_embedding.pt \
+    --negative-weight 1.0 \
+    --siglip --siglip-w-dino 0.4 --siglip-w-siglip 0.4 --siglip-w-pred-iou 0.2 \
+    --fusion-features-out eval_reports/p2_2_train_features.jsonl
 
-# Sync Mac ↔ NucBox (run from Mac)
+# 3d. Train the fusion MLP (~30 sec CPU)
+PYTHONPATH=perception python3 perception/tools/train_fusion_mlp.py \
+  --features eval_reports/p2_2_train_features.jsonl \
+  --image-list data/train_list.txt \
+  --gt-csv data/train_gt.csv \
+  --output models/fusion_mlp.pt --epochs 30
+```
+
+### Sync Mac ↔ NucBox
+
+```bash
 bash tools/network/setup/model_sync.sh --pull   # NucBox → Mac
 bash tools/network/setup/model_sync.sh --all    # Mac → NucBox
+```
 
-# Rebuild val_gt.csv if labels change
+### Rebuild val_gt.csv if labels change
+
+```bash
 python3 perception/tools/build_val_gt_csv.py \
   --val-images data/Laboro-Tomato/val/images \
   --val-labels data/Laboro-Tomato/val/labels \
@@ -378,24 +450,30 @@ python3 perception/tools/build_val_gt_csv.py \
 | **S4.12** | **dino_weight=0.7, conf=0.35, pts=28, max=30** | **0.377** | **0.64** | **0.62** | **19081** |
 | S4.13 | pts=32, max=35 (recall-chasing) | 0.378 | 0.61 | 0.67 | 21883 |
 | E6-base | LoRA DINOv2 rank=8, same conf=0.35 | 0.035 | 0.744 | 0.045 | 17887 |
-| E6-T1 | E6 + conf=0.10, neg=1.0 | TBD | — | — | — |
-| E6-T2 | E6 + conf=0.10, neg=0.5 | TBD | — | — | — |
-| E6-T3 | E6 + conf=0.15, neg=0.5 | TBD | — | — | — |
+| P1.1 | post-filter sweep: conf=0.40 nms=0.40 max=30 | 0.396 | 0.74 | 0.55 | 19081 |
+| P1.2 | P1.1 + horizontal-flip TTA | 0.391 | 0.67 | 0.61 | 37993 |
+| P1.3 | P1.1 + SigLIP fixed fusion (0.4/0.4/0.2) | 0.360 | 0.59 | 0.65 | 21023 |
+| **P2.2** | **SigLIP + trained MLP fusion (7-dim features)** | †0.089 | †0.14 | †0.68 | 24148 |
+| P3.1 | Mask-Cond LoRA (polygon GT, fixed NT-Xent, cross-image batches) | 0.350 | 0.60 | 0.62 | 21382 |
+
+† P2.2 legacy mAP is at `--confidence 0.0` (long low-probability tail); the
+COCO 101-point metrics are the meaningful comparison. On COCO P2.2 beats
+S4.12 by +0.100 mAP@[.5:.95] and +0.132 AP@0.50 — see the table in `Current
+best` above.
 
 ### Key insight (S3.4)
 
 DINOv2 proposals snap to a 14px grid → coarse boxes → IoU < 0.5.
 Fix: **SAM2 AMG proposes, DINOv2 scores**. Architecture swap alone: mAP 0 → 0.022.
 
-### Sprint 4 progression
+### Progression summary
 
-| Step | Change | Cumulative mAP |
+| Step | Change | Legacy mAP@0.5 |
 |------|--------|----------------|
-| E4 | Point-prompt SAM2 fine-tune + E1 soft coverage | baseline |
-| E2 | k=4 k-means prototypes | 0.287 (+69% vs S3) |
-| pts=24, max=30 | More proposals, cap lifted | 0.328 |
-| Score fusion | dino_weight=0.7 + conf=0.35 | 0.360 |
-| pts=28 | 784 proposals, 18.5px grid spacing | **0.377 (+121% vs S3)** |
+| S3.10 | pts=20, single-mean query | 0.170 |
+| S4.12 | k=4 prototypes, pts=28, conf=0.35, nms=0.50 | 0.377 (+122% vs S3) |
+| P1.1 | post-filter sweep: conf=0.40, nms=0.40 | 0.396 |
+| **P2.2** | **+ SigLIP + trained MLP fusion** | **0.492 (+30% vs S4.12)** |
 
-**Next unlock:** E6 LoRA DINOv2 (ROCm gfx1151 still blocked — run on Mac MPS instead).
-See [docs/SPRINT3_ROCM_ISSUE.md](docs/SPRINT3_ROCM_ISSUE.md) and [docs/SPRINT4_ARCHITECTURE.md](docs/SPRINT4_ARCHITECTURE.md).
+Architecture deep-dive: [docs/SPRINT4_ARCHITECTURE.md](docs/SPRINT4_ARCHITECTURE.md).
+ROCm GPU path: [docs/SPRINT3_ROCM_ISSUE.md](docs/SPRINT3_ROCM_ISSUE.md).
