@@ -47,45 +47,6 @@ int main(int argc, char** argv)
         arm.execute(plan1); // Execute the plan if it was successful
     }
 
-    tf2::Quaternion q2;           // Create a quaternion to represent the orientation
-    q2.setRPY(0.0, 3.14, 0.0);   // Set the roll, pitch, and yaw of the quaternion
-    q2 = q2.normalize();           // Normalize the quaternion
-    
-    geometry_msgs::msg::PoseStamped target_pose2;    // Create a Pose message to hold the target pose
-    target_pose2.header.frame_id = "world_frame";      // Set the frame of reference for the target pose
-    target_pose2.pose.position.x = -1.0;              // Set the x position of the target pose
-    target_pose2.pose.position.y = -0.5;              // Set the y position of the target pose
-    target_pose2.pose.position.z = 1.0;              // Set the z position of the target pose
-    target_pose2.pose.orientation.w = 1.0;           // Set the x orientation of the target pose
-    target_pose2.pose.orientation.x = q2.getX();      // Set the x orientation of the target pose
-    target_pose2.pose.orientation.y = q2.getY();      // Set the y orientation of the target pose
-    target_pose2.pose.orientation.z = q2.getZ();      // Set the z orientation of the target pose
-    target_pose2.pose.orientation.w = q2.getW();      // Set the w orientation of the target pose
-
-    arm.setStartStateToCurrentState();  // Set the start state to the current state
-    arm.setPoseTarget(target_pose2);     // Set the pose target for the arm
-
-    moveit::planning_interface::MoveGroupInterface::Plan plan2;                 // Create a plan object
-    success = (arm.plan(plan2) == moveit::core::MoveItErrorCode::SUCCESS); // Plan to the named target and check if it was successful
-
-    if (success)
-    {
-        arm.execute(plan2); // Execute the plan if it was successful
-    }
-
-    // --- Plan and execute to named goal: home ---
-
-    arm.setStartStateToCurrentState(); // Set the start state to the current state
-    arm.setNamedTarget("home");      // Set the named target "home"
-
-    moveit::planning_interface::MoveGroupInterface::Plan plan3;                 // Create a plan object
-    success = (arm.plan(plan3) == moveit::core::MoveItErrorCode::SUCCESS); // Plan to the named target (home) and check if it was successful
-
-    if (success)
-    {
-        arm.execute(plan3); // Execute the plan if it was successful
-    }
-
     // --- Shutdown ---
 
     rclcpp::shutdown(); // Shutdown ROS 2
