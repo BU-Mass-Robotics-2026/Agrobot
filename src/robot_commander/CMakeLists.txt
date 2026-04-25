@@ -19,10 +19,14 @@ ament_target_dependencies(joint_goal rclcpp moveit_ros_planning_interface)
 add_executable(position_goal src/tests/position_goal.cpp)
 ament_target_dependencies(position_goal rclcpp moveit_ros_planning_interface)
 
+add_executable(cartesian_path src/tests/cartesian_path.cpp)
+ament_target_dependencies(cartesian_path rclcpp moveit_ros_planning_interface)
+
 install(TARGETS
   named_goal
   joint_goal
   position_goal
+  cartesian_path
   DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
