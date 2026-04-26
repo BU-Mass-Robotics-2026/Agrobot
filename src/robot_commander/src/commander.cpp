@@ -1,7 +1,12 @@
 #include <rclcpp/rclcpp.hpp>
 #include <moveit/move_group_interface/move_group_interface.hpp>
+#include <example_interfaces/msg/float64_multi_array.hpp> // !!! Create custom interface package later and replace this with the custom message type !!!
+#include <example_interfaces/msg/string.hpp>              // !!! Create custom interface package later and replace this with the custom message type !!!
 
 using MoveGroupInterface = moveit::planning_interface::MoveGroupInterface;
+using FloatArray = example_interfaces::msg::Float64MultiArray;
+using String = example_interfaces::msg::String;
+using namespace std::placeholders;
 
 class Commander
 {
@@ -15,6 +20,13 @@ class Commander
             arm_ = std::make_shared<MoveGroupInterface>(node_, "arm"); // Create a MoveGroupInterface for the "arm" group
             arm_->setMaxVelocityScalingFactor(1.0);                    // Set the maximum velocity scaling factor
             arm_->setMaxAccelerationScalingFactor(1.0);                // Set the maximum acceleration scaling factor
+
+            // Create a subscription to the "named_goal" topic with a queue size of 10, and bind the callback function to handle incoming messages
+            // This functions the same as the buttons in the RViz GUI that send named pose commands to the robot
+            named_command_subscriber_ = node_->create_subscription<String>("named_goal_command", 10, std::bind(&Commander::namedGoalCallback, this, _1));
+
+            // Create a subscription to the "joint_command" topic with a queue size of 10, and bind the callback function to handle incoming messages
+            joint_command_subscriber_ = node_->create_subscription<FloatArray>("joint_goal_command", 10, std::bind(&Commander::jointCommandCallback, this, _1));
         }
 
         // ------------------------------------- Public methods to control the arm using MoveGroupInterface -------------------------------------
@@ -79,6 +91,9 @@ class Commander
         std::shared_ptr<rclcpp::Node> node_;      // Member variable to hold the shared pointer to the ROS 2 node
         std::shared_ptr<MoveGroupInterface> arm_; // Member variable to hold the MoveGroupInterface for controlling the robot's arm
 
+        rclcpp::Subscription<String>::SharedPtr named_command_subscriber_;  // Subscriber for receiving named target commands as String messages
+        rclcpp::Subscription<FloatArray>::SharedPtr joint_command_subscriber_;  // Subscriber for receiving joint commands as Float64MultiArray messages
+
         // Helper function to plan and execute a motion using the MoveGroupInterface
         void planAndExecute(const std::shared_ptr<MoveGroupInterface> &interface)
         {
@@ -88,6 +103,28 @@ class Commander
             if (success)
             {
                 interface->execute(plan); // Execute the plan if it was successful
+            }
+        }
+
+        // Callback function to handle incoming named target command messages
+        void namedGoalCallback(const String::SharedPtr msg)
+        {
+            std::string target_name(msg->data); // Convert the incoming String message to a string representing the named target
+
+            if (target_name == "home" || target_name == "zero") // Check if the target name is "home" or "zero"
+            {
+                goToNamedTarget(target_name); // Plan and execute a motion to the named target
+            }
+        }
+
+        // Callback function to handle incoming joint command messages
+        void jointCommandCallback(const FloatArray::SharedPtr msg)
+        {
+            auto joints = msg->data; // Get the joint values from the message
+            
+            if (joints.size() == 7) // Check if the correct number of joint values were received
+            {
+                goToJointTarget(joints); // Plan and execute a motion to the joint target
             }
         }
 };
