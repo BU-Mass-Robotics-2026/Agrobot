@@ -10,6 +10,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(moveit_ros_planning_interface REQUIRED)
 find_package(example_interfaces REQUIRED)
+find_package(robot_interfaces REQUIRED)
 
 add_executable(named_goal src/tests/named_goal.cpp)
 ament_target_dependencies(named_goal rclcpp moveit_ros_planning_interface)
@@ -24,7 +25,7 @@ add_executable(cartesian_path src/tests/cartesian_path.cpp)
 ament_target_dependencies(cartesian_path rclcpp moveit_ros_planning_interface)
 
 add_executable(commander src/commander.cpp)
-ament_target_dependencies(commander rclcpp moveit_ros_planning_interface example_interfaces)
+ament_target_dependencies(commander rclcpp moveit_ros_planning_interface example_interfaces robot_interfaces)
 
 install(TARGETS
   named_goal
