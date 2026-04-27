@@ -9,6 +9,7 @@
     <!--JOINTS: When a joint is specified, the child link of that joint (which will always exist) is automatically included-->
     <!--CHAINS: When a chain is specified, all the links along the chain (including endpoints) are included in the group. Additionally, all the joints that are parents to included links are also included. This means that joints along the chain and the parent joint of the base link are included in the group-->
     <!--SUBGROUPS: Groups can also be formed by referencing to already defined group names-->
+
     <group name="arm">
         <joint name="joint0"/>
         <joint name="joint1"/>
@@ -16,8 +17,8 @@
         <joint name="joint3"/>
         <joint name="joint4"/>
         <joint name="joint5"/>
-        <joint name="joint6"/>
     </group>
+
     <!--GROUP STATES: Purpose: Define a named state for a particular group, in terms of joint values. This is useful to define states like 'folded arms'-->
     <group_state name="home" group="arm">
         <joint name="joint0" value="0"/>
@@ -26,8 +27,8 @@
         <joint name="joint3" value="1.4"/>
         <joint name="joint4" value="1.55"/>
         <joint name="joint5" value="0.25"/>
-        <joint name="joint6" value="0"/>
     </group_state>
+
     <group_state name="zero" group="arm">
         <joint name="joint0" value="0"/>
         <joint name="joint1" value="0"/>
@@ -35,8 +36,36 @@
         <joint name="joint3" value="0"/>
         <joint name="joint4" value="0"/>
         <joint name="joint5" value="0"/>
-        <joint name="joint6" value="0"/>
     </group_state>
+
+    <!-- GRIPPER GROUP: only finger_1_joint is the active DOF; fingers 2 & 3 follow via mimic -->
+    <group name="gripper">
+        <joint name="finger_1_joint"/>
+    </group>
+
+    <!-- GRIPPER NAMED STATES -->
+    <group_state name="open" group="gripper">
+        <joint name="finger_1_joint" value="0.0"/>
+    </group_state>
+    <group_state name="closed" group="gripper">
+        <joint name="finger_1_joint" value="1.2"/>
+    </group_state>
+
+    <!-- PASSIVE JOINTS: fingers 2 & 3 are driven by mimic, not independently actuated -->
+    <passive_joint name="finger_2_joint"/>
+    <passive_joint name="finger_3_joint"/>
+
+    <!-- MIMIC JOINT PROPERTIES: tells MoveIt the sync relationship -->
+    <joint_property joint_name="finger_2_joint" property_name="mimic_joint_name"  value="finger_1_joint"/>
+    <joint_property joint_name="finger_2_joint" property_name="mimic_multiplier"  value="1.0"/>
+    <joint_property joint_name="finger_2_joint" property_name="mimic_offset"      value="0.0"/>
+    <joint_property joint_name="finger_3_joint" property_name="mimic_joint_name"  value="finger_1_joint"/>
+    <joint_property joint_name="finger_3_joint" property_name="mimic_multiplier"  value="1.0"/>
+    <joint_property joint_name="finger_3_joint" property_name="mimic_offset"      value="0.0"/>
+
+    <!-- END EFFECTOR: attach gripper group to tip of arm -->
+    <end_effector name="gripper_eef" parent_link="link5" group="gripper"/>
+
     <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
     <disable_collisions link1="base_link" link2="linear_rail_link" reason="Adjacent"/>
     <disable_collisions link1="base_link" link2="link1" reason="Adjacent"/>
@@ -54,5 +83,16 @@
     <disable_collisions link1="link3" link2="link5" reason="Never"/>
     <disable_collisions link1="link3" link2="link6" reason="Never"/>
     <disable_collisions link1="link4" link2="link5" reason="Adjacent"/>
-    <disable_collisions link1="link5" link2="link6" reason="Adjacent"/>
+
+    <!-- Gripper collisions -->
+    <disable_collisions link1="gripper_base_link" link2="link5"           reason="Adjacent"/>
+    <disable_collisions link1="gripper_base_link" link2="finger_1_proximal" reason="Adjacent"/>
+    <disable_collisions link1="gripper_base_link" link2="finger_2_proximal" reason="Adjacent"/>
+    <disable_collisions link1="gripper_base_link" link2="finger_3_proximal" reason="Adjacent"/>
+    <disable_collisions link1="finger_1_proximal" link2="finger_2_proximal" reason="Never"/>
+    <disable_collisions link1="finger_1_proximal" link2="finger_3_proximal" reason="Never"/>
+    <disable_collisions link1="finger_2_proximal" link2="finger_3_proximal" reason="Never"/>
+    <disable_collisions link1="finger_1_proximal" link2="link5"           reason="Never"/>
+    <disable_collisions link1="finger_2_proximal" link2="link5"           reason="Never"/>
+    <disable_collisions link1="finger_3_proximal" link2="link5"           reason="Never"/>
 </robot>
