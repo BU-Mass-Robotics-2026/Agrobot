@@ -9,7 +9,6 @@ using MoveGroupInterface = moveit::planning_interface::MoveGroupInterface;
 using PoseCommand = robot_interfaces::msg::PoseCommand;
 using JointCommand = robot_interfaces::msg::JointCommand;
 using PositionCommand = robot_interfaces::msg::PositionCommand;
-
 using namespace std::placeholders;
 
 
@@ -28,22 +27,15 @@ class Commander
             arm_->setMaxVelocityScalingFactor(1.0);                    // Set the maximum velocity scaling factor
             arm_->setMaxAccelerationScalingFactor(1.0);                // Set the maximum acceleration scaling factor
 
-            gripper_ = std::make_shared<MoveGroupInterface>(node_, "gripper"); // Create a MoveGroupInterface for the "gripper" group
-            gripper_->setMaxVelocityScalingFactor(1.0);                        // Set the maximum velocity scaling factor
-            gripper_->setMaxAccelerationScalingFactor(1.0);                    // Set the maximum acceleration scaling factor
-
-            // Create a subscription to the "pose_cmd" topic with a queue size of 10, and bind the callback function to handle incoming messages
+            // Create a subscription to the "pose_command" topic with a queue size of 10, and bind the callback function to handle incoming messages
             // This functions the same as the buttons in the RViz GUI that send pose commands to the robot
             pose_cmd_sub_ = node_->create_subscription<PoseCommand>("pose_cmd", 10, std::bind(&Commander::poseCmdCallback, this, _1));
 
-            // Create a subscription to the "joint_cmd" topic with a queue size of 10, and bind the callback function to handle incoming messages
+            // Create a subscription to the "joint_command" topic with a queue size of 10, and bind the callback function to handle incoming messages
             joint_cmd_sub_ = node_->create_subscription<JointCommand>("joint_cmd", 10, std::bind(&Commander::jointCmdCallback, this, _1));
 
-            // Create a subscription to the "position_cmd" topic with a queue size of 10, and bind the callback function to handle incoming messages
+            // Create a subscription to the "position_command" topic with a queue size of 10, and bind the callback function to handle incoming messages
             position_cmd_sub_ = node_->create_subscription<PositionCommand>("position_cmd", 10, std::bind(&Commander::positionCmdCallback, this, _1));
-
-            // Create a subscription to the "gripper_cmd" topic with a queue size of 10, and bind the callback function to handle incoming messages
-            gripper_sub_ = node_->create_subscription<PoseCommand>("gripper_cmd", 10, std::bind(&Commander::gripperCmdCallback, this, _1));
         }
 
         // ------------------------------------- Public methods -------------------------------------
@@ -104,31 +96,16 @@ class Commander
             }
         }
 
-        void openGripper()
-        {
-            gripper_->setStartStateToCurrentState(); // Set the start state to the current state
-            gripper_->setNamedTarget("open");        // Set the named target to "open"
-            planAndExecute(gripper_);                // Plan and execute the motion to open the gripper
-        }
-
-        void closeGripper()
-        {
-            gripper_->setStartStateToCurrentState(); // Set the start state to the current state
-            gripper_->setNamedTarget("closed");      // Set the named target to "closed"
-            planAndExecute(gripper_);                // Plan and execute the motion to close the gripper
-        }
-
     private:
 
         // ------------------------------------- Private members -------------------------------------
 
-        std::shared_ptr<rclcpp::Node> node_;                                // Member variable to hold the shared pointer to the ROS 2 node
-        std::shared_ptr<MoveGroupInterface> arm_;                           // Member variable to hold the MoveGroupInterface for controlling the robot's arm
-        std::shared_ptr<MoveGroupInterface> gripper_;                       // Member variable to hold the MoveGroupInterface for controlling the robot's gripper
+        std::shared_ptr<rclcpp::Node> node_;      // Member variable to hold the shared pointer to the ROS 2 node
+        std::shared_ptr<MoveGroupInterface> arm_; // Member variable to hold the MoveGroupInterface for controlling the robot's arm
+
         rclcpp::Subscription<PoseCommand>::SharedPtr pose_cmd_sub_;         // Subscription for receiving named target command messages
         rclcpp::Subscription<JointCommand>::SharedPtr joint_cmd_sub_;       // Subscription for receiving joint command messages
         rclcpp::Subscription<PositionCommand>::SharedPtr position_cmd_sub_; // Subscription for receiving position command messages
-        rclcpp::Subscription<PoseCommand>::SharedPtr gripper_sub_;         // Subscription for receiving gripper command messages
 
         // ------------------------------------- Helper functions -------------------------------------
         
@@ -158,7 +135,7 @@ class Commander
         // Callback function to handle incoming joint command messages
         void jointCmdCallback(const JointCommand::SharedPtr msg)
         {
-            std::vector<double> joints = {msg->j0, msg->j1, msg->j2, msg->j3, msg->j4, msg->j5};
+            std::vector<double> joints = {msg->j0, msg->j1, msg->j2, msg->j3, msg->j4, msg->j5, msg->j6};
             goToJointTarget(joints);
         }
 
@@ -166,21 +143,6 @@ class Commander
         void positionCmdCallback(const PositionCommand::SharedPtr msg)
         {
             goToPositionTarget(msg->x, msg->y, msg->z, msg->roll, msg->pitch, msg->yaw, msg->cartesian_path); // Plan and execute a motion to the position target specified in the message
-        }
-
-        // Callback function to handle incoming gripper command messages
-        void gripperCmdCallback(const PoseCommand::SharedPtr msg)
-        {
-            std::string target_name(msg->pose_name); // Get the desired gripper state from the message
-
-            if (target_name == "open") // Check if the desired state is "open"
-            {
-                openGripper(); // Plan and execute a motion to open the gripper
-            }
-            else if (target_name == "closed") // Check if the desired state is "closed"
-            {
-                closeGripper(); // Plan and execute a motion to close the gripper
-            }
         }
 };
 

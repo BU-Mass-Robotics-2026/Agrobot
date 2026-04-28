@@ -45,10 +45,10 @@
 
     <!-- GRIPPER NAMED STATES -->
     <group_state name="open" group="gripper">
-        <joint name="finger_1_joint" value="-0.5"/>
+        <joint name="finger_1_joint" value="0.0"/>
     </group_state>
     <group_state name="closed" group="gripper">
-        <joint name="finger_1_joint" value="0.5"/>
+        <joint name="finger_1_joint" value="1.2"/>
     </group_state>
 
     <!-- PASSIVE JOINTS: fingers 2 & 3 are driven by mimic, not independently actuated -->
