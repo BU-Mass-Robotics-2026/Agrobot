@@ -6,11 +6,10 @@
         <ros2_control name="arm" type="system">
         
             <hardware>
-                
                 <!-- By default, set up controllers for simulation. This won't work on real hardware -->
-            <plugin>mock_components/GenericSystem</plugin>
-
+                <plugin>mock_components/GenericSystem</plugin>
             </hardware>
+
             <joint name="joint0">
                 <command_interface name="position"/>
                 <state_interface name="position">
@@ -59,7 +58,8 @@
                 <state_interface name="velocity"/>
             </joint>
 
-            <joint name="gripper_joint">
+            <!-- Gripper - only finger_1 needs a command interface; fingers 2 & 3 are mimic -->
+            <joint name="finger_1_joint">
                 <command_interface name="position"/>
                 <state_interface name="position">
                     <param name="initial_value">0.0</param>

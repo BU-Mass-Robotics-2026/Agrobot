@@ -74,6 +74,26 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
+        finger_1_proximal:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        finger_2_proximal:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        finger_3_proximal:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        gripper_base_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
         linear_rail_link:
           Alpha: 1
           Show Axes: false
@@ -100,11 +120,6 @@ Visualization Manager:
           Show Trail: false
           Value: true
         link5:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        link6:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -173,6 +188,26 @@ Visualization Manager:
             Show Axes: false
             Show Trail: false
             Value: true
+          finger_1_proximal:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          finger_2_proximal:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          finger_3_proximal:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          gripper_base_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
           linear_rail_link:
             Alpha: 1
             Show Axes: false
@@ -199,11 +234,6 @@ Visualization Manager:
             Show Trail: false
             Value: true
           link5:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          link6:
             Alpha: 1
             Show Axes: false
             Show Trail: false
@@ -263,6 +293,26 @@ Visualization Manager:
             Show Axes: false
             Show Trail: false
             Value: true
+          finger_1_proximal:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          finger_2_proximal:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          finger_3_proximal:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          gripper_base_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
           linear_rail_link:
             Alpha: 1
             Show Axes: false
@@ -289,11 +339,6 @@ Visualization Manager:
             Show Trail: false
             Value: true
           link5:
-            Alpha: 1
-            Show Axes: false
-            Show Trail: false
-            Value: true
-          link6:
             Alpha: 1
             Show Axes: false
             Show Trail: false
@@ -353,7 +398,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 2.7774763107299805
+      Distance: 2.6592087745666504
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -368,10 +413,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.355398029088974
+      Pitch: 0.3253980576992035
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 5.713554382324219
+      Yaw: 5.508551120758057
     Saved: ~
 Window Geometry:
   Displays:
