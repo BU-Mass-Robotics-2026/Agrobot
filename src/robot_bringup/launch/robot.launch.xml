@@ -24,6 +24,11 @@
 
     <!-- Start RViz -->
     <let name="rviz_config_path" value="$(find-pkg-share robot_bringup)/config/robot_moveit.rviz"/>
-    <node pkg="rviz2" exec="rviz2" output="screen"  args="-d $(var rviz_config_path)"/>
+
+    <node pkg="rviz2" exec="rviz2" output="screen"  args="-d $(var rviz_config_path)">
+        <param name="robot_description_kinematics.arm.kinematics_solver" value="kdl_kinematics_plugin/KDLKinematicsPlugin"/>
+        <param name="robot_description_kinematics.arm.kinematics_solver_search_resolution" value="0.005"/>
+        <param name="robot_description_kinematics.arm.kinematics_solver_timeout" value="0.005"/>
+    </node>
 
 </launch>

@@ -55,16 +55,8 @@
     <passive_joint name="finger_2_joint"/>
     <passive_joint name="finger_3_joint"/>
 
-    <!-- MIMIC JOINT PROPERTIES: tells MoveIt the sync relationship -->
-    <joint_property joint_name="finger_2_joint" property_name="mimic_joint_name"  value="finger_1_joint"/>
-    <joint_property joint_name="finger_2_joint" property_name="mimic_multiplier"  value="1.0"/>
-    <joint_property joint_name="finger_2_joint" property_name="mimic_offset"      value="0.0"/>
-    <joint_property joint_name="finger_3_joint" property_name="mimic_joint_name"  value="finger_1_joint"/>
-    <joint_property joint_name="finger_3_joint" property_name="mimic_multiplier"  value="1.0"/>
-    <joint_property joint_name="finger_3_joint" property_name="mimic_offset"      value="0.0"/>
-
     <!-- END EFFECTOR: attach gripper group to tip of arm -->
-    <end_effector name="gripper_eef" parent_link="link5" group="gripper"/>
+    <end_effector name="gripper_eef" parent_link="link5" group="gripper" parent_group="arm"/>
 
     <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
     <disable_collisions link1="base_link" link2="linear_rail_link" reason="Adjacent"/>

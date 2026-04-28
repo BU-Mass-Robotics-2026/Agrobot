@@ -7,7 +7,7 @@ controller_manager:
       type: joint_trajectory_controller/JointTrajectoryController
 
     gripper_controller:
-      type: gripper_controllers/GripperActionController
+      type: position_controllers/GripperActionController
 
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
@@ -21,7 +21,6 @@ arm_controller:
       - joint3
       - joint4
       - joint5
-      - joint6
     command_interfaces:
       - position
     state_interfaces:
