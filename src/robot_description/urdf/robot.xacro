@@ -157,7 +157,7 @@
         <child link="link1"/>                                                   <!-- Child link for joint1 -->
         <origin xyz="0 0 0" rpy="0 0 0"/>                                       <!-- Origin of the joint -->
         <axis xyz="0 0 1"/>                                                     <!-- Axis of rotation for the revolute joint (z-axis) -->
-        <limit effort="37" velocity="0.4" lower="-3.14" upper="3.14"/>          <!-- Joint limits (effort, velocity, lower and upper angle limits in radians) -->
+        <limit effort="37" velocity="0.4" lower="-3.14159" upper="3.14159"/>          <!-- Joint limits (effort, velocity, lower and upper angle limits in radians) -->
     </joint>
 
     <joint name="joint2" type="revolute">

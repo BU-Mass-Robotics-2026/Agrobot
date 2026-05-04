@@ -126,7 +126,7 @@ class Commander
         {
             std::string target_name(msg->pose_name); // Get the target name from the message
 
-            if (target_name == "home" || target_name == "zero") // Check if the target name is "home" or "zero"
+            if (target_name == "crouch" || target_name == "attention" || target_name == "vertical" || target_name == "bin") // Check if the target name is one of the valid named targets
             {
                 goToPoseTarget(target_name); // Plan and execute a motion to the named target
             }
