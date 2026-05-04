@@ -4,8 +4,6 @@
 
     <!-- Robot links -->
 
-    <link name="world_frame"/>  <!-- World frame link (reference frame for the robot) -->
-
     <link name="linear_rail_link">
         <visual>
             <geometry>

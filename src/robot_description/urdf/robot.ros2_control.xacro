@@ -58,15 +58,6 @@
                 <state_interface name="velocity"/>
             </joint>
 
-            <!-- Gripper - only finger_1 needs a command interface; fingers 2 & 3 are mimic -->
-            <joint name="finger_1_joint">
-                <command_interface name="position"/>
-                <state_interface name="position">
-                    <param name="initial_value">0.0</param>
-                </state_interface>
-                <state_interface name="velocity"/>
-            </joint>
-
         </ros2_control>
 
     </xacro:macro>
