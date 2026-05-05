@@ -57,3 +57,6 @@ CATKIN_IGNORE
 
 # log files
 *.log
+
+# Claude
+CLAUDE.md
