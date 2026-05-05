@@ -1,16 +1,23 @@
 #include <rclcpp/rclcpp.hpp>
 #include <moveit/move_group_interface/move_group_interface.hpp>
-
 #include <robot_interfaces/msg/joint_command.hpp>
 #include <robot_interfaces/msg/pose_command.hpp>
 #include <robot_interfaces/msg/position_command.hpp>
+#include <geometry_msgs/msg/pose_array.hpp>
+#include <std_msgs/msg/bool.hpp>
+#include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2/LinearMath/Quaternion.h>
 
 using MoveGroupInterface = moveit::planning_interface::MoveGroupInterface;
 using PoseCommand = robot_interfaces::msg::PoseCommand;
 using JointCommand = robot_interfaces::msg::JointCommand;
 using PositionCommand = robot_interfaces::msg::PositionCommand;
+using PoseArray = geometry_msgs::msg::PoseArray;
+using Pose = geometry_msgs::msg::Pose;
+using Bool = std_msgs::msg::Bool;
 using namespace std::placeholders;
 
+static constexpr int POSES_PER_TOMATO = 3; // approach, grasp, retract
 
 class Commander
 {
@@ -26,22 +33,24 @@ class Commander
             arm_ = std::make_shared<MoveGroupInterface>(node_, "arm"); // Create a MoveGroupInterface for the "arm" group
             arm_->setMaxVelocityScalingFactor(1.0);                    // Set the maximum velocity scaling factor
             arm_->setMaxAccelerationScalingFactor(1.0);                // Set the maximum acceleration scaling factor
+            arm_->setEndEffectorLink("link6");             // Set the end effector link
 
-            // Create a subscription to the "pose_command" topic with a queue size of 10, and bind the callback function to handle incoming messages
-            // This functions the same as the buttons in the RViz GUI that send pose commands to the robot
-            pose_cmd_sub_ = node_->create_subscription<PoseCommand>("pose_cmd", 10, std::bind(&Commander::poseCmdCallback, this, _1));
+            // Create subscriptions for receiving command messages and bind them to their respective callback functions
+            named_pose_cmd_sub_ = node_->create_subscription<PoseCommand>("/named_pose_cmd", 10, std::bind(&Commander::namedPoseCmdCallback, this, _1));
+            joint_cmd_sub_ = node_->create_subscription<JointCommand>("/joint_cmd", 10, std::bind(&Commander::jointCmdCallback, this, _1));
+            position_cmd_sub_ = node_->create_subscription<PositionCommand>("/position_cmd", 10, std::bind(&Commander::positionCmdCallback, this, _1));
 
-            // Create a subscription to the "joint_command" topic with a queue size of 10, and bind the callback function to handle incoming messages
-            joint_cmd_sub_ = node_->create_subscription<JointCommand>("joint_cmd", 10, std::bind(&Commander::jointCmdCallback, this, _1));
+            // Create subscriptions for receiving pick target poses and safe to pick signals, and bind them to their respective callback functions
+            pick_target_sub_ = node_->create_subscription<PoseArray>("/pick_targets", 10, std::bind(&Commander::pickTargetCallback, this, _1));
+            safe_to_pick_pub_ = node_->create_publisher<Bool>("/safe_to_pick", 10);
 
-            // Create a subscription to the "position_command" topic with a queue size of 10, and bind the callback function to handle incoming messages
-            position_cmd_sub_ = node_->create_subscription<PositionCommand>("position_cmd", 10, std::bind(&Commander::positionCmdCallback, this, _1));
+            RCLCPP_INFO(node_->get_logger(), "Commander node initialized and ready to receive commands."); // Log that the commander node has been initialized
         }
 
         // ------------------------------------- Public methods -------------------------------------
 
         // Method to move the arm to a named pose target
-        void goToPoseTarget(const std::string &name)
+        void goToNamedTarget(const std::string &name)
         {
             arm_->setStartStateToCurrentState(); // Set the start state to the current state
             arm_->setNamedTarget(name);          // Set the named target
@@ -96,6 +105,13 @@ class Commander
             }
         }
 
+        void goToPoseTarget(const Pose &pose)
+        {
+            arm_->setStartStateToCurrentState(); // Set the start state to the current state
+            arm_->setPoseTarget(pose);           // Set the pose target for picking
+            planAndExecute(arm_);                // Plan and execute the motion to the pick target
+        }
+
     private:
 
         // ------------------------------------- Private members -------------------------------------
@@ -103,9 +119,14 @@ class Commander
         std::shared_ptr<rclcpp::Node> node_;      // Member variable to hold the shared pointer to the ROS 2 node
         std::shared_ptr<MoveGroupInterface> arm_; // Member variable to hold the MoveGroupInterface for controlling the robot's arm
 
-        rclcpp::Subscription<PoseCommand>::SharedPtr pose_cmd_sub_;         // Subscription for receiving named target command messages
+        rclcpp::Subscription<PoseCommand>::SharedPtr named_pose_cmd_sub_;         // Subscription for receiving named target command messages
         rclcpp::Subscription<JointCommand>::SharedPtr joint_cmd_sub_;       // Subscription for receiving joint command messages
         rclcpp::Subscription<PositionCommand>::SharedPtr position_cmd_sub_; // Subscription for receiving position command messages
+
+        rclcpp::Subscription<PoseArray>::SharedPtr pick_target_sub_; // Subscription for receiving pick target poses
+        rclcpp::Publisher<Bool>::SharedPtr safe_to_pick_pub_;    // Publisher for sending safe to pick signals
+
+        bool is_picking_ = false; // Flag to indicate whether the robot is currently in the process of picking an object
 
         // ------------------------------------- Helper functions -------------------------------------
         
@@ -119,16 +140,20 @@ class Commander
             {
                 interface->execute(plan); // Execute the plan if it was successful
             }
+            else
+            {
+                RCLCPP_ERROR(node_->get_logger(), "Failed to plan a motion to the target."); // Log an error message if planning failed
+            }
         }
 
         // Callback function to handle incoming named target command messages
-        void poseCmdCallback(const PoseCommand::SharedPtr msg)
+        void namedPoseCmdCallback(const PoseCommand::SharedPtr msg)
         {
             std::string target_name(msg->pose_name); // Get the target name from the message
 
             if (target_name == "crouch" || target_name == "attention" || target_name == "vertical" || target_name == "bin") // Check if the target name is one of the valid named targets
             {
-                goToPoseTarget(target_name); // Plan and execute a motion to the named target
+                goToNamedTarget(target_name); // Plan and execute a motion to the named target
             }
         }
 
@@ -143,6 +168,62 @@ class Commander
         void positionCmdCallback(const PositionCommand::SharedPtr msg)
         {
             goToPositionTarget(msg->x, msg->y, msg->z, msg->roll, msg->pitch, msg->yaw, msg->cartesian_path); // Plan and execute a motion to the position target specified in the message
+        }
+
+        // Pick target callback function to handle incoming pick target poses
+        void pickTargetCallback(const PoseArray::SharedPtr msg)
+        {
+            // --- Error handling ----
+
+            if (is_picking_) // If the robot is already in the process of picking, ignore new pick targets
+            {
+                RCLCPP_WARN(node_->get_logger(), "Received new pick targets while already picking. Ignoring new targets."); // Log a warning message
+                return;
+            }
+
+            if (msg->poses.size() % POSES_PER_TOMATO != 0) // Check if the number of poses in the message is a multiple of the expected number of poses per tomato
+            {
+                RCLCPP_ERROR(node_->get_logger(), "Received pick targets with an invalid number of poses. Expected a multiple of %d, but got %zu. Ignoring targets.", POSES_PER_TOMATO, msg->poses.size()); // Log an error message
+                return;
+            }
+
+            // --- Pick sequence execution ---
+
+            setSafeToPick(false); // Set the safe to pick flag to false to indicate that the robot is not yet safe to pick
+            is_picking_ = true;   // Set the picking flag to true to indicate that the robot is now in the process of picking
+
+            const size_t num_tomatoes = msg->poses.size() / POSES_PER_TOMATO; // Calculate the number of tomatoes based on the number of poses in the message
+            RCLCPP_INFO(node_->get_logger(), "Received pick targets for %zu tomatoes.", num_tomatoes); // Log the number of tomatoes for which pick targets were received
+
+            // Loop through each tomato and execute the pick sequence for each one
+            for (size_t i = 0; i < msg->poses.size(); i += POSES_PER_TOMATO)
+            {
+                const Pose & approach = msg->poses[i];    // Get the approach pose for the current tomato
+                const Pose & grasp = msg->poses[i + 1];   // Get the grasp pose for the current tomato
+                const Pose & retract = msg->poses[i + 2]; // Get the retract pose for the current tomato
+
+                size_t tomato_idx = (i / POSES_PER_TOMATO) + 1; // Calculate the tomato number for logging purposes
+                RCLCPP_INFO(node_->get_logger(), "Picking tomato %zu / %zu", tomato_idx, num_tomatoes); // Log that the approach pose is being executed for the current tomato
+
+                // Execute the approach, grasp, and retract motions to the positions in sequence for the current tomato
+                goToPoseTarget(approach); 
+                goToPoseTarget(grasp); 
+                goToPoseTarget(retract);
+
+                // Execute motion to bin pose after picking each tomato
+                goToNamedTarget("bin"); // Move to the bin pose after picking each tomato
+            }
+
+            RCLCPP_INFO(node_->get_logger(), "Finished executing pick targets for all tomatoes."); // Log that the pick sequence has been completed for all tomatoes
+            setSafeToPick(true); // Set the safe to pick flag to true to indicate that the robot is now safe to pick again
+            is_picking_ = false; // Set the picking flag to false to indicate that the robot is no longer in the process of picking
+        }
+
+        void setSafeToPick(bool safe)
+        {
+            std_msgs::msg::Bool msg; // Create a Bool message to hold the safe to pick status
+            msg.data = safe; // Set the data field of the message to the value of the safe parameter
+            safe_to_pick_pub_->publish(msg); // Publish the safe to pick status message
         }
 };
 
