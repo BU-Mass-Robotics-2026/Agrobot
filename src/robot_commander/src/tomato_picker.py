@@ -44,8 +44,7 @@ from geometry_msgs.msg import PointStamped
         #4. For each tomato, computes three waypoints:
             #an approach point backed off from the tomato surface by radius + 5cm,
             #the grasp point at the centroid itself, 
-            #and a retract point 7cm above 
-            #EXTRA plus a basket drop pose appended after each tomato --can be changed
+            #and a retract point 7cm above +++++++++++++
 
 #Output — all of those poses are packed into a single PoseArray and published to /agrobot/pick_target, where Emily's MoveIt node takes it for motion planning
 #----------------------------------------------------------
@@ -69,7 +68,7 @@ class TomatoPicker(Node):
         # --- Subscribers ---
         self.create_subscription(
             Bool,
-            '/safe_to_pick',
+            '/agrobot/safe_to_pick',
             self.safety_callback,
             10
         )
@@ -83,7 +82,7 @@ class TomatoPicker(Node):
         # --- Publisher ---
         # PoseArray to MoveIt; each tomato contributes 3 poses:
         # [approach, grasp, retract] then a basket drop pose
-        self.publisher_ = self.create_publisher(PoseArray, '/pick_targets', 10)
+        self.publisher_ = self.create_publisher(PoseArray, '/agrobot/pick_targets', 10)
 
         self.get_logger().info('TomatoPicker ready, waiting for detections...')
 
@@ -100,7 +99,7 @@ class TomatoPicker(Node):
     # ------------------------------------------------------------------
     def spatial_callback(self, msg: String):
         if not self.safe_to_pick:
-            self.get_logger().warn('Received detections but safe_to_pick=False, skipping')
+            self.get_logger().warn('Received detections but safe_to_pick = False, skipping')
             return
 
         try:
@@ -146,7 +145,7 @@ class TomatoPicker(Node):
 
         # 4. Build PoseArray
         pick_msg = PoseArray()
-        pick_msg.header.frame_id  = 'base'
+        pick_msg.header.frame_id  = 'base_link'
         pick_msg.header.stamp     = self.get_clock().now().to_msg()
 
         for t in base_frame_candidates:
@@ -166,15 +165,12 @@ class TomatoPicker(Node):
                 pose.orientation.w = quat[3]
                 pick_msg.poses.append(pose)
 
-            # Basket drop after each tomato
-            #pick_msg.poses.append(self.basket_pose())
-
             self.picked_ids.add(t['id'])
             self.get_logger().info(f'Queued tomato {t["id"]} for picking')
 
         self.publisher_.publish(pick_msg)
         self.get_logger().info(
-            f'Published {len(base_frame_candidates)} tomatoes to /agrobot/pick_target'
+            f'Published {len(base_frame_candidates)} tomatoes to /agrobot/pick_targets'
         )
 
     # ------------------------------------------------------------------
@@ -251,19 +247,6 @@ class TomatoPicker(Node):
         current = np.array([0.0, 0.0, 1.0])  # gripper forward axis — verify in URDF
         rotation, _ = R.align_vectors([target], [current])
         return rotation.as_quat()  # [x, y, z, w]
-
-    # ------------------------------------------------------------------
-    # Basket drop pose — neutral downward orientation
-    # ------------------------------------------------------------------
-    #BASKET_XYZ = [0.0, 0.0, 0.0]  # fill in once we have real coordinates
-
-    #def basket_pose(self) -> Pose:
-        #pose = Pose()
-        #pose.position.x = self.BASKET_XYZ[0]
-        #pose.position.y = self.BASKET_XYZ[1]
-        #pose.position.z = self.BASKET_XYZ[2]
-        #pose.orientation.w = 1.0  # identity — gripper points along +Z
-        #return pose
 
 
 # ----------------------------------------------------------------------

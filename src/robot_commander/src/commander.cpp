@@ -33,16 +33,16 @@ class Commander
             arm_ = std::make_shared<MoveGroupInterface>(node_, "arm"); // Create a MoveGroupInterface for the "arm" group
             arm_->setMaxVelocityScalingFactor(1.0);                    // Set the maximum velocity scaling factor
             arm_->setMaxAccelerationScalingFactor(1.0);                // Set the maximum acceleration scaling factor
-            arm_->setEndEffectorLink("link6");             // Set the end effector link
+            arm_->setEndEffectorLink("link6");                         // Set the end effector link
 
             // Create subscriptions for receiving command messages and bind them to their respective callback functions
-            named_pose_cmd_sub_ = node_->create_subscription<PoseCommand>("/named_pose_cmd", 10, std::bind(&Commander::namedPoseCmdCallback, this, _1));
-            joint_cmd_sub_ = node_->create_subscription<JointCommand>("/joint_cmd", 10, std::bind(&Commander::jointCmdCallback, this, _1));
-            position_cmd_sub_ = node_->create_subscription<PositionCommand>("/position_cmd", 10, std::bind(&Commander::positionCmdCallback, this, _1));
+            named_pose_cmd_sub_ = node_->create_subscription<PoseCommand>("/agrobot/named_pose_cmd", 10, std::bind(&Commander::namedPoseCmdCallback, this, _1));
+            joint_cmd_sub_ = node_->create_subscription<JointCommand>("/agrobot/joint_cmd", 10, std::bind(&Commander::jointCmdCallback, this, _1));
+            position_cmd_sub_ = node_->create_subscription<PositionCommand>("/agrobot/position_cmd", 10, std::bind(&Commander::positionCmdCallback, this, _1));
 
             // Create subscriptions for receiving pick target poses and safe to pick signals, and bind them to their respective callback functions
-            pick_target_sub_ = node_->create_subscription<PoseArray>("/pick_targets", 10, std::bind(&Commander::pickTargetCallback, this, _1));
-            safe_to_pick_pub_ = node_->create_publisher<Bool>("/safe_to_pick", 10);
+            pick_target_sub_ = node_->create_subscription<PoseArray>("/agrobot/pick_targets", 10, std::bind(&Commander::pickTargetCallback, this, _1));
+            safe_to_pick_pub_ = node_->create_publisher<Bool>("/agrobot/safe_to_pick", 10);
 
             RCLCPP_INFO(node_->get_logger(), "Commander node initialized and ready to receive commands."); // Log that the commander node has been initialized
         }
@@ -107,9 +107,13 @@ class Commander
 
         void goToPoseTarget(const Pose &pose)
         {
-            arm_->setStartStateToCurrentState(); // Set the start state to the current state
-            arm_->setPoseTarget(pose);           // Set the pose target for picking
-            planAndExecute(arm_);                // Plan and execute the motion to the pick target
+            geometry_msgs::msg::PoseStamped stamped;
+            stamped.header.frame_id = "base_link";
+            stamped.header.stamp = node_->get_clock()->now();
+            stamped.pose = pose;
+            arm_->setStartStateToCurrentState();
+            arm_->setPoseTarget(stamped);
+            planAndExecute(arm_);
         }
 
     private:
@@ -174,7 +178,6 @@ class Commander
         void pickTargetCallback(const PoseArray::SharedPtr msg)
         {
             // --- Error handling ----
-
             if (is_picking_) // If the robot is already in the process of picking, ignore new pick targets
             {
                 RCLCPP_WARN(node_->get_logger(), "Received new pick targets while already picking. Ignoring new targets."); // Log a warning message
@@ -187,15 +190,19 @@ class Commander
                 return;
             }
 
-            // --- Pick sequence execution ---
-
             setSafeToPick(false); // Set the safe to pick flag to false to indicate that the robot is not yet safe to pick
             is_picking_ = true;   // Set the picking flag to true to indicate that the robot is now in the process of picking
 
             const size_t num_tomatoes = msg->poses.size() / POSES_PER_TOMATO; // Calculate the number of tomatoes based on the number of poses in the message
             RCLCPP_INFO(node_->get_logger(), "Received pick targets for %zu tomatoes.", num_tomatoes); // Log the number of tomatoes for which pick targets were received
 
-            // Loop through each tomato and execute the pick sequence for each one
+            // --- Test approach to the first tomato using only the approach pose ---
+
+            const Pose & approach = msg->poses[0];    // Get the approach pose for the first tomato
+            RCLCPP_INFO(node_->get_logger(), "Testing approach to the first tomato using only the approach pose."); // Log that the approach pose is being tested for the first tomato
+            goToPoseTarget(approach); // Plan and execute a motion to the approach pose for the first tomato
+
+            /* // Loop through each tomato and execute the pick sequence for each one
             for (size_t i = 0; i < msg->poses.size(); i += POSES_PER_TOMATO)
             {
                 const Pose & approach = msg->poses[i];    // Get the approach pose for the current tomato
@@ -212,7 +219,7 @@ class Commander
 
                 // Execute motion to bin pose after picking each tomato
                 goToNamedTarget("bin"); // Move to the bin pose after picking each tomato
-            }
+            } */
 
             RCLCPP_INFO(node_->get_logger(), "Finished executing pick targets for all tomatoes."); // Log that the pick sequence has been completed for all tomatoes
             setSafeToPick(true); // Set the safe to pick flag to true to indicate that the robot is now safe to pick again
