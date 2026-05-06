@@ -6,11 +6,11 @@ controller_manager:
     arm_controller:
       type: joint_trajectory_controller/JointTrajectoryController
 
-    gripper_controller:
-      type: position_controllers/GripperActionController
-
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
+
+    forward_position_controller:
+      type: forward_command_controller/ForwardCommandController
 
 arm_controller:
   ros__parameters:
@@ -28,3 +28,10 @@ arm_controller:
       - position
       - velocity
     allow_nonzero_velocity_at_trajectory_end: true
+
+# For testing individual joints without a full trajectory
+forward_position_controller:
+  ros__parameters:
+    joints:
+      - joint0
+    interface_name: position
