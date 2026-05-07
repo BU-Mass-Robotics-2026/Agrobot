@@ -146,9 +146,9 @@
     <joint name="joint0" type="prismatic">
         <parent link="linear_rail_link"/>                                       <!-- Parent link for joint0 -->
         <child link="base_link"/>                                               <!-- Child link for joint0 -->
-        <origin xyz="0 0 0.0508" rpy="0 0 0"/>                                  <!-- Origin of the joint -->
+        <origin xyz="-0.7825 0 0.0508" rpy="0 0 0"/>                            <!-- Origin of the joint -->
         <axis xyz="1 0 0"/>                                                     <!-- Axis of translation for the prismatic joint (x-axis) -->
-        <limit effort="100" velocity="0.5" lower="0" upper="0.1565"/>         <!-- Joint limits (effort, velocity, lower and upper translation limits in meters) !! CHANGE LATER !! -->
+        <limit effort="100" velocity="0.5" lower="0" upper="1.565"/>            <!-- Joint limits are 0 = home end, 1.565 m = far end -->
     </joint>
 
     <joint name="joint1" type="revolute">
@@ -156,7 +156,7 @@
         <child link="link1"/>                                                   <!-- Child link for joint1 -->
         <origin xyz="0 0 0" rpy="0 0 0"/>                                       <!-- Origin of the joint -->
         <axis xyz="0 0 1"/>                                                     <!-- Axis of rotation for the revolute joint (z-axis) -->
-        <limit effort="37" velocity="0.4" lower="-3.14159" upper="3.14159"/>          <!-- Joint limits (effort, velocity, lower and upper angle limits in radians) -->
+        <limit effort="37" velocity="0.4" lower="-3.14159" upper="3.14159"/>    <!-- Joint limits (effort, velocity, lower and upper angle limits in radians) -->
     </joint>
 
     <joint name="joint2" type="revolute">
