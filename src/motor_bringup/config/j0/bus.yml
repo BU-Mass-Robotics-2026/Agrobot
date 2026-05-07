@@ -11,8 +11,8 @@ nodes:
   joint0:
     # CAN node ID configured on the Everest EVS-XCR-C via Ingenia's MotionLab3.
     # Default factory setting is typically 32 (0x20) — change to match your drive.
-    node_id: 32
-    dcf: "eve-xcr-c_2.8.1.eds"
+    node_id: 10
+    dcf: "evs-xcr-c_2.10.0.eds"
     driver: "ros2_canopen::Cia402Driver"
     package: "canopen_402_driver"
     period: 10
@@ -20,18 +20,17 @@ nodes:
 
     sdo:
 
-      # Interpolation time for cyclic sync position mode: 10 ms
-      - {index: 0x60C2, sub_index: 1, value: 10}
-      - {index: 0x60C2, sub_index: 2, value: -3}
+      # Interpolation time period
+      - {index: 0x60C2, sub_index: 0, value: 2}  # Highest sub-index supported
+      - {index: 0x60C2, sub_index: 1, value: 1}  # Interpolation time period value
+      - {index: 0x60C2, sub_index: 2, value: -3} # Interpolation time index
       
-      # Profile velocity / accel / decel (in drive units — tune for your rail)
-      - {index: 0x6081, sub_index: 0, value: 100000}
-      - {index: 0x6083, sub_index: 0, value: 50000}
-      - {index: 0x6084, sub_index: 0, value: 50000}
-      - {index: 0x6085, sub_index: 0, value: 50000}
-      - {index: 0x6086, sub_index: 0, value: 0}  # trapezoidal profile
+      - {index: 0x6081, sub_index: 0, value: 20000} # Profile velocity
+      - {index: 0x6083, sub_index: 0, value: 10000} # Profile acceleration
+      - {index: 0x6084, sub_index: 0, value: 10000} # Profile deceleration
 
     tpdo:
+    
       1:
         enabled: true
         cob_id: "auto"

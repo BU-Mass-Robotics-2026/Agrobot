@@ -4,20 +4,20 @@ FileVersion=1
 FileRevision=153
 EDSVersion=4
 Description=Summit Series
-CreationTime=06:32AM
-CreationDate=05-29-2019
+CreationTime=05:53PM
+CreationDate=03-05-2026
 CreatedBy=Ingenia Motion Control
-ModificationTime=11:46AM
-ModificationDate=03-16-2026
+ModificationTime=04:55PM
+ModificationDate=03-05-2026
 ModifiedBy=Ingenia Motion Control
 
 [DeviceInfo]
 VendorName=Ingenia Motion Control
 VendorNumber=0x29C
-ProductName=EVE-XCR-C
-ProductNumber=46342145
-RevisionNumber=196644
-OrderCode=46342145
+ProductName=EVS-XCR-C
+ProductNumber=62070785
+RevisionNumber=196634
+OrderCode=62070785
 Baudrate_10=1
 Baudrate_20=1
 Baudrate_50=1
@@ -72,10 +72,10 @@ PDOMapping=0x0
 [1018]
 SubNumber=0x5
 ParameterName=Identity object
-ObjectType=0x8
+ObjectType=0x9
 
 [1018sub0]
-ParameterName=Highest subindex supported
+ParameterName=Highest sub-index supported
 ObjectType=0x7
 DataType=0x05
 AccessType=ro
@@ -87,6 +87,7 @@ ParameterName=Vendor-ID
 ObjectType=0x7
 DataType=0x07
 AccessType=ro
+DefaultValue=0x29C
 PDOMapping=0x0
 
 [1018sub2]
@@ -94,6 +95,7 @@ ParameterName=Product code
 ObjectType=0x7
 DataType=0x07
 AccessType=ro
+DefaultValue=0xC700001
 PDOMapping=0x0
 
 [1018sub3]
@@ -101,6 +103,7 @@ ParameterName=Revision number
 ObjectType=0x7
 DataType=0x07
 AccessType=ro
+DefaultValue=0x12D
 PDOMapping=0x0
 
 [1018sub4]
@@ -108,80 +111,83 @@ ParameterName=Serial number
 ObjectType=0x7
 DataType=0x07
 AccessType=ro
+DefaultValue=0x1
 PDOMapping=0x0
 
 [OptionalObjects]
-SupportedObjects=70
+SupportedObjects=72
 1=0x1003
 2=0x1005
-3=0x100C
-4=0x100D
-5=0x1010
-6=0x1011
-7=0x1012
-8=0x1014
-9=0x1016
-10=0x1017
-11=0x1029
-12=0x1200
-13=0x1400
-14=0x1401
-15=0x1402
-16=0x1403
-17=0x1600
-18=0x1601
-19=0x1602
-20=0x1603
-21=0x1800
-22=0x1801
-23=0x1802
-24=0x1803
-25=0x1A00
-26=0x1A01
-27=0x1A02
-28=0x1A03
-29=0x1F50
-30=0x1F51
-31=0x1F56
-32=0x1F57
-33=0x6007
-34=0x603F
-35=0x6040
-36=0x6041
-37=0x605A
-38=0x605D
-39=0x6060
-40=0x6061
-41=0x6062
-42=0x6064
-43=0x6065
-44=0x6066
-45=0x606C
-46=0x606F
-47=0x6070
-48=0x6071
-49=0x6073
-50=0x6074
-51=0x6075
-52=0x6076
-53=0x6077
-54=0x6078
-55=0x607A
-56=0x607B
-57=0x607C
-58=0x607D
-59=0x6081
-60=0x6083
-61=0x6084
-62=0x6098
-63=0x6099
-64=0x60B1
-65=0x60B2
-66=0x60C2
-67=0x60F2
-68=0x60F4
-69=0x60FF
-70=0x6502
+3=0x1008
+4=0x100C
+5=0x100D
+6=0x1010
+7=0x1011
+8=0x1012
+9=0x1014
+10=0x1016
+11=0x1017
+12=0x1029
+13=0x1200
+14=0x1400
+15=0x1401
+16=0x1402
+17=0x1403
+18=0x1600
+19=0x1601
+20=0x1602
+21=0x1603
+22=0x1800
+23=0x1801
+24=0x1802
+25=0x1803
+26=0x1A00
+27=0x1A01
+28=0x1A02
+29=0x1A03
+30=0x1F50
+31=0x1F51
+32=0x1F56
+33=0x1F57
+34=0x6007
+35=0x603F
+36=0x6040
+37=0x6041
+38=0x605A
+39=0x605D
+40=0x6060
+41=0x6061
+42=0x6062
+43=0x6064
+44=0x6065
+45=0x6066
+46=0x606C
+47=0x606F
+48=0x6070
+49=0x6071
+50=0x6073
+51=0x6074
+52=0x6075
+53=0x6076
+54=0x6077
+55=0x6078
+56=0x607A
+57=0x607B
+58=0x607C
+59=0x607D
+60=0x6081
+61=0x6082
+62=0x6083
+63=0x6084
+64=0x6098
+65=0x6099
+66=0x60B1
+67=0x60B2
+68=0x60C2
+69=0x60F2
+70=0x60F4
+71=0x60FF
+72=0x6502
 
 [1003]
 SubNumber=0x5
@@ -232,6 +238,14 @@ AccessType=rw
 DefaultValue=0x80
 PDOMapping=0x0
 
+[1008]
+ParameterName=Manufacturer Device Name
+ObjectType=0x7
+DataType=0x09
+AccessType=const
+DefaultValue=EVS-XCR-C
+PDOMapping=0x0
+
 [100C]
 ParameterName=Guard time
 ObjectType=0x7
@@ -254,7 +268,7 @@ ParameterName=Store parameters
 ObjectType=0x8
 
 [1010sub0]
-ParameterName=Highest subindex supported
+ParameterName=Highest sub-index supported
 ObjectType=0x7
 DataType=0x05
 AccessType=ro
@@ -275,7 +289,7 @@ ParameterName=Restore default parameters
 ObjectType=0x8
 
 [1011sub0]
-ParameterName=Highest subindex supported
+ParameterName=Highest sub-index supported
 ObjectType=0x7
 DataType=0x05
 AccessType=ro
@@ -312,7 +326,7 @@ ParameterName=Consumer heartbeat time
 ObjectType=0x8
 
 [1016sub0]
-ParameterName=Highest subindex supported
+ParameterName=Highest sub-index supported
 ObjectType=0x7
 DataType=0x05
 AccessType=ro
@@ -362,7 +376,7 @@ ParameterName=SDO server parameters
 ObjectType=0x9
 
 [1200sub0]
-ParameterName=Highest subindex supported
+ParameterName=Highest sub-index supported
 ObjectType=0x7
 DataType=0x05
 AccessType=const
@@ -386,12 +400,12 @@ DefaultValue=$NODEID+0x580
 PDOMapping=0x0
 
 [1400]
-SubNumber=0x5
+SubNumber=0x6
 ParameterName=RPDO 1
 ObjectType=0x9
 
 [1400sub0]
-ParameterName=Highest subindex supported
+ParameterName=Highest sub-index supported
 ObjectType=0x7
 DataType=0x05
 AccessType=const
@@ -430,13 +444,21 @@ AccessType=rw
 DefaultValue=0x0
 PDOMapping=0x0
 
+[1400sub6]
+ParameterName=SYNC start value
+ObjectType=0x7
+DataType=0x05
+AccessType=rw
+DefaultValue=0x0
+PDOMapping=0x0
+
 [1401]
-SubNumber=0x5
+SubNumber=0x6
 ParameterName=RPDO 2
 ObjectType=0x9
 
 [1401sub0]
-ParameterName=Highest subindex supported
+ParameterName=Highest sub-index supported
 ObjectType=0x7
 DataType=0x05
 AccessType=const
@@ -475,13 +497,21 @@ AccessType=rw
 DefaultValue=0x0
 PDOMapping=0x0
 
+[1401sub6]
+ParameterName=SYNC start value
+ObjectType=0x7
+DataType=0x05
+AccessType=rw
+DefaultValue=0x0
+PDOMapping=0x0
+
 [1402]
-SubNumber=0x5
+SubNumber=0x6
 ParameterName=RPDO 3
 ObjectType=0x9
 
 [1402sub0]
-ParameterName=Highest subindex supported
+ParameterName=Highest sub-index supported
 ObjectType=0x7
 DataType=0x05
 AccessType=const
@@ -520,13 +550,21 @@ AccessType=rw
 DefaultValue=0x0
 PDOMapping=0x0
 
+[1402sub6]
+ParameterName=SYNC start value
+ObjectType=0x7
+DataType=0x05
+AccessType=rw
+DefaultValue=0x0
+PDOMapping=0x0
+
 [1403]
-SubNumber=0x5
+SubNumber=0x6
 ParameterName=RPDO 4
 ObjectType=0x9
 
 [1403sub0]
-ParameterName=Highest subindex supported
+ParameterName=Highest sub-index supported
 ObjectType=0x7
 DataType=0x05
 AccessType=const
@@ -561,6 +599,14 @@ PDOMapping=0x0
 ParameterName=Event timer
 ObjectType=0x7
 DataType=0x06
+AccessType=rw
+DefaultValue=0x0
+PDOMapping=0x0
+
+[1403sub6]
+ParameterName=SYNC start value
+ObjectType=0x7
+DataType=0x05
 AccessType=rw
 DefaultValue=0x0
 PDOMapping=0x0
@@ -874,12 +920,12 @@ DefaultValue=0x0
 PDOMapping=0x0
 
 [1800]
-SubNumber=0x5
+SubNumber=0x6
 ParameterName=TPDO 1
 ObjectType=0x9
 
 [1800sub0]
-ParameterName=Highest subindex supported
+ParameterName=Highest sub-index supported
 ObjectType=0x7
 DataType=0x05
 AccessType=const
@@ -918,13 +964,21 @@ AccessType=rw
 DefaultValue=0x0
 PDOMapping=0x0
 
+[1800sub6]
+ParameterName=SYNC start value
+ObjectType=0x7
+DataType=0x05
+AccessType=rw
+DefaultValue=0x0
+PDOMapping=0x0
+
 [1801]
-SubNumber=0x5
+SubNumber=0x6
 ParameterName=TPDO 2
 ObjectType=0x9
 
 [1801sub0]
-ParameterName=Highest subindex supported
+ParameterName=Highest sub-index supported
 ObjectType=0x7
 DataType=0x05
 AccessType=const
@@ -963,13 +1017,21 @@ AccessType=rw
 DefaultValue=0x0
 PDOMapping=0x0
 
+[1801sub6]
+ParameterName=SYNC start value
+ObjectType=0x7
+DataType=0x05
+AccessType=rw
+DefaultValue=0x0
+PDOMapping=0x0
+
 [1802]
-SubNumber=0x5
+SubNumber=0x6
 ParameterName=TPDO 3
 ObjectType=0x9
 
 [1802sub0]
-ParameterName=Highest subindex supported
+ParameterName=Highest sub-index supported
 ObjectType=0x7
 DataType=0x05
 AccessType=const
@@ -1008,13 +1070,21 @@ AccessType=rw
 DefaultValue=0x0
 PDOMapping=0x0
 
+[1802sub6]
+ParameterName=SYNC start value
+ObjectType=0x7
+DataType=0x05
+AccessType=rw
+DefaultValue=0x0
+PDOMapping=0x0
+
 [1803]
-SubNumber=0x5
+SubNumber=0x6
 ParameterName=TPDO 4
 ObjectType=0x9
 
 [1803sub0]
-ParameterName=Highest subindex supported
+ParameterName=Highest sub-index supported
 ObjectType=0x7
 DataType=0x05
 AccessType=const
@@ -1049,6 +1119,14 @@ PDOMapping=0x0
 ParameterName=Event timer
 ObjectType=0x7
 DataType=0x06
+AccessType=rw
+DefaultValue=0x0
+PDOMapping=0x0
+
+[1803sub6]
+ParameterName=SYNC start value
+ObjectType=0x7
+DataType=0x05
 AccessType=rw
 DefaultValue=0x0
 PDOMapping=0x0
@@ -1362,24 +1440,11 @@ DefaultValue=0x0
 PDOMapping=0x0
 
 [1F50]
-SubNumber=0x2
-ParameterName=Program data
-ObjectType=0x8
-
-[1F50sub0]
 ParameterName=Program data
 ObjectType=0x7
 DataType=0x05
 AccessType=ro
 DefaultValue=0x1
-PDOMapping=0x0
-
-[1F50sub1]
-ParameterName=Program data 1
-ObjectType=0x7
-DataType=0x000F
-AccessType=rw
-DefaultValue=0x0
 PDOMapping=0x0
 
 [1F51]
@@ -1492,7 +1557,7 @@ DefaultValue=0
 PDOMapping=0x0
 
 [6060]
-ParameterName=Operation mode
+ParameterName=Modes of operation
 ObjectType=0x7
 DataType=0x02
 AccessType=rww
@@ -1500,7 +1565,7 @@ DefaultValue=-1
 PDOMapping=0x1
 
 [6061]
-ParameterName=Operation mode display
+ParameterName=Modes of operation display
 ObjectType=0x7
 DataType=0x02
 AccessType=ro
@@ -1516,7 +1581,7 @@ DefaultValue=0
 PDOMapping=0x1
 
 [6064]
-ParameterName=Actual position
+ParameterName=Position actual value
 ObjectType=0x7
 DataType=0x04
 AccessType=ro
@@ -1532,7 +1597,7 @@ DefaultValue=100
 PDOMapping=0x1
 
 [6066]
-ParameterName=Position following error timeout
+ParameterName=Following error time out
 ObjectType=0x7
 DataType=0x06
 AccessType=rww
@@ -1540,7 +1605,7 @@ DefaultValue=0
 PDOMapping=0x1
 
 [606C]
-ParameterName=Actual velocity
+ParameterName=Velocity actual value
 ObjectType=0x7
 DataType=0x04
 AccessType=ro
@@ -1572,7 +1637,7 @@ DefaultValue=0
 PDOMapping=0x1
 
 [6073]
-ParameterName=Max. current
+ParameterName=Max current
 ObjectType=0x7
 DataType=0x06
 AccessType=rww
@@ -1588,7 +1653,7 @@ DefaultValue=0
 PDOMapping=0x1
 
 [6075]
-ParameterName=Rated current
+ParameterName=Motor rated current
 ObjectType=0x7
 DataType=0x07
 AccessType=rw
@@ -1596,7 +1661,7 @@ DefaultValue=10000
 PDOMapping=0x0
 
 [6076]
-ParameterName=Rated torque
+ParameterName=Motor rated torque
 ObjectType=0x7
 DataType=0x07
 AccessType=rw
@@ -1620,7 +1685,7 @@ DefaultValue=0
 PDOMapping=0x1
 
 [607A]
-ParameterName=Position set-point
+ParameterName=Target position
 ObjectType=0x7
 DataType=0x04
 AccessType=rww
@@ -1633,7 +1698,7 @@ ParameterName=Position range limit
 ObjectType=0x8
 
 [607Bsub0]
-ParameterName=Highest subindex supported
+ParameterName=Highest sub-index supported
 ObjectType=0x7
 DataType=0x05
 AccessType=ro
@@ -1657,7 +1722,7 @@ DefaultValue=0x0
 PDOMapping=0x1
 
 [607C]
-ParameterName=Homing offset
+ParameterName=Home offset
 ObjectType=0x7
 DataType=0x04
 AccessType=rww
@@ -1670,7 +1735,7 @@ ParameterName=Software position limit
 ObjectType=0x8
 
 [607Dsub0]
-ParameterName=Highest subindex supported
+ParameterName=Highest sub-index supported
 ObjectType=0x7
 DataType=0x05
 AccessType=ro
@@ -1701,6 +1766,14 @@ AccessType=rww
 DefaultValue=20000
 PDOMapping=0x1
 
+[6082]
+ParameterName=Profile end velocity
+ObjectType=0x7
+DataType=0x07
+AccessType=rww
+DefaultValue=0
+PDOMapping=0x1
+
 [6083]
 ParameterName=Profile acceleration
 ObjectType=0x7
@@ -1718,7 +1791,7 @@ DefaultValue=20000
 PDOMapping=0x1
 
 [6098]
-ParameterName=Homing mode
+ParameterName=Homing method
 ObjectType=0x7
 DataType=0x02
 AccessType=rww
@@ -1727,11 +1800,11 @@ PDOMapping=0x1
 
 [6099]
 SubNumber=0x3
-ParameterName=Homing search velocities
+ParameterName=Homing speed
 ObjectType=0x8
 
 [6099sub0]
-ParameterName=Highest subindex supported
+ParameterName=Highest sub-index supported
 ObjectType=0x7
 DataType=0x05
 AccessType=ro
@@ -1755,7 +1828,7 @@ DefaultValue=0x0
 PDOMapping=0x1
 
 [60B1]
-ParameterName=Velocity loop input offset
+ParameterName=Velocity offset
 ObjectType=0x7
 DataType=0x04
 AccessType=rww
@@ -1776,7 +1849,7 @@ ParameterName=Interpolation time period
 ObjectType=0x9
 
 [60C2sub0]
-ParameterName=Highest subindex supported
+ParameterName=Highest sub-index supported
 ObjectType=0x7
 DataType=0x05
 AccessType=ro
@@ -1784,7 +1857,7 @@ DefaultValue=0x2
 PDOMapping=0x0
 
 [60C2sub1]
-ParameterName=Interpolation time mantissa
+ParameterName=Interpolation time period value
 ObjectType=0x7
 DataType=0x05
 AccessType=rww
@@ -1792,15 +1865,15 @@ DefaultValue=0x1
 PDOMapping=0x1
 
 [60C2sub2]
-ParameterName=Interpolation time exponent
+ParameterName=Interpolation time index
 ObjectType=0x7
 DataType=0x02
 AccessType=rww
-DefaultValue=0xfffffffffffffffd
+DefaultValue=0xFD
 PDOMapping=0x1
 
 [60F2]
-ParameterName=Positioning option code
+ParameterName=Position option code
 ObjectType=0x7
 DataType=0x06
 AccessType=rww
@@ -1808,7 +1881,7 @@ DefaultValue=0
 PDOMapping=0x1
 
 [60F4]
-ParameterName=Position following error
+ParameterName=Following error actual value
 ObjectType=0x7
 DataType=0x04
 AccessType=ro
@@ -1816,7 +1889,7 @@ DefaultValue=0
 PDOMapping=0x1
 
 [60FF]
-ParameterName=Velocity set-point
+ParameterName=Target velocity
 ObjectType=0x7
 DataType=0x04
 AccessType=rww
@@ -1832,7 +1905,7 @@ DefaultValue=0xF03E5
 PDOMapping=0x1
 
 [ManufacturerObjects]
-SupportedObjects=484
+SupportedObjects=567
 1=0x200F
 2=0x2010
 3=0x2011
@@ -1851,172 +1924,172 @@ SupportedObjects=484
 16=0x2025
 17=0x2026
 18=0x2027
-19=0x2029
-20=0x2030
-21=0x2031
-22=0x2033
-23=0x2037
-24=0x2038
-25=0x2039
-26=0x203A
-27=0x203B
-28=0x203C
-29=0x203D
-30=0x203E
-31=0x203F
-32=0x2040
-33=0x2041
-34=0x204A
-35=0x204B
-36=0x2050
-37=0x2051
-38=0x2052
-39=0x2053
-40=0x2054
-41=0x2055
-42=0x205D
-43=0x205E
-44=0x205F
-45=0x2060
-46=0x2061
-47=0x2062
-48=0x2063
-49=0x2064
-50=0x2066
-51=0x2067
-52=0x2068
-53=0x2069
-54=0x206A
-55=0x206E
-56=0x206F
-57=0x2070
-58=0x2071
-59=0x2072
-60=0x2073
-61=0x2074
-62=0x2075
-63=0x2076
-64=0x2077
-65=0x2078
-66=0x2079
-67=0x207A
-68=0x207B
-69=0x207C
-70=0x207D
-71=0x2080
-72=0x2081
-73=0x2082
-74=0x2096
-75=0x2097
-76=0x2098
-77=0x2099
-78=0x209A
-79=0x209B
-80=0x2100
-81=0x2101
-82=0x2102
-83=0x2106
-84=0x2109
-85=0x210A
-86=0x210B
-87=0x210C
-88=0x210D
-89=0x210E
-90=0x210F
-91=0x2110
-92=0x2111
-93=0x2112
-94=0x2113
-95=0x2114
-96=0x2120
-97=0x2121
-98=0x2122
-99=0x2123
-100=0x2124
-101=0x2125
-102=0x2126
-103=0x2127
-104=0x2128
-105=0x2129
-106=0x212A
-107=0x212B
-108=0x212C
-109=0x212D
-110=0x212E
-111=0x212F
-112=0x2130
-113=0x2131
-114=0x2133
-115=0x2134
-116=0x2141
-117=0x214F
-118=0x2150
-119=0x2151
-120=0x2152
-121=0x2153
-122=0x2154
-123=0x2155
-124=0x2156
-125=0x2157
-126=0x217B
-127=0x217C
-128=0x2181
-129=0x2182
-130=0x2183
-131=0x2184
-132=0x2185
-133=0x21C0
-134=0x21C8
-135=0x21D6
-136=0x21D7
-137=0x21DC
-138=0x21DD
-139=0x21DE
-140=0x21DF
-141=0x21E0
-142=0x21E2
-143=0x21E3
-144=0x21E4
-145=0x21E5
-146=0x21E6
-147=0x21E8
-148=0x21EA
-149=0x21EB
-150=0x21EC
-151=0x21ED
-152=0x21EE
-153=0x21EF
-154=0x21F0
-155=0x21F1
-156=0x21F2
-157=0x21F3
-158=0x21F4
-159=0x21F5
-160=0x21F6
-161=0x21F7
-162=0x21F8
-163=0x21F9
-164=0x21FB
-165=0x2204
-166=0x2205
-167=0x2206
-168=0x2207
-169=0x2208
-170=0x2209
-171=0x220A
-172=0x220B
-173=0x220C
-174=0x220D
-175=0x220E
-176=0x220F
-177=0x2210
-178=0x2211
-179=0x2212
-180=0x2213
-181=0x22E0
-182=0x22E1
-183=0x22E8
-184=0x22E9
+19=0x2028
+20=0x2029
+21=0x2030
+22=0x2031
+23=0x2033
+24=0x2037
+25=0x2038
+26=0x2039
+27=0x203A
+28=0x203B
+29=0x203C
+30=0x203D
+31=0x203E
+32=0x203F
+33=0x2040
+34=0x2041
+35=0x2042
+36=0x204A
+37=0x204B
+38=0x204C
+39=0x2050
+40=0x2051
+41=0x2052
+42=0x2053
+43=0x2054
+44=0x2055
+45=0x2056
+46=0x205F
+47=0x2060
+48=0x2061
+49=0x2062
+50=0x2063
+51=0x2064
+52=0x2066
+53=0x2067
+54=0x2068
+55=0x2069
+56=0x206A
+57=0x206E
+58=0x206F
+59=0x2070
+60=0x2071
+61=0x2072
+62=0x2073
+63=0x2074
+64=0x2075
+65=0x2076
+66=0x2077
+67=0x2078
+68=0x2079
+69=0x207A
+70=0x207B
+71=0x207C
+72=0x207D
+73=0x2080
+74=0x2081
+75=0x2082
+76=0x2096
+77=0x2097
+78=0x2098
+79=0x2099
+80=0x209A
+81=0x209B
+82=0x2100
+83=0x2101
+84=0x2102
+85=0x2106
+86=0x2109
+87=0x210A
+88=0x210B
+89=0x210C
+90=0x210D
+91=0x210E
+92=0x210F
+93=0x2110
+94=0x2111
+95=0x2112
+96=0x2113
+97=0x2114
+98=0x2120
+99=0x2121
+100=0x2122
+101=0x2123
+102=0x2124
+103=0x2125
+104=0x2126
+105=0x2127
+106=0x2128
+107=0x2129
+108=0x212A
+109=0x212B
+110=0x212C
+111=0x212D
+112=0x212E
+113=0x212F
+114=0x2130
+115=0x2131
+116=0x2133
+117=0x2134
+118=0x213D
+119=0x213E
+120=0x213F
+121=0x2140
+122=0x2141
+123=0x214F
+124=0x2150
+125=0x2151
+126=0x2152
+127=0x2153
+128=0x2154
+129=0x2155
+130=0x2156
+131=0x2157
+132=0x2160
+133=0x2161
+134=0x217B
+135=0x217C
+136=0x2181
+137=0x2182
+138=0x2183
+139=0x2184
+140=0x2185
+141=0x21C0
+142=0x21C8
+143=0x21D6
+144=0x21D7
+145=0x21DC
+146=0x21DD
+147=0x21DE
+148=0x21DF
+149=0x21E0
+150=0x21E2
+151=0x21E3
+152=0x21E4
+153=0x21E5
+154=0x21E6
+155=0x21E8
+156=0x21EA
+157=0x21EB
+158=0x21EC
+159=0x21ED
+160=0x21EE
+161=0x21EF
+162=0x21F0
+163=0x21F1
+164=0x21F2
+165=0x21F3
+166=0x21F4
+167=0x21F5
+168=0x21F6
+169=0x21F7
+170=0x21F8
+171=0x21F9
+172=0x22E0
+173=0x22E1
+174=0x22E8
+175=0x22E9
+176=0x2300
+177=0x2301
+178=0x2302
+179=0x2303
+180=0x2304
+181=0x2305
+182=0x2306
+183=0x2307
+184=0x2308
 185=0x235F
 186=0x2360
 187=0x2361
@@ -2059,264 +2132,347 @@ SupportedObjects=484
 224=0x2399
 225=0x239A
 226=0x239B
-227=0x2400
-228=0x2401
-229=0x2403
-230=0x2404
-231=0x2405
-232=0x2406
-233=0x2407
-234=0x2408
-235=0x2409
-236=0x240A
-237=0x240B
-238=0x240C
-239=0x240D
-240=0x2438
-241=0x2439
-242=0x243A
-243=0x243B
-244=0x2450
-245=0x2451
-246=0x2452
-247=0x2453
-248=0x2454
-249=0x2455
-250=0x2456
-251=0x2457
-252=0x2458
-253=0x24FF
-254=0x2500
-255=0x2501
-256=0x2502
-257=0x2503
-258=0x2505
-259=0x2506
-260=0x2507
-261=0x2508
-262=0x250A
-263=0x250B
-264=0x250C
-265=0x250D
-266=0x250E
-267=0x250F
-268=0x2510
-269=0x2511
-270=0x2512
-271=0x2513
-272=0x2514
-273=0x2515
-274=0x2516
-275=0x2517
-276=0x2518
-277=0x2519
-278=0x251A
-279=0x251B
-280=0x251C
-281=0x251D
-282=0x251E
-283=0x251F
-284=0x2520
-285=0x2521
-286=0x2522
-287=0x2523
-288=0x2524
-289=0x2527
-290=0x2528
-291=0x2530
-292=0x2531
-293=0x2532
-294=0x2533
-295=0x2538
-296=0x2539
-297=0x253A
-298=0x253B
-299=0x2540
-300=0x2541
-301=0x2542
-302=0x2543
-303=0x2548
-304=0x2549
-305=0x254A
-306=0x254B
-307=0x2550
-308=0x2551
-309=0x2552
-310=0x2553
-311=0x2558
-312=0x2559
-313=0x255A
-314=0x255B
-315=0x2560
-316=0x2561
-317=0x2562
-318=0x2563
-319=0x2568
-320=0x2569
-321=0x256A
-322=0x256B
-323=0x2570
-324=0x2571
-325=0x2572
-326=0x2573
-327=0x2578
-328=0x2579
-329=0x257A
-330=0x257B
-331=0x2580
-332=0x2581
-333=0x2582
-334=0x2583
-335=0x2588
-336=0x2589
-337=0x258A
-338=0x258B
-339=0x2590
-340=0x2591
-341=0x2592
-342=0x25FC
-343=0x25FD
-344=0x25FE
-345=0x25FF
-346=0x2600
-347=0x2601
-348=0x2602
-349=0x2603
-350=0x2604
-351=0x2608
-352=0x2609
-353=0x260A
-354=0x260B
-355=0x260D
-356=0x260F
-357=0x2610
-358=0x2611
-359=0x2612
-360=0x2613
-361=0x2614
-362=0x2615
-363=0x2616
-364=0x2617
-365=0x2618
-366=0x2619
-367=0x261A
-368=0x261B
-369=0x261C
-370=0x261D
-371=0x2620
-372=0x2621
-373=0x2624
-374=0x262B
-375=0x262E
-376=0x262F
-377=0x2630
-378=0x2631
-379=0x2632
-380=0x2633
-381=0x263B
-382=0x2641
-383=0x2642
-384=0x2643
-385=0x2644
-386=0x2645
-387=0x2646
-388=0x264D
-389=0x264E
-390=0x264F
-391=0x26D1
-392=0x26DB
-393=0x26DC
-394=0x26DD
-395=0x26DF
-396=0x26E0
-397=0x26E1
-398=0x26E2
-399=0x26E4
-400=0x26E5
-401=0x26E6
-402=0x2700
-403=0x2701
-404=0x2702
-405=0x2703
-406=0x2704
-407=0x2706
-408=0x2707
-409=0x2709
-410=0x270A
-411=0x270C
-412=0x2710
-413=0x2711
-414=0x2712
-415=0x2713
-416=0x271D
-417=0x271E
-418=0x271F
-419=0x2720
-420=0x2721
-421=0x2722
-422=0x2723
-423=0x2728
-424=0x2729
-425=0x272A
-426=0x272B
-427=0x272C
-428=0x272D
-429=0x272E
-430=0x2732
-431=0x2733
-432=0x2734
-433=0x2735
-434=0x2736
-435=0x2737
-436=0x2738
-437=0x2739
-438=0x2740
-439=0x2741
-440=0x2742
-441=0x2743
-442=0x2746
-443=0x2747
-444=0x2748
-445=0x2749
-446=0x274A
-447=0x274B
-448=0x2750
-449=0x2751
-450=0x2752
-451=0x2753
-452=0x2754
-453=0x275A
-454=0x275B
-455=0x275C
-456=0x275D
-457=0x2760
-458=0x2761
-459=0x2762
-460=0x2763
-461=0x2764
-462=0x2765
-463=0x580F
-464=0x5820
-465=0x58A0
-466=0x58AA
-467=0x5E49
-468=0x5E4A
-469=0x5E4B
-470=0x5E4C
-471=0x5E4D
-472=0x5E4E
-473=0x5E4F
-474=0x5E80
-475=0x5ED1
-476=0x5EDB
-477=0x5EDC
-478=0x5EDE
-479=0x5EDF
-480=0x5EE0
-481=0x5EE1
-482=0x5EE2
-483=0x5EE4
-484=0x5EE6
+227=0x239C
+228=0x239D
+229=0x239E
+230=0x239F
+231=0x2400
+232=0x2401
+233=0x2403
+234=0x2404
+235=0x2405
+236=0x2406
+237=0x2407
+238=0x2408
+239=0x2409
+240=0x240A
+241=0x240B
+242=0x240C
+243=0x240D
+244=0x2438
+245=0x2439
+246=0x243A
+247=0x243B
+248=0x243C
+249=0x243D
+250=0x243E
+251=0x243F
+252=0x2440
+253=0x2441
+254=0x2442
+255=0x2443
+256=0x2444
+257=0x2445
+258=0x2446
+259=0x2447
+260=0x2450
+261=0x2451
+262=0x2452
+263=0x2453
+264=0x2454
+265=0x2455
+266=0x2456
+267=0x2457
+268=0x2458
+269=0x24FF
+270=0x2500
+271=0x2501
+272=0x2502
+273=0x2503
+274=0x2505
+275=0x2506
+276=0x2507
+277=0x2508
+278=0x250A
+279=0x250B
+280=0x250C
+281=0x250D
+282=0x250E
+283=0x250F
+284=0x2510
+285=0x2511
+286=0x2512
+287=0x2513
+288=0x2514
+289=0x2515
+290=0x2516
+291=0x2517
+292=0x2518
+293=0x2519
+294=0x251A
+295=0x251B
+296=0x251C
+297=0x251D
+298=0x251E
+299=0x251F
+300=0x2520
+301=0x2521
+302=0x2522
+303=0x2523
+304=0x2524
+305=0x2527
+306=0x2528
+307=0x2530
+308=0x2531
+309=0x2532
+310=0x2533
+311=0x2538
+312=0x2539
+313=0x253A
+314=0x253B
+315=0x2540
+316=0x2541
+317=0x2542
+318=0x2543
+319=0x2548
+320=0x2549
+321=0x254A
+322=0x254B
+323=0x2550
+324=0x2551
+325=0x2552
+326=0x2553
+327=0x2558
+328=0x2559
+329=0x255A
+330=0x255B
+331=0x2560
+332=0x2561
+333=0x2562
+334=0x2563
+335=0x2568
+336=0x2569
+337=0x256A
+338=0x256B
+339=0x2570
+340=0x2571
+341=0x2572
+342=0x2573
+343=0x2578
+344=0x2579
+345=0x257A
+346=0x257B
+347=0x2580
+348=0x2581
+349=0x2582
+350=0x2583
+351=0x2588
+352=0x2589
+353=0x258A
+354=0x258B
+355=0x2590
+356=0x2591
+357=0x2592
+358=0x2593
+359=0x2594
+360=0x25FC
+361=0x25FD
+362=0x25FE
+363=0x25FF
+364=0x2600
+365=0x2601
+366=0x2602
+367=0x2603
+368=0x2604
+369=0x2608
+370=0x2609
+371=0x260A
+372=0x260B
+373=0x260F
+374=0x2610
+375=0x2611
+376=0x2612
+377=0x2613
+378=0x2614
+379=0x2615
+380=0x2616
+381=0x2617
+382=0x2619
+383=0x261A
+384=0x261B
+385=0x261D
+386=0x261E
+387=0x261F
+388=0x2620
+389=0x2621
+390=0x2624
+391=0x2625
+392=0x2628
+393=0x262B
+394=0x262E
+395=0x262F
+396=0x2630
+397=0x2631
+398=0x2632
+399=0x2633
+400=0x2634
+401=0x2635
+402=0x263B
+403=0x2641
+404=0x2643
+405=0x2644
+406=0x2645
+407=0x2646
+408=0x264D
+409=0x264E
+410=0x264F
+411=0x26DB
+412=0x26DC
+413=0x26DD
+414=0x26DF
+415=0x26E0
+416=0x26E1
+417=0x26E2
+418=0x26E4
+419=0x26E6
+420=0x2700
+421=0x2701
+422=0x2702
+423=0x2703
+424=0x2704
+425=0x2706
+426=0x2707
+427=0x2709
+428=0x270A
+429=0x270C
+430=0x2710
+431=0x2711
+432=0x2712
+433=0x2713
+434=0x271D
+435=0x271E
+436=0x271F
+437=0x2720
+438=0x2721
+439=0x2722
+440=0x2723
+441=0x2728
+442=0x2729
+443=0x272A
+444=0x272B
+445=0x272C
+446=0x272D
+447=0x272E
+448=0x2732
+449=0x2733
+450=0x2734
+451=0x2735
+452=0x2736
+453=0x2737
+454=0x2738
+455=0x2739
+456=0x2740
+457=0x2741
+458=0x2742
+459=0x2743
+460=0x2746
+461=0x2747
+462=0x2748
+463=0x2749
+464=0x274A
+465=0x274B
+466=0x2750
+467=0x2751
+468=0x2752
+469=0x2753
+470=0x2754
+471=0x275A
+472=0x275B
+473=0x275C
+474=0x275D
+475=0x580F
+476=0x5820
+477=0x5890
+478=0x5891
+479=0x5892
+480=0x5893
+481=0x5894
+482=0x5895
+483=0x5896
+484=0x5897
+485=0x5898
+486=0x5899
+487=0x589A
+488=0x589B
+489=0x589C
+490=0x589D
+491=0x589E
+492=0x589F
+493=0x58A0
+494=0x58A1
+495=0x58A2
+496=0x58A3
+497=0x58A4
+498=0x58AA
+499=0x58B0
+500=0x58B1
+501=0x58B2
+502=0x58B3
+503=0x58B4
+504=0x58B5
+505=0x58B6
+506=0x58B7
+507=0x58B8
+508=0x58BA
+509=0x58BC
+510=0x58BD
+511=0x58BF
+512=0x58C0
+513=0x58C1
+514=0x58C2
+515=0x58C3
+516=0x58C4
+517=0x58C5
+518=0x58C7
+519=0x58D0
+520=0x58D1
+521=0x58D2
+522=0x58D3
+523=0x58D4
+524=0x58D5
+525=0x58D6
+526=0x58D7
+527=0x58D8
+528=0x58D9
+529=0x58DA
+530=0x58DB
+531=0x58DC
+532=0x58DD
+533=0x58DE
+534=0x58DF
+535=0x58E3
+536=0x58E4
+537=0x58E8
+538=0x58E9
+539=0x58EA
+540=0x58EB
+541=0x58F0
+542=0x58F1
+543=0x58F3
+544=0x58F4
+545=0x58F5
+546=0x58F7
+547=0x5940
+548=0x5941
+549=0x5E49
+550=0x5E4A
+551=0x5E4B
+552=0x5E4C
+553=0x5E4D
+554=0x5E4E
+555=0x5E4F
+556=0x5E50
+557=0x5ED1
+558=0x5EDB
+559=0x5EDC
+560=0x5EDD
+561=0x5EDE
+562=0x5EDF
+563=0x5EE0
+564=0x5EE1
+565=0x5EE2
+566=0x5EE4
+567=0x5EE6
 
 [200F]
 ParameterName=Last error
@@ -2343,7 +2499,7 @@ DefaultValue=0
 PDOMapping=0x1
 
 [2014]
-ParameterName=Operation mode
+ParameterName=Modes of operation
 ObjectType=0x7
 DataType=0x06
 AccessType=rww
@@ -2351,7 +2507,7 @@ DefaultValue=0
 PDOMapping=0x1
 
 [2015]
-ParameterName=Operation mode display
+ParameterName=Modes of operation display
 ObjectType=0x7
 DataType=0x06
 AccessType=ro
@@ -2363,7 +2519,7 @@ ParameterName=Voltage quadrature set-point
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2019]
@@ -2371,7 +2527,7 @@ ParameterName=Voltage direct set-point
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [201A]
@@ -2379,7 +2535,7 @@ ParameterName=Current quadrature set-point
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [201B]
@@ -2387,7 +2543,7 @@ ParameterName=Current direct set-point
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [201C]
@@ -2395,7 +2551,7 @@ ParameterName=Current A set-point
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [201D]
@@ -2403,7 +2559,7 @@ ParameterName=Current B set-point
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2020]
@@ -2415,11 +2571,11 @@ DefaultValue=0
 PDOMapping=0x1
 
 [2021]
-ParameterName=Velocity set-point
+ParameterName=Target velocity
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2022]
@@ -2427,11 +2583,11 @@ ParameterName=Torque set-point
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2024]
-ParameterName=Positioning option code
+ParameterName=Position option code
 ObjectType=0x7
 DataType=0x06
 AccessType=rww
@@ -2443,7 +2599,7 @@ ParameterName=Profiler max. velocity
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=20.0
+DefaultValue=0x41a00000
 PDOMapping=0x1
 
 [2026]
@@ -2451,7 +2607,7 @@ ParameterName=Profiler max. acceleration
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=20.0
+DefaultValue=0x41a00000
 PDOMapping=0x1
 
 [2027]
@@ -2459,7 +2615,15 @@ ParameterName=Profiler max. deceleration
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=20.0
+DefaultValue=0x41a00000
+PDOMapping=0x1
+
+[2028]
+ParameterName=Profiler end velocity
+ObjectType=0x7
+DataType=0x08
+AccessType=rww
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2029]
@@ -2467,11 +2631,11 @@ ParameterName=Actual torque
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2030]
-ParameterName=Actual position
+ParameterName=Position actual value
 ObjectType=0x7
 DataType=0x04
 AccessType=ro
@@ -2479,11 +2643,11 @@ DefaultValue=0
 PDOMapping=0x1
 
 [2031]
-ParameterName=Actual velocity
+ParameterName=Velocity actual value
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2033]
@@ -2507,7 +2671,7 @@ ParameterName=Current A value
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2039]
@@ -2515,7 +2679,7 @@ ParameterName=Current B value
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [203A]
@@ -2523,7 +2687,7 @@ ParameterName=Current C value
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [203B]
@@ -2531,7 +2695,7 @@ ParameterName=Current quadrature value
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [203C]
@@ -2539,7 +2703,7 @@ ParameterName=Current direct value
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [203D]
@@ -2571,7 +2735,7 @@ ParameterName=Commutation angle value
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2041]
@@ -2579,7 +2743,15 @@ ParameterName=Reference angle value
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
+PDOMapping=0x1
+
+[2042]
+ParameterName=User commutation angle offset
+ObjectType=0x7
+DataType=0x08
+AccessType=rww
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [204A]
@@ -2598,12 +2770,20 @@ AccessType=ro
 DefaultValue=0
 PDOMapping=0x1
 
+[204C]
+ParameterName=Primary Absolute Slave 1 - Compensated position
+ObjectType=0x7
+DataType=0x07
+AccessType=ro
+DefaultValue=0
+PDOMapping=0x1
+
 [2050]
 ParameterName=Generator value
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2051]
@@ -2615,7 +2795,7 @@ DefaultValue=0
 PDOMapping=0x1
 
 [2052]
-ParameterName=Primary Absolute Slave 2 (daisy chain) - Position
+ParameterName=Primary Absolute Slave 2 - Position
 ObjectType=0x7
 DataType=0x04
 AccessType=ro
@@ -2627,7 +2807,7 @@ ParameterName=Torque demand
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2054]
@@ -2639,25 +2819,17 @@ DefaultValue=0
 PDOMapping=0x1
 
 [2055]
-ParameterName=Primary Absolute Slave 2 (daisy chain) - full frame
+ParameterName=Primary Absolute Slave 2 - Full frame
 ObjectType=0x7
 DataType=0x07
 AccessType=ro
 DefaultValue=0
 PDOMapping=0x1
 
-[205D]
-ParameterName=Power stage temperature 3 value
+[2056]
+ParameterName=Secondary Absolute Slave 1 - Compensated position
 ObjectType=0x7
-DataType=0x08
-AccessType=ro
-DefaultValue=0.0
-PDOMapping=0x1
-
-[205E]
-ParameterName=Power stage temperature 3 counts
-ObjectType=0x7
-DataType=0x06
+DataType=0x04
 AccessType=ro
 DefaultValue=0
 PDOMapping=0x1
@@ -2675,7 +2847,7 @@ ParameterName=Bus voltage value
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2061]
@@ -2683,7 +2855,7 @@ ParameterName=Power stage temperature 1 value
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2062]
@@ -2699,7 +2871,7 @@ ParameterName=Motor temperature value
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2064]
@@ -2707,7 +2879,7 @@ ParameterName=Power stage temperature 2 value
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2066]
@@ -2723,7 +2895,7 @@ ParameterName=Power stage max. actual temperature
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2068]
@@ -2731,7 +2903,7 @@ ParameterName=Voltage phase A
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2069]
@@ -2739,7 +2911,7 @@ ParameterName=Voltage phase B
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [206A]
@@ -2747,7 +2919,7 @@ ParameterName=Voltage phase C
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [206E]
@@ -2755,7 +2927,7 @@ ParameterName=Voltage direct command
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [206F]
@@ -2763,7 +2935,7 @@ ParameterName=Voltage quadrature command
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2070]
@@ -2771,7 +2943,7 @@ ParameterName=Voltage quadrature demand
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2071]
@@ -2779,7 +2951,7 @@ ParameterName=Voltage direct demand
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2072]
@@ -2787,7 +2959,7 @@ ParameterName=Current quadrature demand
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2073]
@@ -2795,7 +2967,7 @@ ParameterName=Current direct demand
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2074]
@@ -2803,7 +2975,7 @@ ParameterName=Current A demand
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2075]
@@ -2811,7 +2983,7 @@ ParameterName=Current B demand
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2076]
@@ -2819,7 +2991,7 @@ ParameterName=Current actual value
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2077]
@@ -2827,7 +2999,7 @@ ParameterName=Current command value
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2078]
@@ -2843,7 +3015,7 @@ ParameterName=Velocity demand
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [207A]
@@ -2851,7 +3023,7 @@ ParameterName=Acceleration demand
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [207B]
@@ -2859,7 +3031,7 @@ ParameterName=Velocity loop input offset
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [207C]
@@ -2867,7 +3039,7 @@ ParameterName=Current quadrature loop input offset
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [207D]
@@ -2875,7 +3047,7 @@ ParameterName=Current direct loop input offset
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2080]
@@ -2883,7 +3055,7 @@ ParameterName=Torque loop input offset
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2081]
@@ -2899,7 +3071,7 @@ ParameterName=Analog input 1 - Value
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2096]
@@ -2907,7 +3079,7 @@ ParameterName=Position loop control command
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2097]
@@ -2915,7 +3087,7 @@ ParameterName=Velocity loop control command
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2098]
@@ -2923,7 +3095,7 @@ ParameterName=Current quadrature / A control loop command
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2099]
@@ -2931,15 +3103,15 @@ ParameterName=Current direct / B control loop command
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [209A]
-ParameterName=Rated torque
+ParameterName=Motor rated torque
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=1.0
+DefaultValue=0x3f800000
 PDOMapping=0x1
 
 [209B]
@@ -2947,15 +3119,15 @@ ParameterName=Torque control loop command
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2100]
-ParameterName=Rated current
+ParameterName=Motor rated current
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=10.0
+DefaultValue=0x41200000
 PDOMapping=0x1
 
 [2101]
@@ -2963,7 +3135,7 @@ ParameterName=Peak current
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=60.0
+DefaultValue=0x42700000
 PDOMapping=0x0
 
 [2102]
@@ -2987,11 +3159,11 @@ ParameterName=Motor temp. protection threshold
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=100.0
+DefaultValue=0x42c80000
 PDOMapping=0x0
 
 [210A]
-ParameterName=Motor temperature sensor type
+ParameterName=Motor temp. sensor type
 ObjectType=0x7
 DataType=0x06
 AccessType=rw
@@ -2999,7 +3171,7 @@ DefaultValue=6
 PDOMapping=0x0
 
 [210B]
-ParameterName=Motor temperature sensor resistance
+ParameterName=Motor temp. sensor resistance
 ObjectType=0x7
 DataType=0x07
 AccessType=rw
@@ -3007,7 +3179,7 @@ DefaultValue=4000
 PDOMapping=0x0
 
 [210C]
-ParameterName=Motor temperature sensor β (25-85)
+ParameterName=Motor temp. sensor Beta (25-85)
 ObjectType=0x7
 DataType=0x06
 AccessType=rw
@@ -3015,7 +3187,7 @@ DefaultValue=0
 PDOMapping=0x0
 
 [210D]
-ParameterName=Motor temperature sensor external resistance
+ParameterName=Motor temp. sensor external resistance
 ObjectType=0x7
 DataType=0x07
 AccessType=rw
@@ -3023,19 +3195,19 @@ DefaultValue=1650
 PDOMapping=0x0
 
 [210E]
-ParameterName=Motor temperature sensor gain
+ParameterName=Motor temp. sensor gain
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x0
 
 [210F]
-ParameterName=Motor temperature sensor offset
+ParameterName=Motor temp. sensor offset
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x0
 
 [2110]
@@ -3043,7 +3215,7 @@ ParameterName=Motor temperature sensor voltage reference
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=5.0
+DefaultValue=0x40533333
 PDOMapping=0x0
 
 [2111]
@@ -3051,7 +3223,7 @@ ParameterName=Motor temperature sensor Temperature 0
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x0
 
 [2112]
@@ -3059,7 +3231,7 @@ ParameterName=Motor temperature sensor Resistance 0
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x0
 
 [2113]
@@ -3067,7 +3239,7 @@ ParameterName=Motor temperature sensor Temperature 1
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x0
 
 [2114]
@@ -3075,7 +3247,7 @@ ParameterName=Motor temperature sensor Resistance 1
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x0
 
 [2120]
@@ -3083,7 +3255,7 @@ ParameterName=Internal shunt enable voltage
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=60.0
+DefaultValue=0x42700000
 PDOMapping=0x0
 
 [2121]
@@ -3091,7 +3263,7 @@ ParameterName=Internal shunt disable voltage
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=58.0
+DefaultValue=0x42680000
 PDOMapping=0x0
 
 [2122]
@@ -3099,7 +3271,7 @@ ParameterName=External shunt enable voltage
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=60.0
+DefaultValue=0x42700000
 PDOMapping=0x0
 
 [2123]
@@ -3107,7 +3279,7 @@ ParameterName=External shunt disable voltage
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=58.0
+DefaultValue=0x42680000
 PDOMapping=0x0
 
 [2124]
@@ -3163,7 +3335,7 @@ ParameterName=Brake activation current
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=2.0
+DefaultValue=0x40000000
 PDOMapping=0x0
 
 [212B]
@@ -3171,7 +3343,7 @@ ParameterName=Brake holding current
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=2.0
+DefaultValue=0x40000000
 PDOMapping=0x0
 
 [212C]
@@ -3179,7 +3351,7 @@ ParameterName=Brake current control Kp
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=1.0
+DefaultValue=0x3f800000
 PDOMapping=0x0
 
 [212D]
@@ -3187,7 +3359,7 @@ ParameterName=Brake current control Ki
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x0
 
 [212E]
@@ -3203,7 +3375,7 @@ ParameterName=Brake current error window
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=100.0
+DefaultValue=0x42c80000
 PDOMapping=0x0
 
 [2130]
@@ -3219,7 +3391,7 @@ ParameterName=Brake max current
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=100.0
+DefaultValue=0x42c80000
 PDOMapping=0x0
 
 [2133]
@@ -3227,7 +3399,7 @@ ParameterName=Brake current actual value
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2134]
@@ -3238,12 +3410,44 @@ AccessType=rw
 DefaultValue=0
 PDOMapping=0x0
 
+[213D]
+ParameterName=Angle integrity check 1 angle deviation
+ObjectType=0x7
+DataType=0x08
+AccessType=ro
+DefaultValue=0x00000000
+PDOMapping=0x1
+
+[213E]
+ParameterName=Angle integrity check 1 calibration angle
+ObjectType=0x7
+DataType=0x08
+AccessType=ro
+DefaultValue=0x00000000
+PDOMapping=0x1
+
+[213F]
+ParameterName=Angle integrity check 1 commutation calibration angle
+ObjectType=0x7
+DataType=0x08
+AccessType=ro
+DefaultValue=0x00000000
+PDOMapping=0x1
+
+[2140]
+ParameterName=Angle integrity check 1 latched commutation angle
+ObjectType=0x7
+DataType=0x08
+AccessType=ro
+DefaultValue=0x00000000
+PDOMapping=0x1
+
 [2141]
 ParameterName=Brake current command
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [214F]
@@ -3259,7 +3463,7 @@ ParameterName=Commutation angle offset
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x0
 
 [2151]
@@ -3274,9 +3478,9 @@ PDOMapping=0x0
 ParameterName=Reference angle offset
 ObjectType=0x7
 DataType=0x08
-AccessType=rwr
-DefaultValue=0.0
-PDOMapping=0x1
+AccessType=rw
+DefaultValue=0x00000000
+PDOMapping=0x0
 
 [2153]
 ParameterName=Reference feedback sensor
@@ -3299,7 +3503,7 @@ ParameterName=Max. current on phasing sequence
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=1.5
+DefaultValue=0x3fc00000
 PDOMapping=0x0
 
 [2156]
@@ -3316,6 +3520,22 @@ ObjectType=0x7
 DataType=0x06
 AccessType=rw
 DefaultValue=3600
+PDOMapping=0x0
+
+[2160]
+ParameterName=Angle integrity check 1 threshold
+ObjectType=0x7
+DataType=0x08
+AccessType=rw
+DefaultValue=0x3f800000
+PDOMapping=0x0
+
+[2161]
+ParameterName=Angle integrity check 2 threshold
+ObjectType=0x7
+DataType=0x08
+AccessType=rw
+DefaultValue=0x3f800000
 PDOMapping=0x0
 
 [217B]
@@ -3347,7 +3567,7 @@ ParameterName=Interpolation data record - Velocity input
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2183]
@@ -3379,7 +3599,7 @@ ParameterName=Power stage maximum duty cycle
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=100.0
+DefaultValue=0x42c80000
 PDOMapping=0x0
 
 [21C8]
@@ -3395,7 +3615,7 @@ ParameterName=Velocity threshold
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=1.0
+DefaultValue=0x3f800000
 PDOMapping=0x1
 
 [21D7]
@@ -3411,7 +3631,7 @@ ParameterName=Velocity following error window
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=1.0
+DefaultValue=0x3f800000
 PDOMapping=0x1
 
 [21DD]
@@ -3439,11 +3659,11 @@ DefaultValue=0
 PDOMapping=0x1
 
 [21E0]
-ParameterName=Max. current
+ParameterName=Max current
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=60.0
+DefaultValue=0x42700000
 PDOMapping=0x1
 
 [21E2]
@@ -3459,7 +3679,7 @@ ParameterName=Velocity control loop error
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [21E4]
@@ -3467,7 +3687,7 @@ ParameterName=Torque control loop error
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [21E5]
@@ -3475,7 +3695,7 @@ ParameterName=Current direct control loop error
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [21E6]
@@ -3483,7 +3703,7 @@ ParameterName=Current quadrature control loop error
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [21E8]
@@ -3491,7 +3711,7 @@ ParameterName=Max. velocity
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=500.0
+DefaultValue=0x43960000
 PDOMapping=0x0
 
 [21EA]
@@ -3515,11 +3735,11 @@ ParameterName=Position following error window
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=100.0
+DefaultValue=0x42c80000
 PDOMapping=0x1
 
 [21ED]
-ParameterName=Position following error timeout
+ParameterName=Following error time out
 ObjectType=0x7
 DataType=0x07
 AccessType=rww
@@ -3531,7 +3751,7 @@ ParameterName=Following error
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [21EF]
@@ -3539,7 +3759,7 @@ ParameterName=Interpolation time mantissa
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=1.0
+DefaultValue=0x3f800000
 PDOMapping=0x1
 
 [21F0]
@@ -3547,7 +3767,7 @@ ParameterName=Interpolation time exponent
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=0.001
+DefaultValue=0x3a83126f
 PDOMapping=0x1
 
 [21F1]
@@ -3571,7 +3791,7 @@ ParameterName=Velocity window
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=1.0
+DefaultValue=0x3f800000
 PDOMapping=0x0
 
 [21F4]
@@ -3587,7 +3807,7 @@ ParameterName=Quick stop deceleration
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=1.0
+DefaultValue=0x3f800000
 PDOMapping=0x0
 
 [21F6]
@@ -3622,142 +3842,6 @@ AccessType=ro
 DefaultValue=16
 PDOMapping=0x0
 
-[21FB]
-ParameterName=Monitoring and disturbance selection
-ObjectType=0x7
-DataType=0x06
-AccessType=rw
-DefaultValue=0
-PDOMapping=0x0
-
-[2204]
-ParameterName=Monitoring sample 1 - Channel 1
-ObjectType=0x7
-DataType=0x07
-AccessType=ro
-DefaultValue=0
-PDOMapping=0x1
-
-[2205]
-ParameterName=Monitoring sample 1 - Channel 2
-ObjectType=0x7
-DataType=0x07
-AccessType=ro
-DefaultValue=0
-PDOMapping=0x1
-
-[2206]
-ParameterName=Monitoring sample 1 - Channel 3
-ObjectType=0x7
-DataType=0x07
-AccessType=ro
-DefaultValue=0
-PDOMapping=0x1
-
-[2207]
-ParameterName=Monitoring sample 1 - Channel 4
-ObjectType=0x7
-DataType=0x07
-AccessType=ro
-DefaultValue=0
-PDOMapping=0x1
-
-[2208]
-ParameterName=Monitoring sample 2 - Channel 1
-ObjectType=0x7
-DataType=0x07
-AccessType=ro
-DefaultValue=0
-PDOMapping=0x1
-
-[2209]
-ParameterName=Monitoring sample 2 - Channel 2
-ObjectType=0x7
-DataType=0x07
-AccessType=ro
-DefaultValue=0
-PDOMapping=0x1
-
-[220A]
-ParameterName=Monitoring sample 2 - Channel 3
-ObjectType=0x7
-DataType=0x07
-AccessType=ro
-DefaultValue=0
-PDOMapping=0x1
-
-[220B]
-ParameterName=Monitoring sample 2 - Channel 4
-ObjectType=0x7
-DataType=0x07
-AccessType=ro
-DefaultValue=0
-PDOMapping=0x1
-
-[220C]
-ParameterName=Disturbance sample 1 - Channel 1
-ObjectType=0x7
-DataType=0x07
-AccessType=rww
-DefaultValue=0
-PDOMapping=0x1
-
-[220D]
-ParameterName=Disturbance sample 1 - Channel 2
-ObjectType=0x7
-DataType=0x07
-AccessType=rww
-DefaultValue=0
-PDOMapping=0x1
-
-[220E]
-ParameterName=Disturbance sample 1 - Channel 3
-ObjectType=0x7
-DataType=0x07
-AccessType=rww
-DefaultValue=0
-PDOMapping=0x1
-
-[220F]
-ParameterName=Disturbance sample 1 - Channel 4
-ObjectType=0x7
-DataType=0x07
-AccessType=rww
-DefaultValue=0
-PDOMapping=0x1
-
-[2210]
-ParameterName=Disturbance sample 2 - Channel 1
-ObjectType=0x7
-DataType=0x07
-AccessType=rww
-DefaultValue=0
-PDOMapping=0x1
-
-[2211]
-ParameterName=Disturbance sample 2 - Channel 2
-ObjectType=0x7
-DataType=0x07
-AccessType=rww
-DefaultValue=0
-PDOMapping=0x1
-
-[2212]
-ParameterName=Disturbance sample 2 - Channel 3
-ObjectType=0x7
-DataType=0x07
-AccessType=rww
-DefaultValue=0
-PDOMapping=0x1
-
-[2213]
-ParameterName=Disturbance sample 2 - Channel 4
-ObjectType=0x7
-DataType=0x07
-AccessType=rww
-DefaultValue=0
-PDOMapping=0x1
-
 [22E0]
 ParameterName=Command source 1
 ObjectType=0x7
@@ -3779,7 +3863,7 @@ ParameterName=Analog input 1 - Gain
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=1.0
+DefaultValue=0x3f800000
 PDOMapping=0x0
 
 [22E9]
@@ -3787,7 +3871,79 @@ ParameterName=Analog input 1 - Offset
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.0
+DefaultValue=0x00000000
+PDOMapping=0x0
+
+[2300]
+ParameterName=Abs feedback 1 compensation table enable
+ObjectType=0x7
+DataType=0x06
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[2301]
+ParameterName=Abs feedback 1 compensation table index
+ObjectType=0x7
+DataType=0x03
+AccessType=rw
+DefaultValue=-1
+PDOMapping=0x0
+
+[2302]
+ParameterName=Abs feedback 1 compensation table value
+ObjectType=0x7
+DataType=0x04
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[2303]
+ParameterName=Abs feedback 2 compensation table enable
+ObjectType=0x7
+DataType=0x06
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[2304]
+ParameterName=Abs feedback 2 compensation table index
+ObjectType=0x7
+DataType=0x03
+AccessType=rw
+DefaultValue=-1
+PDOMapping=0x0
+
+[2305]
+ParameterName=Abs feedback 2 compensation table value
+ObjectType=0x7
+DataType=0x04
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[2306]
+ParameterName=Cogging compensation table enable
+ObjectType=0x7
+DataType=0x06
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[2307]
+ParameterName=Cogging compensation table index
+ObjectType=0x7
+DataType=0x03
+AccessType=rw
+DefaultValue=-1
+PDOMapping=0x0
+
+[2308]
+ParameterName=Cogging compensation table value
+ObjectType=0x7
+DataType=0x08
+AccessType=rw
+DefaultValue=0x00000000
 PDOMapping=0x0
 
 [235F]
@@ -3827,7 +3983,7 @@ ParameterName=Position to velocity sensor ratio
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=1.0
+DefaultValue=0x3f800000
 PDOMapping=0x0
 
 [236F]
@@ -3843,7 +3999,7 @@ ParameterName=Primary Absolute Slave 1 - Frame size
 ObjectType=0x7
 DataType=0x06
 AccessType=rw
-DefaultValue=24
+DefaultValue=28
 PDOMapping=0x0
 
 [2371]
@@ -3895,7 +4051,7 @@ DefaultValue=0
 PDOMapping=0x0
 
 [2378]
-ParameterName=Secondary Absolute Slave 1 -  Frame size
+ParameterName=Secondary Absolute Slave 1 - Frame size
 ObjectType=0x7
 DataType=0x06
 AccessType=rw
@@ -3919,7 +4075,7 @@ DefaultValue=0
 PDOMapping=0x0
 
 [237C]
-ParameterName=Secondary Absolute Slave 1 -  Frame type
+ParameterName=Secondary Absolute Slave 1 - Frame type
 ObjectType=0x7
 DataType=0x06
 AccessType=rw
@@ -3963,7 +4119,7 @@ ParameterName=Generator frequency
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=1.0
+DefaultValue=0x3f800000
 PDOMapping=0x0
 
 [2382]
@@ -3971,7 +4127,7 @@ ParameterName=Generator gain
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=1.0
+DefaultValue=0x3f800000
 PDOMapping=0x1
 
 [2383]
@@ -3979,7 +4135,7 @@ ParameterName=Generator offset
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2384]
@@ -4003,7 +4159,7 @@ ParameterName=Primary Absolute Slave 1 - Baudrate
 ObjectType=0x7
 DataType=0x07
 AccessType=rw
-DefaultValue=1000
+DefaultValue=5000
 PDOMapping=0x0
 
 [2387]
@@ -4087,7 +4243,7 @@ DefaultValue=4
 PDOMapping=0x0
 
 [2395]
-ParameterName=Primary Absolute Feedbacks in Chain
+ParameterName=Primary Absolute Feedback - Topology
 ObjectType=0x7
 DataType=0x06
 AccessType=rw
@@ -4126,8 +4282,40 @@ AccessType=ro
 DefaultValue=0
 PDOMapping=0x0
 
+[239C]
+ParameterName=Digital halls offset compensation enable
+ObjectType=0x7
+DataType=0x06
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[239D]
+ParameterName=Digital halls offset compensation index
+ObjectType=0x7
+DataType=0x03
+AccessType=rw
+DefaultValue=-1
+PDOMapping=0x0
+
+[239E]
+ParameterName=Digital halls offset compensation value
+ObjectType=0x7
+DataType=0x08
+AccessType=rw
+DefaultValue=0x00000000
+PDOMapping=0x0
+
+[239F]
+ParameterName=Digital halls Last transition angle
+ObjectType=0x7
+DataType=0x08
+AccessType=ro
+DefaultValue=0x00000000
+PDOMapping=0x0
+
 [2400]
-ParameterName=Primary Absolute Slave 2 (daisy chain) - Frame size
+ParameterName=Primary Absolute Slave 2 - Frame size
 ObjectType=0x7
 DataType=0x06
 AccessType=rw
@@ -4135,7 +4323,7 @@ DefaultValue=24
 PDOMapping=0x0
 
 [2401]
-ParameterName=Primary Absolute Slave 2 (daisy chain) - Error tolerance
+ParameterName=Primary Absolute Slave 2 - Error tolerance
 ObjectType=0x7
 DataType=0x06
 AccessType=rw
@@ -4143,7 +4331,7 @@ DefaultValue=5
 PDOMapping=0x0
 
 [2403]
-ParameterName=Primary Absolute Slave 2 (daisy chain) - Polarity
+ParameterName=Primary Absolute Slave 2 - Polarity
 ObjectType=0x7
 DataType=0x06
 AccessType=rw
@@ -4151,7 +4339,7 @@ DefaultValue=0
 PDOMapping=0x0
 
 [2404]
-ParameterName=Primary Absolute Slave 2 (daisy chain) - Frame type
+ParameterName=Primary Absolute Slave 2 - Frame type
 ObjectType=0x7
 DataType=0x06
 AccessType=rw
@@ -4159,7 +4347,7 @@ DefaultValue=0
 PDOMapping=0x0
 
 [2405]
-ParameterName=Primary Absolute Slave 2 (daisy chain) - Position bits
+ParameterName=Primary Absolute Slave 2 - Position bits
 ObjectType=0x7
 DataType=0x06
 AccessType=rw
@@ -4167,7 +4355,7 @@ DefaultValue=22
 PDOMapping=0x0
 
 [2406]
-ParameterName=Primary Absolute Slave 2 (daisy chain) - Single-turn bits
+ParameterName=Primary Absolute Slave 2 - Single-turn bits
 ObjectType=0x7
 DataType=0x06
 AccessType=rw
@@ -4175,7 +4363,7 @@ DefaultValue=22
 PDOMapping=0x0
 
 [2407]
-ParameterName=Primary Absolute Slave 2 (daisy chain) - Position start bit
+ParameterName=Primary Absolute Slave 2 - Position start bit
 ObjectType=0x7
 DataType=0x06
 AccessType=rw
@@ -4187,7 +4375,7 @@ ParameterName=Primary Absolute Slave 1 - CRC polynomial
 ObjectType=0x7
 DataType=0x06
 AccessType=ro
-DefaultValue=43
+DefaultValue=0
 PDOMapping=0x0
 
 [2409]
@@ -4195,19 +4383,19 @@ ParameterName=Primary Absolute Slave 1 - CRC number of bits
 ObjectType=0x7
 DataType=0x06
 AccessType=ro
-DefaultValue=6
+DefaultValue=0
 PDOMapping=0x0
 
 [240A]
-ParameterName=Primary Absolute Slave 2 (daisy chain) - CRC polynomial
+ParameterName=Primary Absolute Slave 2 - CRC polynomial
 ObjectType=0x7
 DataType=0x06
 AccessType=ro
-DefaultValue=43
+DefaultValue=67
 PDOMapping=0x0
 
 [240B]
-ParameterName=Primary Absolute Slave 2 (daisy chain) - CRC number of bits
+ParameterName=Primary Absolute Slave 2 - CRC number of bits
 ObjectType=0x7
 DataType=0x06
 AccessType=ro
@@ -4223,7 +4411,7 @@ DefaultValue=0
 PDOMapping=0x0
 
 [240D]
-ParameterName=Primary Absolute Slave 2 (daisy chain) - CRC seed
+ParameterName=Primary Absolute Slave 2 - CRC seed
 ObjectType=0x7
 DataType=0x06
 AccessType=ro
@@ -4239,7 +4427,7 @@ DefaultValue=0
 PDOMapping=0x0
 
 [2439]
-ParameterName=Primary Absolute Slave 2 (daisy chain) - Position offset
+ParameterName=Primary Absolute Slave 2 - Position offset
 ObjectType=0x7
 DataType=0x04
 AccessType=rw
@@ -4259,7 +4447,103 @@ ParameterName=Torque constant
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=1.0
+DefaultValue=0x3f800000
+PDOMapping=0x0
+
+[243C]
+ParameterName=Secondary Absolute Slave 1 - Protocol
+ObjectType=0x7
+DataType=0x06
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[243D]
+ParameterName=Secondary Absolute Slave 1 - CRC polynomial
+ObjectType=0x7
+DataType=0x06
+AccessType=ro
+DefaultValue=0
+PDOMapping=0x0
+
+[243E]
+ParameterName=Secondary Absolute Slave 1 - CRC seed
+ObjectType=0x7
+DataType=0x06
+AccessType=ro
+DefaultValue=0
+PDOMapping=0x0
+
+[243F]
+ParameterName=Secondary Absolute Slave 1 - CRC number of bits
+ObjectType=0x7
+DataType=0x06
+AccessType=ro
+DefaultValue=0
+PDOMapping=0x0
+
+[2440]
+ParameterName=Primary absolute interface - Register address
+ObjectType=0x7
+DataType=0x06
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[2441]
+ParameterName=Primary absolute interface - Register data
+ObjectType=0x7
+DataType=0x06
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[2442]
+ParameterName=Primary absolute interface - Operation status
+ObjectType=0x7
+DataType=0x06
+AccessType=ro
+DefaultValue=0
+PDOMapping=0x0
+
+[2443]
+ParameterName=Primary absolute interface - Control
+ObjectType=0x7
+DataType=0x06
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[2444]
+ParameterName=Secondary absolute interface - Register address
+ObjectType=0x7
+DataType=0x06
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[2445]
+ParameterName=Secondary absolute interface - Register data
+ObjectType=0x7
+DataType=0x06
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[2446]
+ParameterName=Secondary absolute interface - Operation status
+ObjectType=0x7
+DataType=0x06
+AccessType=ro
+DefaultValue=0
+PDOMapping=0x0
+
+[2447]
+ParameterName=Secondary absolute interface - Control
+ObjectType=0x7
+DataType=0x06
+AccessType=rw
+DefaultValue=0
 PDOMapping=0x0
 
 [2450]
@@ -4291,7 +4575,7 @@ ParameterName=Homing limit search speed
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2454]
@@ -4299,7 +4583,7 @@ ParameterName=Homing zero search speed
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2455]
@@ -4347,7 +4631,7 @@ ParameterName=Current quadrature loop Kp
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.8
+DefaultValue=0x3f4ccccd
 PDOMapping=0x0
 
 [2501]
@@ -4355,7 +4639,7 @@ ParameterName=Current quadrature loop Ki
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=50.0
+DefaultValue=0x42480000
 PDOMapping=0x0
 
 [2502]
@@ -4363,7 +4647,7 @@ ParameterName=Current quadrature loop max. out
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=60.0
+DefaultValue=0x42700000
 PDOMapping=0x0
 
 [2503]
@@ -4371,7 +4655,7 @@ ParameterName=Current quadrature loop min. out
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=-60.0
+DefaultValue=0xc2700000
 PDOMapping=0x0
 
 [2505]
@@ -4379,7 +4663,7 @@ ParameterName=Current direct loop Kp
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.8
+DefaultValue=0x3f4ccccd
 PDOMapping=0x0
 
 [2506]
@@ -4387,7 +4671,7 @@ ParameterName=Current direct loop Ki
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=50.0
+DefaultValue=0x42480000
 PDOMapping=0x0
 
 [2507]
@@ -4395,7 +4679,7 @@ ParameterName=Current direct loop max. out
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=60.0
+DefaultValue=0x42700000
 PDOMapping=0x0
 
 [2508]
@@ -4403,7 +4687,7 @@ ParameterName=Current direct loop min. out
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=-60.0
+DefaultValue=0xc2700000
 PDOMapping=0x0
 
 [250A]
@@ -4411,7 +4695,7 @@ ParameterName=Velocity loop Kp
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=1.0
+DefaultValue=0x3f800000
 PDOMapping=0x1
 
 [250B]
@@ -4419,7 +4703,7 @@ ParameterName=Velocity loop Ki
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=10.0
+DefaultValue=0x41200000
 PDOMapping=0x1
 
 [250C]
@@ -4427,7 +4711,7 @@ ParameterName=Velocity loop Kd
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [250D]
@@ -4435,7 +4719,7 @@ ParameterName=Velocity loop Kd filter
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [250E]
@@ -4443,7 +4727,7 @@ ParameterName=Velocity loop max. output
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=60.0
+DefaultValue=0x42700000
 PDOMapping=0x1
 
 [250F]
@@ -4451,7 +4735,7 @@ ParameterName=Velocity loop min. output
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=-60.0
+DefaultValue=0xc2700000
 PDOMapping=0x1
 
 [2510]
@@ -4467,7 +4751,7 @@ ParameterName=Position loop Kp
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=0.00001
+DefaultValue=0x3727c5ac
 PDOMapping=0x1
 
 [2512]
@@ -4475,7 +4759,7 @@ ParameterName=Position loop Ki
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2513]
@@ -4483,7 +4767,7 @@ ParameterName=Position loop Kd
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2514]
@@ -4491,7 +4775,7 @@ ParameterName=Position loop Kd filter
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2515]
@@ -4499,7 +4783,7 @@ ParameterName=Position loop max. output
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=200.0
+DefaultValue=0x43480000
 PDOMapping=0x1
 
 [2516]
@@ -4507,11 +4791,11 @@ ParameterName=Position loop min. output
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=-200.0
+DefaultValue=0xc3480000
 PDOMapping=0x1
 
 [2517]
-ParameterName=Current loops statusword
+ParameterName=Current loop status
 ObjectType=0x7
 DataType=0x07
 AccessType=ro
@@ -4519,7 +4803,7 @@ DefaultValue=0
 PDOMapping=0x1
 
 [2518]
-ParameterName=Velocity loop statusword
+ParameterName=Velocity loop status
 ObjectType=0x7
 DataType=0x07
 AccessType=ro
@@ -4563,7 +4847,7 @@ ParameterName=Velocity loop integral value
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [251E]
@@ -4571,7 +4855,7 @@ ParameterName=Position loop integral value
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [251F]
@@ -4579,7 +4863,7 @@ ParameterName=Maximum voltage bus utilization
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x0
 
 [2520]
@@ -4611,7 +4895,7 @@ ParameterName=Torque loop Kp
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=1.0
+DefaultValue=0x3f800000
 PDOMapping=0x1
 
 [2524]
@@ -4619,7 +4903,7 @@ ParameterName=Torque loop Ki
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2527]
@@ -4627,7 +4911,7 @@ ParameterName=Torque loop max. output
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=60.0
+DefaultValue=0x42700000
 PDOMapping=0x1
 
 [2528]
@@ -4635,7 +4919,7 @@ ParameterName=Torque loop min. output
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=-60.0
+DefaultValue=0xc2700000
 PDOMapping=0x1
 
 [2530]
@@ -4659,7 +4943,7 @@ ParameterName=Position feedback filter 1 Q-factor
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.7071
+DefaultValue=0x3f350481
 PDOMapping=0x0
 
 [2533]
@@ -4667,7 +4951,7 @@ ParameterName=Position feedback filter 1 gain
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x0
 
 [2538]
@@ -4691,7 +4975,7 @@ ParameterName=Position feedback filter 2 Q-factor
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.7071
+DefaultValue=0x3f350481
 PDOMapping=0x0
 
 [253B]
@@ -4699,7 +4983,7 @@ ParameterName=Position feedback filter 2 gain
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x0
 
 [2540]
@@ -4723,7 +5007,7 @@ ParameterName=Position reference filter 1 Q-factor
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.7071
+DefaultValue=0x3f350481
 PDOMapping=0x0
 
 [2543]
@@ -4731,7 +5015,7 @@ ParameterName=Position reference filter 1 gain
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x0
 
 [2548]
@@ -4755,7 +5039,7 @@ ParameterName=Position reference filter 2 Q-factor
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.7071
+DefaultValue=0x3f350481
 PDOMapping=0x0
 
 [254B]
@@ -4763,7 +5047,7 @@ ParameterName=Position reference filter 2 gain
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x0
 
 [2550]
@@ -4787,7 +5071,7 @@ ParameterName=Velocity feedback filter 1 Q-factor
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.7071
+DefaultValue=0x3f350481
 PDOMapping=0x0
 
 [2553]
@@ -4795,7 +5079,7 @@ ParameterName=Velocity feedback filter 1 gain
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x0
 
 [2558]
@@ -4819,7 +5103,7 @@ ParameterName=Velocity feedback filter 2 Q-factor
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.7071
+DefaultValue=0x3f350481
 PDOMapping=0x0
 
 [255B]
@@ -4827,7 +5111,7 @@ ParameterName=Velocity feedback filter 2 gain
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x0
 
 [2560]
@@ -4851,7 +5135,7 @@ ParameterName=Velocity reference filter 1 Q-factor
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.7071
+DefaultValue=0x3f350481
 PDOMapping=0x0
 
 [2563]
@@ -4859,7 +5143,7 @@ ParameterName=Velocity reference filter 1 gain
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x0
 
 [2568]
@@ -4883,7 +5167,7 @@ ParameterName=Velocity reference filter 2 Q-factor
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.7071
+DefaultValue=0x3f350481
 PDOMapping=0x0
 
 [256B]
@@ -4891,7 +5175,7 @@ ParameterName=Velocity reference filter 2 gain
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x0
 
 [2570]
@@ -4915,7 +5199,7 @@ ParameterName=Current feedback filter 1 Q-factor
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.7071
+DefaultValue=0x3f350481
 PDOMapping=0x0
 
 [2573]
@@ -4923,7 +5207,7 @@ ParameterName=Current feedback filter 1 gain
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x0
 
 [2578]
@@ -4947,7 +5231,7 @@ ParameterName=Current feedback filter 2 Q-factor
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.7071
+DefaultValue=0x3f350481
 PDOMapping=0x0
 
 [257B]
@@ -4955,7 +5239,7 @@ ParameterName=Current feedback filter 2 gain
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x0
 
 [2580]
@@ -4979,7 +5263,7 @@ ParameterName=Current reference filter 1 Q-factor
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.7071
+DefaultValue=0x3f350481
 PDOMapping=0x0
 
 [2583]
@@ -4987,7 +5271,7 @@ ParameterName=Current reference filter 1 gain
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x0
 
 [2588]
@@ -5011,7 +5295,7 @@ ParameterName=Current reference filter 2 Q-factor
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.7071
+DefaultValue=0x3f350481
 PDOMapping=0x0
 
 [258B]
@@ -5019,7 +5303,7 @@ ParameterName=Current reference filter 2 gain
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x0
 
 [2590]
@@ -5027,7 +5311,7 @@ ParameterName=Velocity loop Kffa
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2591]
@@ -5035,7 +5319,7 @@ ParameterName=Position loop Kffv
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
 
 [2592]
@@ -5043,8 +5327,24 @@ ParameterName=Position loop Kffa
 ObjectType=0x7
 DataType=0x08
 AccessType=rww
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x1
+
+[2593]
+ParameterName=Velocity loop integral limit
+ObjectType=0x7
+DataType=0x08
+AccessType=rw
+DefaultValue=0x00000000
+PDOMapping=0x0
+
+[2594]
+ParameterName=Position loop integral limit
+ObjectType=0x7
+DataType=0x08
+AccessType=rw
+DefaultValue=0x00000000
+PDOMapping=0x0
 
 [25FC]
 ParameterName=Map output 1
@@ -5067,7 +5367,7 @@ ParameterName=Map output 3
 ObjectType=0x7
 DataType=0x06
 AccessType=rw
-DefaultValue=3
+DefaultValue=0
 PDOMapping=0x0
 
 [25FF]
@@ -5150,14 +5450,6 @@ AccessType=rw
 DefaultValue=5
 PDOMapping=0x0
 
-[260D]
-ParameterName=External error signal reaction
-ObjectType=0x7
-DataType=0x06
-AccessType=rw
-DefaultValue=1
-PDOMapping=0x0
-
 [260F]
 ParameterName=User I2T error option code
 ObjectType=0x7
@@ -5230,14 +5522,6 @@ AccessType=rw
 DefaultValue=0
 PDOMapping=0x0
 
-[2618]
-ParameterName=External fault option code
-ObjectType=0x7
-DataType=0x06
-AccessType=rw
-DefaultValue=1
-PDOMapping=0x0
-
 [2619]
 ParameterName=Halls sequence error option code
 ObjectType=0x7
@@ -5262,16 +5546,24 @@ AccessType=rw
 DefaultValue=0
 PDOMapping=0x0
 
-[261C]
-ParameterName=Communications watchdog error option code
+[261D]
+ParameterName=Velocity following error option code
 ObjectType=0x7
 DataType=0x06
 AccessType=rw
 DefaultValue=0
 PDOMapping=0x0
 
-[261D]
-ParameterName=Velocity following error option code
+[261E]
+ParameterName=Angle integrity check 1 error option code
+ObjectType=0x7
+DataType=0x06
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[261F]
+ParameterName=Angle integrity check 2 error option code
 ObjectType=0x7
 DataType=0x06
 AccessType=rw
@@ -5302,6 +5594,22 @@ AccessType=rw
 DefaultValue=0
 PDOMapping=0x0
 
+[2625]
+ParameterName=Digital input 1, 2 and 3 glitch filter
+ObjectType=0x7
+DataType=0x06
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[2628]
+ParameterName=Digital input 4 glitch filter
+ObjectType=0x7
+DataType=0x06
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
 [262B]
 ParameterName=Fault reaction timeout
 ObjectType=0x7
@@ -5311,7 +5619,7 @@ DefaultValue=10000
 PDOMapping=0x0
 
 [262E]
-ParameterName=Dynamic break option code
+ParameterName=Disable power stage option code
 ObjectType=0x7
 DataType=0x03
 AccessType=rw
@@ -5331,7 +5639,7 @@ ParameterName=User over voltage level
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=60.0
+DefaultValue=0x42700000
 PDOMapping=0x0
 
 [2631]
@@ -5339,7 +5647,7 @@ ParameterName=User under voltage level
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=10.0
+DefaultValue=0x41200000
 PDOMapping=0x0
 
 [2632]
@@ -5347,7 +5655,7 @@ ParameterName=User over temperature level
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=110.0
+DefaultValue=0x42dc0000
 PDOMapping=0x0
 
 [2633]
@@ -5355,7 +5663,23 @@ ParameterName=User under temperature level
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=-20.0
+DefaultValue=0xc1a00000
+PDOMapping=0x0
+
+[2634]
+ParameterName=User over temperature warning level
+ObjectType=0x7
+DataType=0x08
+AccessType=rw
+DefaultValue=0x42b40000
+PDOMapping=0x0
+
+[2635]
+ParameterName=User under temperature warning level
+ObjectType=0x7
+DataType=0x08
+AccessType=rw
+DefaultValue=0xc1200000
 PDOMapping=0x0
 
 [263B]
@@ -5370,14 +5694,6 @@ PDOMapping=0x0
 ParameterName=Sync. signal configuration
 ObjectType=0x7
 DataType=0x06
-AccessType=rw
-DefaultValue=0
-PDOMapping=0x0
-
-[2642]
-ParameterName=Communication watchdog window
-ObjectType=0x7
-DataType=0x07
 AccessType=rw
 DefaultValue=0
 PDOMapping=0x0
@@ -5403,7 +5719,7 @@ ParameterName=Sync. signal PLL phase
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.25
+DefaultValue=0x3e800000
 PDOMapping=0x0
 
 [2646]
@@ -5411,7 +5727,7 @@ ParameterName=Sync. signal PLL Kp
 ObjectType=0x7
 DataType=0x08
 AccessType=rw
-DefaultValue=0.01
+DefaultValue=0x3c23d70a
 PDOMapping=0x0
 
 [264D]
@@ -5438,14 +5754,6 @@ AccessType=ro
 DefaultValue=0
 PDOMapping=0x0
 
-[26D1]
-ParameterName=CRC output motion core
-ObjectType=0x7
-DataType=0x06
-AccessType=ro
-DefaultValue=0
-PDOMapping=0x0
-
 [26DB]
 ParameterName=Store all
 ObjectType=0x7
@@ -5463,11 +5771,11 @@ DefaultValue=1
 PDOMapping=0x0
 
 [26DD]
-ParameterName=Dict. access password
+ParameterName=Store status
 ObjectType=0x7
-DataType=0x07
-AccessType=wo
-DefaultValue=0x0
+DataType=0x06
+AccessType=ro
+DefaultValue=0
 PDOMapping=0x0
 
 [26DF]
@@ -5491,7 +5799,7 @@ ParameterName=Product code
 ObjectType=0x7
 DataType=0x07
 AccessType=ro
-DefaultValue=46342145
+DefaultValue=62070785
 PDOMapping=0x0
 
 [26E2]
@@ -5499,23 +5807,15 @@ ParameterName=Revision number
 ObjectType=0x7
 DataType=0x07
 AccessType=ro
-DefaultValue=196644
+DefaultValue=196634
 PDOMapping=0x0
 
 [26E4]
 ParameterName=Software version
 ObjectType=0x7
-DataType=0x0009
+DataType=0x09
 AccessType=const
-DefaultValue=1.0.0.000
-PDOMapping=0x0
-
-[26E5]
-ParameterName=Ingenia url
-ObjectType=0x7
-DataType=0x0009
-AccessType=const
-DefaultValue=http://www.ingeniamc.com
+DefaultValue=2.10.0.000
 PDOMapping=0x0
 
 [26E6]
@@ -5563,7 +5863,7 @@ ParameterName=Power stage dead-time (ns)
 ObjectType=0x7
 DataType=0x07
 AccessType=ro
-DefaultValue=30
+DefaultValue=26
 PDOMapping=0x0
 
 [2706]
@@ -5603,7 +5903,7 @@ ParameterName=Current calibration offset tolerance
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=1.5
+DefaultValue=0x3fc00000
 PDOMapping=0x0
 
 [2710]
@@ -5611,7 +5911,7 @@ ParameterName=Over-temperature level
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=110.0
+DefaultValue=0x42dc0000
 PDOMapping=0x0
 
 [2711]
@@ -5619,7 +5919,7 @@ ParameterName=Under-temperature level
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=-20.0
+DefaultValue=0xc1a00000
 PDOMapping=0x0
 
 [2712]
@@ -5627,7 +5927,7 @@ ParameterName=Over-voltage level
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=85.0
+DefaultValue=0x42aa0000
 PDOMapping=0x0
 
 [2713]
@@ -5635,7 +5935,7 @@ ParameterName=Under-voltage level
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=7.5
+DefaultValue=0x40f00000
 PDOMapping=0x0
 
 [271D]
@@ -5643,7 +5943,7 @@ ParameterName=Maximum drive current
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=45.0
+DefaultValue=0x42340000
 PDOMapping=0x0
 
 [271E]
@@ -5659,7 +5959,7 @@ ParameterName=Maximum drive peak current
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=60.0
+DefaultValue=0x42700000
 PDOMapping=0x0
 
 [2720]
@@ -5667,7 +5967,7 @@ ParameterName=Current measuring range 1
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=-81.108911
+DefaultValue=0xc2a237c3
 PDOMapping=0x0
 
 [2721]
@@ -5675,7 +5975,7 @@ ParameterName=Current measuring range 2
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=-44.305773
+DefaultValue=0xc231391d
 PDOMapping=0x0
 
 [2722]
@@ -5683,7 +5983,7 @@ ParameterName=Current measuring range 3
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=-18.667032
+DefaultValue=0xc1955615
 PDOMapping=0x0
 
 [2723]
@@ -5691,7 +5991,7 @@ ParameterName=Current measuring range 4
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=-12.434811
+DefaultValue=0xc146f4fc
 PDOMapping=0x0
 
 [2728]
@@ -5755,7 +6055,7 @@ ParameterName=Bus voltage measuring range
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=-124.494758
+DefaultValue=0x42cc999a
 PDOMapping=0x0
 
 [2733]
@@ -5763,7 +6063,7 @@ ParameterName=Bus voltage reading offset
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=1.23
+DefaultValue=0x00000000
 PDOMapping=0x0
 
 [2734]
@@ -5783,7 +6083,7 @@ DefaultValue=10000
 PDOMapping=0x0
 
 [2736]
-ParameterName=Power stage temp. sensor 1 β
+ParameterName=Power stage temp. sensor 1 Beta
 ObjectType=0x7
 DataType=0x06
 AccessType=ro
@@ -5803,7 +6103,7 @@ ParameterName=Power stage temp. sensor 1 gain
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=1.0
+DefaultValue=0x3f800000
 PDOMapping=0x0
 
 [2739]
@@ -5811,7 +6111,7 @@ ParameterName=Power stage temp. sensor 1 offset
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x0
 
 [2740]
@@ -5863,7 +6163,7 @@ DefaultValue=10000
 PDOMapping=0x0
 
 [2748]
-ParameterName=Power stage temp. sensor 2 β
+ParameterName=Power stage temp. sensor 2 Beta
 ObjectType=0x7
 DataType=0x06
 AccessType=ro
@@ -5883,7 +6183,7 @@ ParameterName=Power stage temp. sensor 2 gain
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=1.0
+DefaultValue=0x3f800000
 PDOMapping=0x0
 
 [274B]
@@ -5891,7 +6191,7 @@ ParameterName=Power stage temp. sensor 2 offset
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x00000000
 PDOMapping=0x0
 
 [2750]
@@ -5899,7 +6199,7 @@ ParameterName=Derating constant
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=2.5
+DefaultValue=0x40200000
 PDOMapping=0x0
 
 [2751]
@@ -5907,7 +6207,7 @@ ParameterName=Frequency 1 derating constant
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.1
+DefaultValue=0x3dcccccd
 PDOMapping=0x0
 
 [2752]
@@ -5915,7 +6215,7 @@ ParameterName=Frequency 2 derating constant
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.1
+DefaultValue=0x3dcccccd
 PDOMapping=0x0
 
 [2753]
@@ -5923,7 +6223,7 @@ ParameterName=Frequency 3 derating constant
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.1
+DefaultValue=0x3dcccccd
 PDOMapping=0x0
 
 [2754]
@@ -5931,7 +6231,7 @@ ParameterName=Frequency 4 derating constant
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=0.2
+DefaultValue=0x3e4ccccd
 PDOMapping=0x0
 
 [275A]
@@ -5939,7 +6239,7 @@ ParameterName=Power stage derating temperature threshold 1
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=273.0
+DefaultValue=0x43888000
 PDOMapping=0x0
 
 [275B]
@@ -5947,7 +6247,7 @@ ParameterName=Power stage derating temperature threshold 2
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=273.0
+DefaultValue=0x43888000
 PDOMapping=0x0
 
 [275C]
@@ -5955,7 +6255,7 @@ ParameterName=Power stage derating temperature threshold 3
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=273.0
+DefaultValue=0x43888000
 PDOMapping=0x0
 
 [275D]
@@ -5963,55 +6263,7 @@ ParameterName=Power stage derating temperature threshold 4
 ObjectType=0x7
 DataType=0x08
 AccessType=ro
-DefaultValue=268.0
-PDOMapping=0x0
-
-[2760]
-ParameterName=Power stage temp. sensor 3 type
-ObjectType=0x7
-DataType=0x06
-AccessType=ro
-DefaultValue=0
-PDOMapping=0x0
-
-[2761]
-ParameterName=Power stage temp. sensor 3 resistance
-ObjectType=0x7
-DataType=0x07
-AccessType=ro
-DefaultValue=0
-PDOMapping=0x0
-
-[2762]
-ParameterName=Power stage temp. sensor 3 β
-ObjectType=0x7
-DataType=0x06
-AccessType=ro
-DefaultValue=0
-PDOMapping=0x0
-
-[2763]
-ParameterName=Power stage temp. sensor 3 ext. resistance
-ObjectType=0x7
-DataType=0x07
-AccessType=ro
-DefaultValue=0
-PDOMapping=0x0
-
-[2764]
-ParameterName=Power stage temp. sensor 3 gain
-ObjectType=0x7
-DataType=0x08
-AccessType=ro
-DefaultValue=0.0
-PDOMapping=0x0
-
-[2765]
-ParameterName=Power stage temp. sensor 3 offset
-ObjectType=0x7
-DataType=0x08
-AccessType=ro
-DefaultValue=0.0
+DefaultValue=0x43860000
 PDOMapping=0x0
 
 [580F]
@@ -6023,16 +6275,16 @@ DefaultValue=0
 PDOMapping=0x1
 
 [5820]
-SubNumber=0x4
+SubNumber=0x5
 ParameterName=Node Id Bits Source
-ObjectType=0x8
+ObjectType=0x9
 
 [5820sub0]
-ParameterName=Highest subindex supported
+ParameterName=Node Id Bits Source
 ObjectType=0x7
 DataType=0x05
 AccessType=ro
-DefaultValue=0x3
+DefaultValue=4
 PDOMapping=0x0
 
 [5820sub1]
@@ -6040,7 +6292,7 @@ ParameterName=Node Id Bit0 Input Source
 ObjectType=0x7
 DataType=0x05
 AccessType=rw
-DefaultValue=0x0
+DefaultValue=0
 PDOMapping=0x0
 
 [5820sub2]
@@ -6048,7 +6300,7 @@ ParameterName=Node Id Bit1 Input Source
 ObjectType=0x7
 DataType=0x05
 AccessType=rw
-DefaultValue=0x0
+DefaultValue=0
 PDOMapping=0x0
 
 [5820sub3]
@@ -6056,7 +6308,143 @@ ParameterName=Node Id Bit2 Input Source
 ObjectType=0x7
 DataType=0x05
 AccessType=rw
-DefaultValue=0x0
+DefaultValue=0
+PDOMapping=0x0
+
+[5820sub4]
+ParameterName=Node Id Bit3 Input Source
+ObjectType=0x7
+DataType=0x05
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[5890]
+ParameterName=Disturbance mapped register 0
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[5891]
+ParameterName=Disturbance mapped register 1
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[5892]
+ParameterName=Disturbance mapped register 2
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[5893]
+ParameterName=Disturbance mapped register 3
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[5894]
+ParameterName=Disturbance mapped register 4
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[5895]
+ParameterName=Disturbance mapped register 5
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[5896]
+ParameterName=Disturbance mapped register 6
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[5897]
+ParameterName=Disturbance mapped register 7
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[5898]
+ParameterName=Disturbance mapped register 8
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[5899]
+ParameterName=Disturbance mapped register 9
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[589A]
+ParameterName=Disturbance mapped register 10
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[589B]
+ParameterName=Disturbance mapped register 11
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[589C]
+ParameterName=Disturbance mapped register 12
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[589D]
+ParameterName=Disturbance mapped register 13
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[589E]
+ParameterName=Disturbance mapped register 14
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[589F]
+ParameterName=Disturbance mapped register 15
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
 PDOMapping=0x0
 
 [58A0]
@@ -6067,12 +6455,442 @@ AccessType=ro
 DefaultValue=1
 PDOMapping=0x0
 
+[58A1]
+ParameterName=IP address
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=3232236054
+PDOMapping=0x0
+
+[58A2]
+ParameterName=Netmask
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=4294967040
+PDOMapping=0x0
+
+[58A3]
+ParameterName=Gateway address
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=3232236033
+PDOMapping=0x0
+
+[58A4]
+ParameterName=MAC address
+ObjectType=0x7
+DataType=0x1B
+AccessType=rw
+DefaultValue=80600547656193
+PDOMapping=0x0
+
 [58AA]
 ParameterName=Bootloader version
 ObjectType=0x7
-DataType=0x0009
+DataType=0x09
 AccessType=const
 DefaultValue=1.0.0.000
+PDOMapping=0x0
+
+[58B0]
+ParameterName=Monitoring status
+ObjectType=0x7
+DataType=0x07
+AccessType=ro
+DefaultValue=0
+PDOMapping=0x0
+
+[58B1]
+ParameterName=Actual number of monitoring samples
+ObjectType=0x7
+DataType=0x07
+AccessType=ro
+DefaultValue=0
+PDOMapping=0x0
+
+[58B2]
+ParameterName=Monitoring data
+ObjectType=0x7
+DataType=0x0F
+AccessType=ro
+PDOMapping=0x0
+
+[58B3]
+ParameterName=Actual number of disturbance samples
+ObjectType=0x7
+DataType=0x07
+AccessType=ro
+DefaultValue=0
+PDOMapping=0x0
+
+[58B4]
+ParameterName=Disturbance data
+ObjectType=0x7
+DataType=0x0F
+AccessType=wo
+PDOMapping=0x0
+
+[58B5]
+ParameterName=Monitoring maximum size
+ObjectType=0x7
+DataType=0x07
+AccessType=ro
+DefaultValue=8192
+PDOMapping=0x0
+
+[58B6]
+ParameterName=Disturbance maximum size
+ObjectType=0x7
+DataType=0x07
+AccessType=ro
+DefaultValue=8192
+PDOMapping=0x0
+
+[58B7]
+ParameterName=Actual number of monitoring bytes
+ObjectType=0x7
+DataType=0x07
+AccessType=ro
+DefaultValue=0
+PDOMapping=0x0
+
+[58B8]
+ParameterName=Disturbance current number of bytes
+ObjectType=0x7
+DataType=0x07
+AccessType=ro
+DefaultValue=0
+PDOMapping=0x0
+
+[58BA]
+ParameterName=Monitoring disturbance version
+ObjectType=0x7
+DataType=0x07
+AccessType=ro
+DefaultValue=0
+PDOMapping=0x0
+
+[58BC]
+ParameterName=Monitoring lifeguard time
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[58BD]
+ParameterName=Disturbance lifeguard time
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[58BF]
+ParameterName=Disturbance status
+ObjectType=0x7
+DataType=0x07
+AccessType=ro
+DefaultValue=0
+PDOMapping=0x0
+
+[58C0]
+ParameterName=Enable monitoring
+ObjectType=0x7
+DataType=0x06
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[58C1]
+ParameterName=Monitoring frequency divider
+ObjectType=0x7
+DataType=0x06
+AccessType=rw
+DefaultValue=1
+PDOMapping=0x0
+
+[58C2]
+ParameterName=Monitoring delay
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[58C3]
+ParameterName=Monitoring buffer size
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=1024
+PDOMapping=0x0
+
+[58C4]
+ParameterName=Disturbance buffer size
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=1024
+PDOMapping=0x0
+
+[58C5]
+ParameterName=Disturbance frequency divider
+ObjectType=0x7
+DataType=0x06
+AccessType=rw
+DefaultValue=1
+PDOMapping=0x0
+
+[58C7]
+ParameterName=Enable disturbance
+ObjectType=0x7
+DataType=0x06
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[58D0]
+ParameterName=Monitoring mapped register 0
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[58D1]
+ParameterName=Monitoring mapped register 1
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[58D2]
+ParameterName=Monitoring mapped register 2
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[58D3]
+ParameterName=Monitoring mapped register 3
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[58D4]
+ParameterName=Monitoring mapped register 4
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[58D5]
+ParameterName=Monitoring mapped register 5
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[58D6]
+ParameterName=Monitoring mapped register 6
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[58D7]
+ParameterName=Monitoring mapped register 7
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[58D8]
+ParameterName=Monitoring mapped register 8
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[58D9]
+ParameterName=Monitoring mapped register 9
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[58DA]
+ParameterName=Monitoring mapped register 10
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[58DB]
+ParameterName=Monitoring mapped register 11
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[58DC]
+ParameterName=Monitoring mapped register 12
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[58DD]
+ParameterName=Monitoring mapped register 13
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[58DE]
+ParameterName=Monitoring mapped register 14
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[58DF]
+ParameterName=Monitoring mapped register 15
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[58E3]
+ParameterName=Monitoring number mapped registers
+ObjectType=0x7
+DataType=0x06
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[58E4]
+ParameterName=Monitoring number of bytes per sample
+ObjectType=0x7
+DataType=0x06
+AccessType=ro
+DefaultValue=0
+PDOMapping=0x0
+
+[58E8]
+ParameterName=Disturbance number mapped registers
+ObjectType=0x7
+DataType=0x06
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[58E9]
+ParameterName=Disturbance number of bytes per sample
+ObjectType=0x7
+DataType=0x06
+AccessType=ro
+DefaultValue=0
+PDOMapping=0x0
+
+[58EA]
+ParameterName=Monitoring remove data
+ObjectType=0x7
+DataType=0x06
+AccessType=wo
+DefaultValue=0
+PDOMapping=0x0
+
+[58EB]
+ParameterName=Disturbance remove data
+ObjectType=0x7
+DataType=0x06
+AccessType=wo
+DefaultValue=0
+PDOMapping=0x0
+
+[58F0]
+ParameterName=Monitoring trigger type
+ObjectType=0x7
+DataType=0x06
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[58F1]
+ParameterName=Monitoring trigger config
+ObjectType=0x7
+DataType=0x06
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[58F3]
+ParameterName=Monitoring force trigger
+ObjectType=0x7
+DataType=0x06
+AccessType=wo
+DefaultValue=0
+PDOMapping=0x0
+
+[58F4]
+ParameterName=Monitoring trigger threshold
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[58F5]
+ParameterName=Monitoring trigger source
+ObjectType=0x7
+DataType=0x06
+AccessType=rw
+DefaultValue=0
+PDOMapping=0x0
+
+[58F7]
+ParameterName=Monitoring rearm
+ObjectType=0x7
+DataType=0x06
+AccessType=wo
+DefaultValue=0
+PDOMapping=0x0
+
+[5940]
+ParameterName=User memory address pointer
+ObjectType=0x7
+DataType=0x03
+AccessType=rw
+DefaultValue=-1
+PDOMapping=0x0
+
+[5941]
+ParameterName=User memory data
+ObjectType=0x7
+DataType=0x07
+AccessType=rw
+DefaultValue=0
 PDOMapping=0x0
 
 [5E49]
@@ -6131,12 +6949,12 @@ AccessType=ro
 DefaultValue=0
 PDOMapping=0x0
 
-[5E80]
-ParameterName=Error notification source
+[5E50]
+ParameterName=Abort connection option code
 ObjectType=0x7
-DataType=0x05
+DataType=0x03
 AccessType=rw
-DefaultValue=3
+DefaultValue=1
 PDOMapping=0x0
 
 [5ED1]
@@ -6161,6 +6979,14 @@ ObjectType=0x7
 DataType=0x07
 AccessType=rw
 DefaultValue=1
+PDOMapping=0x0
+
+[5EDD]
+ParameterName=Store status
+ObjectType=0x7
+DataType=0x06
+AccessType=ro
+DefaultValue=0
 PDOMapping=0x0
 
 [5EDE]
@@ -6192,7 +7018,7 @@ ParameterName=Product code
 ObjectType=0x7
 DataType=0x07
 AccessType=ro
-DefaultValue=0x32
+DefaultValue=0x3B32001
 PDOMapping=0x0
 
 [5EE2]
@@ -6200,15 +7026,15 @@ ParameterName=Revision number
 ObjectType=0x7
 DataType=0x07
 AccessType=ro
-DefaultValue=0
+DefaultValue=196634
 PDOMapping=0x0
 
 [5EE4]
 ParameterName=Software Version
 ObjectType=0x7
-DataType=0x0009
+DataType=0x09
 AccessType=const
-DefaultValue=1.0.0.000
+DefaultValue=2.10.0.000
 PDOMapping=0x0
 
 [5EE6]
