@@ -9,14 +9,14 @@
     <link name="linear_rail_link">
         <visual>
             <geometry>
-                <box size="2.9464 0.445 0.1016"/>                                                                        <!-- Visual geometry for the linear rail (box shape) -->
+                <box size="2.97 0.45 0.082"/>                                                                        <!-- Visual geometry for the linear rail (box shape) -->
             </geometry>
             <origin xyz="0 0 0" rpy="0 0 0"/>
             <material name="grey"/>
         </visual>
         <collision>
             <geometry>
-                <box size="2.9464 0.445 0.1016"/>                                                                        <!-- Collision geometry for the linear rail (box shape) -->
+                <box size="2.97 0.45 0.082"/>                                                                        <!-- Collision geometry for the linear rail (box shape) -->
             </geometry>
             <origin xyz="0 0 0" rpy="0 0 0"/>
         </collision>
@@ -148,7 +148,7 @@
         <child link="base_link"/>                                               <!-- Child link for joint0 -->
         <origin xyz="0 0 0.0508" rpy="0 0 0"/>                                  <!-- Origin of the joint -->
         <axis xyz="1 0 0"/>                                                     <!-- Axis of translation for the prismatic joint (x-axis) -->
-        <limit effort="100" velocity="0.5" lower="-0.85" upper="0.85"/>         <!-- Joint limits (effort, velocity, lower and upper translation limits in meters) !! CHANGE LATER !! -->
+        <limit effort="100" velocity="0.5" lower="0" upper="0.1565"/>         <!-- Joint limits (effort, velocity, lower and upper translation limits in meters) !! CHANGE LATER !! -->
     </joint>
 
     <joint name="joint1" type="revolute">
