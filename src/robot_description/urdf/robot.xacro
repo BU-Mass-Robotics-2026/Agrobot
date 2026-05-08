@@ -121,16 +121,16 @@
     <link name="link6">
         <visual>
             <geometry>
-                <mesh filename="package://robot_description/meshes/Link 6 Visual.stl" scale="0.001 0.001 0.001"/>       <!-- Visual geometry for the end-effector link (STL file) -->
+                <mesh filename="package://robot_description/meshes/End Effector Geometry.stl" scale="0.001 0.001 0.001"/>       <!-- Visual geometry for the end-effector link (STL file) -->
             </geometry>
-            <origin xyz="0 0 0.13" rpy="0 0 0"/>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
             <material name="grey"/>
         </visual>
         <collision>
             <geometry>
                 <box size="0.12 0.12 0.26"/>                                                                            <!-- Collision geometry for the end-effector link (box shape) -->
             </geometry>
-            <origin xyz="0 0 0.13" rpy="0 0 0"/>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
         </collision>
     </link>
 
@@ -191,11 +191,10 @@
         <limit effort="24" velocity="3.5" lower="-3.14159" upper="3.14159"/>    <!-- Joint limits (effort, velocity, lower and upper angle limits in radians) -->
     </joint>
 
-    <joint name="joint6" type="revolute">
+    <joint name="joint6" type="fixed">
         <parent link="link5"/>                                                  <!-- Parent link for joint6 -->
         <child link="link6"/>                                                   <!-- Child link for joint6 -->
         <origin xyz="-0.047 0 -0.055033" rpy="0 -1.57079 0"/>                   <!-- Origin of the joint -->
         <axis xyz="0 0 1"/>                                                     <!-- Axis of rotation for the revolute joint (z-axis) -->
-        <limit effort="12" velocity="3.5" lower="-1.57079" upper="1.57079"/>    <!-- Joint limits (effort, velocity, lower and upper angle limits in radians) -->
     </joint>
 </robot>
