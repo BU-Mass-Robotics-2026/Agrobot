@@ -25,7 +25,6 @@
         <joint name="joint3" value="1.4"/>
         <joint name="joint4" value="1.55"/>
         <joint name="joint5" value="0.25"/>
-        <joint name="joint6" value="0"/>
     </group_state>
 
     <group_state name="attention" group="arm">
@@ -35,7 +34,6 @@
         <joint name="joint3" value="0"/>
         <joint name="joint4" value="0"/>
         <joint name="joint5" value="0"/>
-        <joint name="joint6" value="0"/>
     </group_state>
 
     <group_state name="vertical" group="arm">
@@ -45,7 +43,6 @@
         <joint name="joint3" value="-1.5708"/>
         <joint name="joint4" value="0"/>
         <joint name="joint5" value="0"/>
-        <joint name="joint6" value="0"/>
     </group_state>
 
     <group_state name="bin" group="arm">
@@ -55,7 +52,6 @@
         <joint name="joint3" value="-0.959931"/>
         <joint name="joint4" value="1.5708"/>
         <joint name="joint5" value="-1.309"/>
-        <joint name="joint6" value="0.663225"/>
     </group_state>
 
     <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
