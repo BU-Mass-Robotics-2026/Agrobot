@@ -59,7 +59,7 @@
                 <state_interface name="velocity"/>
             </joint>
 
-            <joint name="joint6">
+            <joint name="fin_joint1">
                 <command_interface name="position"/>
                 <state_interface name="position">
                     <param name="initial_value">0.0</param>

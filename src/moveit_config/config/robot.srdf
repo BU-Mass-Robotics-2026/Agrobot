@@ -25,8 +25,8 @@
 
     <end_effector name="gripper" parent_link="link6" group="gripper" parent_group="arm"/>
 
-    <passive_joint name="fin_joint2" parent_link="link6" child_link="fin_link2" mimic="fin_joint1"/>
-    <passive_joint name="fin_joint3" parent_link="link6" child_link="fin_link3" mimic="fin_joint1"/>
+    <passive_joint name="fin_joint2"/>
+    <passive_joint name="fin_joint3"/>
 
      <!-- Arm group states -->
     <group_state name="crouch" group="arm">
@@ -93,11 +93,11 @@
     <disable_collisions link1="link5" link2="link6" reason="Adjacent"/>
 
     <!-- Gripper disable collisions -->
-    <disable_collisions link1="link6" link2="finger_link1" reason="Adjacent"/>
-    <disable_collisions link1="link6" link2="finger_link2" reason="Adjacent"/>
-    <disable_collisions link1="link6" link2="finger_link3" reason="Adjacent"/>
-    <disable_collisions link1="finger_link1" link2="finger_link2" reason="Never"/>
-    <disable_collisions link1="finger_link1" link2="finger_link3" reason="Never"/>
-    <disable_collisions link1="finger_link2" link2="finger_link3" reason="Never"/>
+    <disable_collisions link1="link6" link2="fin_link1" reason="Adjacent"/>
+    <disable_collisions link1="link6" link2="fin_link2" reason="Adjacent"/>
+    <disable_collisions link1="link6" link2="fin_link3" reason="Adjacent"/>
+    <disable_collisions link1="fin_link1" link2="fin_link2" reason="Never"/>
+    <disable_collisions link1="fin_link1" link2="fin_link3" reason="Never"/>
+    <disable_collisions link1="fin_link2" link2="fin_link3" reason="Never"/>
     
 </robot>
