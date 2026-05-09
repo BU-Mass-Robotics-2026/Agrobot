@@ -128,7 +128,55 @@
         </visual>
         <collision>
             <geometry>
-                <box size="0.12 0.12 0.26"/>                                                                            <!-- Collision geometry for the end-effector link (box shape) -->
+                <mesh filename="package://robot_description/meshes/End Effector Geometry.stl" scale="0.001 0.001 0.001"/>    <!-- Collision geometry for the end-effector link (STL file) -->
+            </geometry>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+        </collision>
+    </link>
+
+    <link name="fin_link1">
+        <visual>
+            <geometry>
+                <mesh filename="package://robot_description/meshes/Gripper fin.stl" scale="0.001 0.001 0.001"/>       <!-- Visual geometry for the fin link 1 (STL file) -->
+            </geometry>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <material name="grey"/>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="package://robot_description/meshes/Gripper fin.stl" scale="0.001 0.001 0.001"/>    <!-- Collision geometry for the fin link 1 (STL file) -->
+            </geometry>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+        </collision>
+    </link>
+
+    <link name="fin_link2">
+        <visual>
+            <geometry>
+                <mesh filename="package://robot_description/meshes/Gripper fin.stl" scale="0.001 0.001 0.001"/>       <!-- Visual geometry for the fin link 1 (STL file) -->
+            </geometry>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <material name="grey"/>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="package://robot_description/meshes/Gripper fin.stl" scale="0.001 0.001 0.001"/>    <!-- Collision geometry for the fin link 1 (STL file) -->
+            </geometry>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+        </collision>
+    </link>
+
+    <link name="fin_link3">
+        <visual>
+            <geometry>
+                <mesh filename="package://robot_description/meshes/Gripper fin.stl" scale="0.001 0.001 0.001"/>       <!-- Visual geometry for the fin link 1 (STL file) -->
+            </geometry>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <material name="grey"/>
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="package://robot_description/meshes/Gripper fin.stl" scale="0.001 0.001 0.001"/>    <!-- Collision geometry for the fin link 1 (STL file) -->
             </geometry>
             <origin xyz="0 0 0" rpy="0 0 0"/>
         </collision>
@@ -197,4 +245,31 @@
         <origin xyz="-0.047 0 -0.055033" rpy="0 -1.57079 0"/>                   <!-- Origin of the joint -->
         <axis xyz="0 0 1"/>                                                     <!-- Axis of rotation for the revolute joint (z-axis) -->
     </joint>
+
+    <joint name="fin_joint1" type="revolute">
+        <parent link="link6"/>                                                  <!-- Parent link for fin_joint1 -->
+        <child link="fin_link1"/>                                               <!-- Child link for fin_joint1 -->
+        <origin xyz="0.049999999 0 0.1355" rpy="0 0 3.14159"/>                  <!-- Origin of the joint -->
+        <axis xyz="0 1 0"/>                                                     <!-- Axis of rotation for the revolute joint (y-axis) -->
+        <limit effort="10" velocity="1.0" lower="-1.0" upper="1.0"/>               <!-- Joint limits (effort, velocity, lower and upper angle limits in radians) -->
+    </joint>
+
+    <joint name="fin_joint2" type="revolute">
+        <parent link="link6"/>                                                  <!-- Parent link for fin_joint2 -->
+        <child link="fin_link2"/>                                               <!-- Child link for fin_joint2 -->
+        <origin xyz="-0.025 0.0433 0.1255" rpy="0 0 5.23599"/>                        <!-- Origin of the joint -->
+        <axis xyz="0 1 0"/>                                                     <!-- Axis of rotation for the revolute joint (y-axis) -->
+        <limit effort="10" velocity="1.0" lower="-1.0" upper="1.0"/>               <!-- Joint limits (effort, velocity, lower and upper angle limits in radians) -->
+        <mimic joint="fin_joint1" multiplier="1.0" offset="0.0"/>               <!-- Mimic joint definition to mirror the motion of fin_joint1 -->
+    </joint>
+
+    <joint name="fin_joint3" type="revolute">
+        <parent link="link6"/>                                                  <!-- Parent link for fin_joint3 -->
+        <child link="fin_link3"/>                                               <!-- Child link for fin_joint3 -->
+        <origin xyz="-0.025 -0.0433 0.1255" rpy="0 0 7.33039"/>                       <!-- Origin of the joint -->
+        <axis xyz="0 1 0"/>                                                     <!-- Axis of rotation for the revolute joint (y-axis) -->
+        <limit effort="10" velocity="1.0" lower="-1.0" upper="1.0"/>               <!-- Joint limits (effort, velocity, lower and upper angle limits in radians) -->
+        <mimic joint="fin_joint1" multiplier="1.0" offset="0.0"/>               <!-- Mimic joint definition to mirror the motion of fin_joint1 -->
+    </joint>
+
 </robot>

@@ -11,24 +11,6 @@ Panels:
         - /TF1
       Splitter Ratio: 0.5
     Tree Height: 681
-  - Class: rviz_common/Selection
-    Name: Selection
-  - Class: rviz_common/Tool Properties
-    Expanded:
-      - /2D Goal Pose1
-      - /Publish Point1
-    Name: Tool Properties
-    Splitter Ratio: 0.5886790156364441
-  - Class: rviz_common/Views
-    Expanded:
-      - /Current View1
-    Name: Views
-    Splitter Ratio: 0.5
-  - Class: rviz_common/Time
-    Experimental: false
-    Name: Time
-    SyncMode: 0
-    SyncSource: ""
 Visualization Manager:
   Class: ""
   Displays:
@@ -131,7 +113,7 @@ Visualization Manager:
       Name: TF
       Show Arrows: true
       Show Axes: true
-      Show Names: true
+      Show Names: false
       Tree:
         {}
       Update Interval: 0
@@ -188,8 +170,8 @@ Visualization Manager:
 Window Geometry:
   Displays:
     collapsed: false
-  Height: 900
-  Hide Left Dock: false
+  Height: 2086
+  Hide Left Dock: true
   Hide Right Dock: false
   Selection:
     collapsed: false
@@ -199,6 +181,6 @@ Window Geometry:
     collapsed: false
   Views:
     collapsed: false
-  Width: 1600
-  X: 0
+  Width: 3840
+  X: 4096
   Y: 0

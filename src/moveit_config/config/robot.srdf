@@ -13,11 +13,22 @@
     <!--VIRTUAL JOINT: Purpose: this element defines a virtual joint between a robot link and an external frame of reference (considered fixed with respect to the robot)-->
     <virtual_joint name="virtual_joint" type="fixed" parent_frame="world" child_link="world_frame"/>
 
+    <!-- Arm group -->
     <group name="arm">
         <chain base_link="linear_rail_link" tip_link="link6"/>
     </group>
 
-    <!--GROUP STATES: Purpose: Define a named state for a particular group, in terms of joint values. This is useful to define states like 'folded arms'-->
+    <!-- Gripper group (only fin joint 1 is needed because of mimicry) -->
+    <group name="gripper">
+        <joint name="fin_joint1"/>
+    </group>
+
+    <end_effector name="gripper" parent_link="link6" group="gripper" parent_group="arm"/>
+
+    <passive_joint name="fin_joint2" parent_link="link6" child_link="fin_link2" mimic="fin_joint1"/>
+    <passive_joint name="fin_joint3" parent_link="link6" child_link="fin_link3" mimic="fin_joint1"/>
+
+     <!-- Arm group states -->
     <group_state name="crouch" group="arm">
         <joint name="joint0" value="0"/>
         <joint name="joint1" value="0"/>
@@ -54,7 +65,16 @@
         <joint name="joint5" value="-1.309"/>
     </group_state>
 
-    <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
+    <!-- Gripper group states -->
+    <group_state name="gripper_open" group="gripper">
+        <joint name="fin_joint1" value="0"/>
+    </group_state>
+
+    <group_state name="gripper_closed" group="gripper">
+        <joint name="fin_joint1" value="1.0"/>
+    </group_state>
+
+    <!-- Arm disable collisions -->
     <disable_collisions link1="base_link" link2="linear_rail_link" reason="Adjacent"/>
     <disable_collisions link1="base_link" link2="link1" reason="Adjacent"/>
     <disable_collisions link1="base_link" link2="link2" reason="Never"/>
@@ -71,5 +91,13 @@
     <disable_collisions link1="link3" link2="link5" reason="Never"/>
     <disable_collisions link1="link4" link2="link5" reason="Adjacent"/>
     <disable_collisions link1="link5" link2="link6" reason="Adjacent"/>
+
+    <!-- Gripper disable collisions -->
+    <disable_collisions link1="link6" link2="finger_link1" reason="Adjacent"/>
+    <disable_collisions link1="link6" link2="finger_link2" reason="Adjacent"/>
+    <disable_collisions link1="link6" link2="finger_link3" reason="Adjacent"/>
+    <disable_collisions link1="finger_link1" link2="finger_link2" reason="Never"/>
+    <disable_collisions link1="finger_link1" link2="finger_link3" reason="Never"/>
+    <disable_collisions link1="finger_link2" link2="finger_link3" reason="Never"/>
     
 </robot>
