@@ -47,13 +47,6 @@ int main(int argc, char** argv)
 
     // --- Shutdown ---
 
-    // Stop the background executor before spinner goes out of scope.
-    // A joinable std::thread destructor calls std::terminate(), which
-    // caused the post-success "terminate called without an active exception" abort.
-    executor.cancel();
-    if (spinner.joinable()) {
-        spinner.join();
-    }
     rclcpp::shutdown(); // Shutdown ROS 2
     return 0; // Exit the program
 }
