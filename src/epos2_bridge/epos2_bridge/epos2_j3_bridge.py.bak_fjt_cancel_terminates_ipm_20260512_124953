@@ -2290,35 +2290,9 @@ class Epos2J3Bridge(Node):
         try:
             while record_idx < len(all_pvt):
                 if goal_handle.is_cancel_requested:
-                    self.get_logger().warning(
-                        "Goal canceled mid-stream; terminating IPM with dt=0 and entering Position Mode hold"
-                    )
-                    try:
-                        if record_idx > 0:
-                            cancel_hold_qc = all_pvt[max(0, record_idx - 1)].position_qc
-                        else:
-                            with self.state_lock:
-                                cancel_hold_qc = self.state.position_actual_qc
-
-                        if not self.terminate_ipm_and_enter_position_hold(
-                            to_signed_32(cancel_hold_qc),
-                            final_dt_ms=default_seg_ms,
-                        ):
-                            self.get_logger().warning(
-                                "Cancel cleanup reported false; checking for fault snapshot"
-                            )
-                            with self.state_lock:
-                                cancel_faulted = self.state.faulted()
-                            if cancel_faulted:
-                                self.read_fault_snapshot("cancel_cleanup_fault")
-
-                    except Exception as exc:
-                        self.get_logger().error(f"Cancel cleanup exception: {exc}")
-                        self.read_fault_snapshot("cancel_cleanup_exception")
-
                     goal_handle.canceled()
-                    result.error_code = FollowJointTrajectory.Result.SUCCESSFUL
-                    result.error_string = "Goal canceled; IPM terminated and Position Mode hold requested"
+                    result.error_code = FollowJointTrajectory.Result.PATH_TOLERANCE_VIOLATED
+                    result.error_string = "Goal canceled mid-stream"
                     return result
 
                 with self.state_lock:

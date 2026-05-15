@@ -276,9 +276,9 @@ class RawSocketCAN:
         self.sock.close()
 
 
-class Epos2J3Bridge(Node):
+class Epos2JointBridge(Node):
     def __init__(self) -> None:
-        super().__init__("epos2_j3_bridge")
+        super().__init__("epos2_joint_bridge")
 
         # ---------------- Parameters ----------------
         self.declare_parameter("can_interface", "can0")
@@ -2481,9 +2481,13 @@ class Epos2J3Bridge(Node):
             pass
         return super().destroy_node()
 
+# Phase 1 generic node note: this file is generated from the safe J3 bridge.
+# Topic/service/action names may still be internally rooted at /epos2/j3;
+# the generic launch files remap them per joint. Phase 2 should replace those
+# internal hardcoded prefixes with a declared joint_prefix parameter.
 def main(args=None) -> None:
     rclpy.init(args=args)
-    node = Epos2J3Bridge()
+    node = Epos2JointBridge()
     executor = MultiThreadedExecutor(num_threads=4)
     executor.add_node(node)
     try:

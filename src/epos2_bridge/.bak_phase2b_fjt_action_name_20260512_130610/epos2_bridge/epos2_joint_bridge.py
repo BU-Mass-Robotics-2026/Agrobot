@@ -276,14 +276,23 @@ class RawSocketCAN:
         self.sock.close()
 
 
-class Epos2J3Bridge(Node):
+class Epos2JointBridge(Node):
+    def topic_name(self, suffix: str) -> str:
+        """Return a fully-qualified per-joint ROS name under self.topic_prefix."""
+        suffix = str(suffix).strip("/")
+        if not suffix:
+            return self.topic_prefix
+        return f"{self.topic_prefix}/{suffix}"
+
     def __init__(self) -> None:
-        super().__init__("epos2_j3_bridge")
+        super().__init__("epos2_joint_bridge")
 
         # ---------------- Parameters ----------------
         self.declare_parameter("can_interface", "can0")
         self.declare_parameter("drive_node_id", 1)
         self.declare_parameter("joint_name", "joint_3")
+        self.declare_parameter("joint_id", "j3")
+        self.declare_parameter("topic_prefix", "")
         self.declare_parameter("encoder_qc_per_motor_rev", 4096.0)
         self.declare_parameter("gear_ratio_motor_per_joint_rev", 100.0)
         self.declare_parameter("sign", 1.0)
@@ -321,6 +330,19 @@ class Epos2J3Bridge(Node):
         self.state_lock = threading.Lock()
         self.active_goal_lock = threading.Lock()
         self.active_goal_handle = None
+        self.joint_id = str(self.get_parameter("joint_id").value).strip().strip("/")
+        topic_prefix_param = str(self.get_parameter("topic_prefix").value).strip()
+        if topic_prefix_param:
+            self.topic_prefix = topic_prefix_param.rstrip("/")
+            if not self.topic_prefix.startswith("/"):
+                self.topic_prefix = "/" + self.topic_prefix
+        else:
+            self.topic_prefix = f"/epos2/{self.joint_id}"
+
+        self.get_logger().info(
+            f"EPOS2 generic joint namespace: joint_id={self.joint_id} topic_prefix={self.topic_prefix}"
+        )
+
         self.ipm_armed = False
         self.last_hold_qc = 0
         self.last_commanded_controlword = 0x0000
@@ -363,34 +385,34 @@ class Epos2J3Bridge(Node):
             depth=10,
         )
         self.pub_joint_states = self.create_publisher(JointState, "/joint_states", qos)
-        self.pub_drive_raw = self.create_publisher(Int64MultiArray, "/epos2/j3/state_raw", qos)
-        self.pub_drive_engineering = self.create_publisher(Float64MultiArray, "/epos2/j3/state_engineering", qos)
-        self.pub_drive_summary = self.create_publisher(String, "/epos2/j3/state_summary", qos)
-        self.pub_fault = self.create_publisher(Bool, "/epos2/j3/fault", qos)
+        self.pub_drive_raw = self.create_publisher(Int64MultiArray, self.topic_name("state_raw"), qos)
+        self.pub_drive_engineering = self.create_publisher(Float64MultiArray, self.topic_name("state_engineering"), qos)
+        self.pub_drive_summary = self.create_publisher(String, self.topic_name("state_summary"), qos)
+        self.pub_fault = self.create_publisher(Bool, self.topic_name("fault"), qos)
         self.pub_diag = self.create_publisher(DiagnosticArray, "/diagnostics", qos)
 
         # ---------------- Subscriptions ----------------
         self.sub_joint_target = self.create_subscription(
             JointState,
-            "/epos2/j3/joint_target",
+            self.topic_name("joint_target"),
             self._joint_target_cb,
             qos,
         )
         self.sub_arm_ipm = self.create_subscription(
             Bool,
-            "/epos2/j3/arm_ipm_now",
+            self.topic_name("arm_ipm_now"),
             self._arm_ipm_cb,
             qos,
         )
         self.sub_test_move = self.create_subscription(
             Float64,
-            "/epos2/j3/test_move_rad",
+            self.topic_name("test_move_rad"),
             self._test_move_cb,
             qos,
         )
         self.sub_disarm_ipm = self.create_subscription(
             Bool,
-            "/epos2/j3/disarm_ipm_now",
+            self.topic_name("disarm_ipm_now"),
             self._disarm_ipm_cb,
             qos,
         )
@@ -398,7 +420,7 @@ class Epos2J3Bridge(Node):
 
         self.sub_reduced_traj = self.create_subscription(
             Float64MultiArray,
-            "/epos2/j3/reduced_traj",
+            self.topic_name("reduced_traj"),
             self._reduced_traj_cb_native,
             qos,
         )
@@ -417,38 +439,38 @@ class Epos2J3Bridge(Node):
 
         self.srv_clear_fault = self.create_service(
             Trigger,
-            "/epos2/j3/clear_fault",
+            self.topic_name("clear_fault"),
             self._clear_fault_srv,
         )
 
         self.srv_arm_ipm = self.create_service(
             Trigger,
-            "/epos2/j3/arm_ipm",
+            self.topic_name("arm_ipm"),
             self._arm_ipm_srv,
         )
 
         self.srv_disarm_ipm = self.create_service(
             Trigger,
-            "/epos2/j3/disarm_ipm",
+            self.topic_name("disarm_ipm"),
             self._disarm_ipm_srv,
         )
 
         self.srv_move_delta = self.create_service(
             MoveDelta,
-            "/epos2/j3/move_delta",
+            self.topic_name("move_delta"),
             self._move_delta_srv,
         )
 
         
         self.srv_move_absolute = self.create_service(
             MoveAbsolute,
-            "/epos2/j3/move_absolute",
+            self.topic_name("move_absolute"),
             self._move_absolute_srv,
         )
 
         self.srv_move_absolute_timed = self.create_service(
             MoveAbsoluteTimed,
-            "/epos2/j3/move_absolute_timed",
+            self.topic_name("move_absolute_timed"),
             self._move_absolute_timed_srv,
         )
 # ---------------- Timers ----------------
@@ -2481,9 +2503,12 @@ class Epos2J3Bridge(Node):
             pass
         return super().destroy_node()
 
+# Phase 2 generic node note: this file is generated from the safe J3 bridge.
+# Topic/service/action names are generated from the topic_prefix parameter.
+# Generic launch files should no longer need /epos2/j3 remaps.
 def main(args=None) -> None:
     rclpy.init(args=args)
-    node = Epos2J3Bridge()
+    node = Epos2JointBridge()
     executor = MultiThreadedExecutor(num_threads=4)
     executor.add_node(node)
     try:

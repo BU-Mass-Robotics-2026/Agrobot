@@ -323,10 +323,6 @@ class Epos2J3Bridge(Node):
         self.active_goal_handle = None
         self.ipm_armed = False
         self.last_hold_qc = 0
-        self.last_commanded_controlword = 0x0000
-        self.last_commanded_mode = 0x00
-        self.last_command_reason = "startup"
-        self.last_command_time = 0.0
         self.bridge_state = BridgeState.IDLE
         self.stream_lock = threading.Lock()
 
@@ -815,21 +811,32 @@ class Epos2J3Bridge(Node):
 
         return ok0, ok1, ipm_buf
     def enable_ipm_active(self) -> bool:
-        # Official activation point: only call this after the IPM FIFO has been prefilled.
-        ok_sdo = self.sdo_write(IDX_CONTROLWORD, 0, 0x001F, warn=False)
-        ok_rpdo2 = self.command_control_mode(
-            0x001F,
-            MODE_INTERPOLATED_POSITION,
-            "enable_ipm_active_after_prefill",
-        )
+        ok = self.sdo_write(IDX_CONTROLWORD, 0, 31, warn=False)
         time.sleep(0.05)
+
         sw = self.sdo_read(IDX_STATUSWORD, 0, warn=False)
-        ipm = self.sdo_read(IDX_INTERPOLATION_STATUS, 1, warn=False)
+        ipm_buf = self.sdo_read(IDX_INTERPOLATION_STATUS, 1, warn=False)
+
         self.get_logger().info(
             f"enable_ipm_active sw=0x{((sw or 0) & 0xFFFF):04X} "
-            f"ipm=0x{((ipm or 0) & 0xFFFF):04X} ok_sdo={ok_sdo} ok_rpdo2={ok_rpdo2}"
+            f"ipm=0x{((ipm_buf or 0) & 0xFFFF):04X}"
         )
-        return bool(ok_sdo and ok_rpdo2)
+
+        if not ok:
+            return False
+        if sw is not None and ((sw >> SW_FAULT_BIT) & 0x1):
+            return False
+        if ipm_buf is None:
+            return False
+        if not ((ipm_buf >> IPM_BUF_ENABLED) & 0x1):
+            return False
+        if not ((ipm_buf >> IPM_ACTIVE) & 0x1):
+            return False
+        return True
+
+
+
+    # ---------------- EPOS2 IPM session / hold helpers ----------------
 
     def _legacy_ipm_allowed(self, path_name: str) -> bool:
         # Return True only when explicitly allowing old IPM hold-stream/test paths.
@@ -904,7 +911,7 @@ class Epos2J3Bridge(Node):
             # Make absolutely sure IPM-active bit 4 is low before touching the FIFO.
             self.sdo_write(IDX_CONTROLWORD, 0, 0x000F, warn=False)
             try:
-                self.command_control_mode(0x000F, MODE_INTERPOLATED_POSITION, "prepare_or_clear_ipm_bit4_low")
+                self.send_rpdo2_control_mode(0x000F, MODE_INTERPOLATED_POSITION)
             except Exception:
                 pass
             time.sleep(0.02)
@@ -984,7 +991,7 @@ class Epos2J3Bridge(Node):
             # Drop IPM-active bit 4 and keep the power stage Operation Enabled.
             self.sdo_write(IDX_CONTROLWORD, 0, 0x000F, warn=False)
             try:
-                self.command_control_mode(0x000F, MODE_INTERPOLATED_POSITION, "prepare_or_clear_ipm_bit4_low")
+                self.send_rpdo2_control_mode(0x000F, MODE_INTERPOLATED_POSITION)
             except Exception:
                 pass
             time.sleep(0.02)
@@ -993,7 +1000,7 @@ class Epos2J3Bridge(Node):
             ok &= self.sdo_write(IDX_POSITION_MODE_SETTING_VALUE, 0, hold_qc, warn=False)
             ok &= self.sdo_write(IDX_MODES_OF_OPERATION, 0, MODE_MAXON_POSITION, warn=False)
             try:
-                self.command_control_mode(0x000F, MODE_MAXON_POSITION, "enter_maxon_position_mode_hold")
+                self.send_rpdo2_control_mode(0x000F, MODE_MAXON_POSITION)
             except Exception:
                 pass
             time.sleep(0.05)
@@ -1042,7 +1049,7 @@ class Epos2J3Bridge(Node):
             # Explicitly clear IPM-active bit 4 as the belt-and-suspenders path.
             self.sdo_write(IDX_CONTROLWORD, 0, 0x000F, warn=False)
             try:
-                self.command_control_mode(0x000F, MODE_INTERPOLATED_POSITION, "prepare_or_clear_ipm_bit4_low")
+                self.send_rpdo2_control_mode(0x000F, MODE_INTERPOLATED_POSITION)
             except Exception:
                 pass
 
@@ -1896,30 +1903,6 @@ class Epos2J3Bridge(Node):
 
 
     # ---------------- PDO runtime ----------------
-    def command_control_mode(self, controlword: int, mode: int, reason: str = "unspecified") -> bool:
-        """Single tracked writer for RPDO2: 0x6040 controlword + 0x6060 mode."""
-        cw = int(controlword) & 0xFFFF
-        mode_u8 = int(mode) & 0xFF
-
-        try:
-            self.last_commanded_controlword = cw
-            self.last_commanded_mode = mode_u8
-            self.last_command_reason = str(reason)
-            self.last_command_time = time.monotonic()
-
-            self.get_logger().info(
-                f"RPDO2 command reason={reason} cw=0x{cw:04X} mode=0x{mode_u8:02X}"
-            )
-
-            self.send_rpdo2_control_mode(cw, mode_u8)
-            return True
-
-        except Exception as exc:
-            self.get_logger().error(
-                f"RPDO2 command failed reason={reason} cw=0x{cw:04X} mode=0x{mode_u8:02X}: {exc}"
-            )
-            return False
-
     def send_rpdo2_control_mode(self, controlword: int, mode: int) -> None:
         # RPDO2 mapping: 0x6040 (16b) + 0x6060 (8b)
         data = struct.pack("<HB", controlword & 0xFFFF, mode & 0xFF)
@@ -2290,35 +2273,9 @@ class Epos2J3Bridge(Node):
         try:
             while record_idx < len(all_pvt):
                 if goal_handle.is_cancel_requested:
-                    self.get_logger().warning(
-                        "Goal canceled mid-stream; terminating IPM with dt=0 and entering Position Mode hold"
-                    )
-                    try:
-                        if record_idx > 0:
-                            cancel_hold_qc = all_pvt[max(0, record_idx - 1)].position_qc
-                        else:
-                            with self.state_lock:
-                                cancel_hold_qc = self.state.position_actual_qc
-
-                        if not self.terminate_ipm_and_enter_position_hold(
-                            to_signed_32(cancel_hold_qc),
-                            final_dt_ms=default_seg_ms,
-                        ):
-                            self.get_logger().warning(
-                                "Cancel cleanup reported false; checking for fault snapshot"
-                            )
-                            with self.state_lock:
-                                cancel_faulted = self.state.faulted()
-                            if cancel_faulted:
-                                self.read_fault_snapshot("cancel_cleanup_fault")
-
-                    except Exception as exc:
-                        self.get_logger().error(f"Cancel cleanup exception: {exc}")
-                        self.read_fault_snapshot("cancel_cleanup_exception")
-
                     goal_handle.canceled()
-                    result.error_code = FollowJointTrajectory.Result.SUCCESSFUL
-                    result.error_string = "Goal canceled; IPM terminated and Position Mode hold requested"
+                    result.error_code = FollowJointTrajectory.Result.PATH_TOLERANCE_VIOLATED
+                    result.error_string = "Goal canceled mid-stream"
                     return result
 
                 with self.state_lock:

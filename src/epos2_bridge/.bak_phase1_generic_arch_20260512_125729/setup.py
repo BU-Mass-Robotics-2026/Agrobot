@@ -9,11 +9,9 @@ setup(
     version='0.0.1',
     packages=find_packages(exclude=['test']),
     data_files=[
-        (os.path.join('share', package_name, 'config'), [p for p in glob('config/*.yaml') if os.path.isfile(p)]),
-        (os.path.join('share', package_name, 'config', 'joints'), glob('config/joints/*.yaml')),
         ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        (os.path.join('share', package_name, 'launch'), [p for p in glob('launch/*.py') if os.path.isfile(p)]),
+        (os.path.join('share', package_name, 'launch'), glob('launch/*')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -24,8 +22,6 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'epos2_joint_bridge = epos2_bridge.epos2_joint_bridge:main',
-            'epos2_fjt_fanout = epos2_bridge.epos2_fjt_fanout:main',
             'epos2_j3_bridge = epos2_bridge.epos2_j3_bridge:main',
             'epos2_arm_controller = epos2_bridge.epos2_arm_controller:main',
         ],
