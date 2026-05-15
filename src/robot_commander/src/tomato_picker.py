@@ -50,7 +50,7 @@ from geometry_msgs.msg import PointStamped
 #----------------------------------------------------------
 CONFIDENCE_THRESHOLD = 0.6   # ignore low-confidence detections
 APPROACH_STANDOFF    = 0.05  # 5 cm before tomato surface on approach
-RETRACT_Z_OFFSET     = 0.07  # 7 cm downward after grasp
+RETRACT_Z_OFFSET     = 0.07  # 7 cm upward after grasp
 
 #------------------------------------------
 class TomatoPicker(Node):
@@ -145,7 +145,7 @@ class TomatoPicker(Node):
 
         # 4. Build PoseArray
         pick_msg = PoseArray()
-        pick_msg.header.frame_id  = 'base_link'
+        pick_msg.header.frame_id  = 'linear_rail_link'
         pick_msg.header.stamp     = self.get_clock().now().to_msg()
 
         for t in base_frame_candidates:
@@ -187,7 +187,7 @@ class TomatoPicker(Node):
         try:
             transformed = self.tf_buffer.transform(
                 point,
-                'base',
+                'linear_rail_link',
                 timeout=rclpy.duration.Duration(seconds=0.1)
             )
             return {
@@ -202,7 +202,7 @@ class TomatoPicker(Node):
     # ------------------------------------------------------------------
     # Reachability check (flat 3D distance from base origin)
     # ------------------------------------------------------------------
-    MAX_REACH = 110.0  # cm, adjust based on the robot's actual reach
+    MAX_REACH = 1.1  # meters, adjust based on the robot's actual reach
 
     def is_reachable(self, p: dict) -> bool:
         dist = math.sqrt(p['x']**2 + p['y']**2 + p['z']**2)
@@ -235,7 +235,7 @@ class TomatoPicker(Node):
         retract = {
             'x': centroid['x'],
             'y': centroid['y'],
-            'z': centroid['z'] - RETRACT_Z_OFFSET,
+            'z': centroid['z'] + RETRACT_Z_OFFSET,
         }
         return [approach, centroid, retract]
 

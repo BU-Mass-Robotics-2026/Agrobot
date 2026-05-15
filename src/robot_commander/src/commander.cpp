@@ -108,7 +108,7 @@ class Commander
         void goToPoseTarget(const Pose &pose)
         {
             geometry_msgs::msg::PoseStamped stamped;
-            stamped.header.frame_id = "base_link";
+            stamped.header.frame_id = "linear_rail_link";
             stamped.header.stamp = node_->get_clock()->now();
             stamped.pose = pose;
             arm_->setStartStateToCurrentState();

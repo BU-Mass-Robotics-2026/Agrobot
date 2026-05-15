@@ -75,6 +75,21 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
+        fin_link1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        fin_link2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        fin_link3:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
         linear_rail_link:
           Alpha: 1
           Show Axes: false
@@ -174,6 +189,21 @@ Visualization Manager:
             Show Axes: false
             Show Trail: false
             Value: true
+          fin_link1:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          fin_link2:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          fin_link3:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
           linear_rail_link:
             Alpha: 1
             Show Axes: false
@@ -260,6 +290,21 @@ Visualization Manager:
           Expand Tree: false
           Link Tree Style: Links in Alphabetic Order
           base_link:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          fin_link1:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          fin_link2:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+            Value: true
+          fin_link3:
             Alpha: 1
             Show Axes: false
             Show Trail: false
@@ -395,4 +440,4 @@ Window Geometry:
     collapsed: false
   Width: 3840
   X: 4096
-  Y: 0
+  Y: 2837
