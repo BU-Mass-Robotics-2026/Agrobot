@@ -112,7 +112,7 @@
         </visual>
         <collision>
             <geometry>
-                <mesh filename="package://robot_description/meshes/Link 5 Collision.stl" scale="0.001 0.001 0.001"/>         <!-- Collision geometry for the link 5 (STL file) -->
+                <mesh filename="package://robot_description/meshes/Link 5 Visual.stl" scale="0.001 0.001 0.001"/>         <!-- Collision geometry for the link 5 (STL file) -->
             </geometry>
             <origin xyz="0 0 0" rpy="0 0 0"/>
         </collision>
@@ -236,14 +236,15 @@
         <child link="link5"/>                                                   <!-- Child link for joint5 -->
         <origin xyz="-0.054 0 0.4645" rpy="0 1.57079 0"/>                       <!-- Origin of the joint -->
         <axis xyz="0 0 1"/>                                                     <!-- Axis of rotation for the revolute joint (z-axis) -->
-        <limit effort="24" velocity="3.5" lower="-3.14159" upper="3.14159"/>    <!-- Joint limits (effort, velocity, lower and upper angle limits in radians) -->
+        <limit effort="24" velocity="3.5" lower="-5" upper="5"/>                <!-- Joint limits (effort, velocity, lower and upper angle limits in radians) -->
     </joint>
 
-    <joint name="joint6" type="fixed">
+    <joint name="joint6" type="revolute">
         <parent link="link5"/>                                                  <!-- Parent link for joint6 -->
         <child link="link6"/>                                                   <!-- Child link for joint6 -->
         <origin xyz="-0.047 0 -0.055033" rpy="0 -1.57079 0"/>                   <!-- Origin of the joint -->
         <axis xyz="0 0 1"/>                                                     <!-- Axis of rotation for the revolute joint (z-axis) -->
+        <limit effort="24" velocity="3.5" lower="0" upper="2.0944"/>                <!-- Joint limits (effort, velocity, lower and upper angle limits in radians) -->
     </joint>
 
     <joint name="fin_joint1" type="revolute">
@@ -251,7 +252,7 @@
         <child link="fin_link1"/>                                               <!-- Child link for fin_joint1 -->
         <origin xyz="0.05052 0 0.1355" rpy="0 0 3.14159"/>                      <!-- Origin of the joint (hinge hole center at r=50.52mm, z=135.5mm) -->
         <axis xyz="0 1 0"/>                                                     <!-- Axis of rotation for the revolute joint (y-axis) -->
-        <limit effort="10" velocity="1.0" lower="-0.25" upper="0.175"/>            <!-- Joint limits (effort, velocity, lower and upper angle limits in radians) -->
+        <limit effort="10" velocity="1.0" lower="-0.25" upper="0.175"/>         <!-- Joint limits (effort, velocity, lower and upper angle limits in radians) -->
     </joint>
 
     <joint name="fin_joint2" type="revolute">
@@ -259,7 +260,7 @@
         <child link="fin_link2"/>                                               <!-- Child link for fin_joint2 -->
         <origin xyz="-0.02526 0.04375 0.1355" rpy="0 0 5.23599"/>               <!-- Origin of the joint (hinge hole center at r=50.52mm, 120°, z=135.5mm) -->
         <axis xyz="0 1 0"/>                                                     <!-- Axis of rotation for the revolute joint (y-axis) -->
-        <limit effort="10" velocity="1.0" lower="-0.25" upper="0.175"/>            <!-- Joint limits (effort, velocity, lower and upper angle limits in radians) -->
+        <limit effort="10" velocity="1.0" lower="-0.25" upper="0.175"/>         <!-- Joint limits (effort, velocity, lower and upper angle limits in radians) -->
         <mimic joint="fin_joint1" multiplier="1.0" offset="0.0"/>               <!-- Mimic joint definition to mirror the motion of fin_joint1 -->
     </joint>
 
@@ -268,7 +269,7 @@
         <child link="fin_link3"/>                                               <!-- Child link for fin_joint3 -->
         <origin xyz="-0.02526 -0.04375 0.1355" rpy="0 0 7.33039"/>              <!-- Origin of the joint (hinge hole center at r=50.52mm, 240°, z=135.5mm) -->
         <axis xyz="0 1 0"/>                                                     <!-- Axis of rotation for the revolute joint (y-axis) -->
-        <limit effort="10" velocity="1.0" lower="-0.25" upper="0.175"/>            <!-- Joint limits (effort, velocity, lower and upper angle limits in radians) -->
+        <limit effort="10" velocity="1.0" lower="-0.25" upper="0.175"/>         <!-- Joint limits (effort, velocity, lower and upper angle limits in radians) -->
         <mimic joint="fin_joint1" multiplier="1.0" offset="0.0"/>               <!-- Mimic joint definition to mirror the motion of fin_joint1 -->
     </joint>
 
