@@ -50,7 +50,7 @@ from geometry_msgs.msg import PointStamped
 #----------------------------------------------------------
 CONFIDENCE_THRESHOLD = 0.6   # ignore low-confidence detections
 APPROACH_STANDOFF    = 0.05  # 5 cm before tomato surface on approach
-RETRACT_Z_OFFSET     = 0.07  # 7 cm upward after grasp
+RETRACT_STANDOFF     = 0.15  # 15 cm back along approach vector after grasp
 
 #------------------------------------------
 class TomatoPicker(Node):
@@ -221,21 +221,21 @@ class TomatoPicker(Node):
 
     # ------------------------------------------------------------------
     # Waypoints: approach surface, grasp centroid, retract upward
-    # Approach is offset by (radius + standoff) along approach vector
+    # Approach is offset by (radius + appoach standoff) along approach vector
     # so it scales with actual tomato size
+    # Retract is offset by (radius + retract standoff) along the retract vector
     # ------------------------------------------------------------------
     def get_waypoints(self, centroid: dict, vec: dict, radius: float) -> list:
-        offset = radius + APPROACH_STANDOFF  # e.g. 3.81 cm + 5 cm = 8.81 cm
 
         approach = {
-            'x': centroid['x'] - vec['dx'] * offset,
-            'y': centroid['y'] - vec['dy'] * offset,
-            'z': centroid['z'] - vec['dz'] * offset,
+            'x': centroid['x'] - vec['dx'] * (radius + APPROACH_STANDOFF),
+            'y': centroid['y'] - vec['dy'] * (radius + APPROACH_STANDOFF),
+            'z': centroid['z'] - vec['dz'] * (radius + APPROACH_STANDOFF),
         }
         retract = {
-            'x': centroid['x'],
-            'y': centroid['y'],
-            'z': centroid['z'] + RETRACT_Z_OFFSET,
+            'x': centroid['x'] - vec['dx'] * (radius + RETRACT_STANDOFF),
+            'y': centroid['y'] - vec['dy'] * (radius + RETRACT_STANDOFF),
+            'z': centroid['z'] - vec['dz'] * (radius + RETRACT_STANDOFF),
         }
         return [approach, centroid, retract]
 

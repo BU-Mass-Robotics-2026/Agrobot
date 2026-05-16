@@ -196,13 +196,7 @@ class Commander
             const size_t num_tomatoes = msg->poses.size() / POSES_PER_TOMATO; // Calculate the number of tomatoes based on the number of poses in the message
             RCLCPP_INFO(node_->get_logger(), "Received pick targets for %zu tomatoes.", num_tomatoes); // Log the number of tomatoes for which pick targets were received
 
-            // --- Test approach to the first tomato using only the approach pose ---
-
-            const Pose & approach = msg->poses[0];    // Get the approach pose for the first tomato
-            RCLCPP_INFO(node_->get_logger(), "Testing approach to the first tomato using only the approach pose."); // Log that the approach pose is being tested for the first tomato
-            goToPoseTarget(approach); // Plan and execute a motion to the approach pose for the first tomato
-
-            /* // Loop through each tomato and execute the pick sequence for each one
+            // Loop through each tomato and execute the pick sequence for each one
             for (size_t i = 0; i < msg->poses.size(); i += POSES_PER_TOMATO)
             {
                 const Pose & approach = msg->poses[i];    // Get the approach pose for the current tomato
@@ -210,16 +204,28 @@ class Commander
                 const Pose & retract = msg->poses[i + 2]; // Get the retract pose for the current tomato
 
                 size_t tomato_idx = (i / POSES_PER_TOMATO) + 1; // Calculate the tomato number for logging purposes
-                RCLCPP_INFO(node_->get_logger(), "Picking tomato %zu / %zu", tomato_idx, num_tomatoes); // Log that the approach pose is being executed for the current tomato
+
+                // ----- Motion sequence -----
+                // Execute motion to crouch pose before any picking is done
+                RCLCPP_INFO(node_->get_logger(), "Moving to crouch pose.");
+                goToNamedTarget("crouch");
 
                 // Execute the approach, grasp, and retract motions to the positions in sequence for the current tomato
-                goToPoseTarget(approach); 
-                goToPoseTarget(grasp); 
-                goToPoseTarget(retract);
+                RCLCPP_INFO(node_->get_logger(), "Picking tomato %zu / %zu", tomato_idx, num_tomatoes);
 
+                RCLCPP_INFO(node_->get_logger(), "Planning & executing approach for tomato %zu / %zu", tomato_idx, num_tomatoes);
+                goToPoseTarget(approach);
+
+                RCLCPP_INFO(node_->get_logger(), "Planning & executing grasp for tomato %zu / %zu", tomato_idx, num_tomatoes);
+                goToPoseTarget(grasp);
+
+                RCLCPP_INFO(node_->get_logger(), "Planning & executing retract for tomato %zu / %zu", tomato_idx, num_tomatoes);
+                goToPoseTarget(retract);
+                
                 // Execute motion to bin pose after picking each tomato
-                goToNamedTarget("bin"); // Move to the bin pose after picking each tomato
-            } */
+                RCLCPP_INFO(node_->get_logger(), "Planning & executing to bin pose for tomato %zu / %zu", tomato_idx, num_tomatoes);
+                goToNamedTarget("bin");
+            }
 
             RCLCPP_INFO(node_->get_logger(), "Finished executing pick targets for all tomatoes."); // Log that the pick sequence has been completed for all tomatoes
             setSafeToPick(true); // Set the safe to pick flag to true to indicate that the robot is now safe to pick again
