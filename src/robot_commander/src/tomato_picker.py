@@ -202,7 +202,7 @@ class TomatoPicker(Node):
     # ------------------------------------------------------------------
     # Reachability check (flat 3D distance from base origin)
     # ------------------------------------------------------------------
-    MAX_REACH = 1.1  # meters, adjust based on the robot's actual reach
+    MAX_REACH = 1.5  # meters, adjust based on the robot's actual reach
 
     def is_reachable(self, p: dict) -> bool:
         dist = math.sqrt(p['x']**2 + p['y']**2 + p['z']**2)
