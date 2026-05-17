@@ -192,7 +192,7 @@ class TomatoPicker(Node):
             )
             return {
                 'x': transformed.point.x,
-                'y': transformed.point.y,
+                'y': transformed.point.y,  # flip Y axis if needed based on TF results
                 'z': transformed.point.z,
             }
         except (LookupException, ExtrapolationException) as e:
