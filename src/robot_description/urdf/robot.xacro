@@ -96,7 +96,7 @@
         </visual>
         <collision>
             <geometry>
-                <mesh filename="package://robot_description/meshes/Link 4 Visual.stl" scale="0.001 0.001 0.001"/>         <!-- Collision geometry for the link 4 (STL file) -->
+                <mesh filename="package://robot_description/meshes/Link 4 Visual.stl" scale="0.001 0.001 0.001"/>
             </geometry>
             <origin xyz="0 0 0" rpy="0 0 0"/>
         </collision>
@@ -112,7 +112,7 @@
         </visual>
         <collision>
             <geometry>
-                <mesh filename="package://robot_description/meshes/Link 5 Visual.stl" scale="0.001 0.001 0.001"/>         <!-- Collision geometry for the link 5 (STL file) -->
+                <mesh filename="package://robot_description/meshes/Link 5 Visual.stl" scale="0.001 0.001 0.001"/>
             </geometry>
             <origin xyz="0 0 0" rpy="0 0 0"/>
         </collision>
@@ -188,15 +188,15 @@
     <joint name="world_to_linear_rail" type="fixed">
         <parent link="world_frame"/>                                            <!-- Parent link for the fixed joint (world frame) -->
         <child link="linear_rail_link"/>                                        <!-- Child link for the fixed joint (linear rail) -->
-        <origin xyz="0 0 0" rpy="0 0 0"/>                                 <!-- Origin of the joint (position and orientation of the linear rail in the world frame) -->
+        <origin xyz="0 0 0" rpy="0 0 0"/>                                       <!-- Origin of the joint (position and orientation of the linear rail in the world frame) -->
     </joint>
 
     <joint name="joint0" type="prismatic">
         <parent link="linear_rail_link"/>                                       <!-- Parent link for joint0 -->
         <child link="base_link"/>                                               <!-- Child link for joint0 -->
-        <origin xyz="0.7825 0 0.0508" rpy="0 0 3.14159"/>                            <!-- Origin of the joint -->
+        <origin xyz="0.7825 0 0.0508" rpy="0 0 3.14159"/>                       <!-- Origin of the joint -->
         <axis xyz="1 0 0"/>                                                     <!-- Axis of translation for the prismatic joint (x-axis) -->
-        <limit effort="100" velocity="0.5" lower="0" upper="1.35"/>             <!-- Joint limits are 0 = home end, 1.565 m = far end -->
+        <limit effort="100" velocity="0.5" lower="0" upper="1.565"/>            <!-- Joint limits are 0 = home end, 1.565 m = far end -->
     </joint>
 
     <joint name="joint1" type="revolute">
@@ -244,7 +244,7 @@
         <child link="link6"/>                                                   <!-- Child link for joint6 -->
         <origin xyz="-0.047 0 -0.055033" rpy="0 -1.57079 0"/>                   <!-- Origin of the joint -->
         <axis xyz="0 0 1"/>                                                     <!-- Axis of rotation for the revolute joint (z-axis) -->
-        <limit effort="24" velocity="3.5" lower="0" upper="2.0944"/>            S<!-- Joint limits (effort, velocity, lower and upper angle limits in radians) -->
+        <limit effort="24" velocity="3.5" lower="0" upper="2.0944"/>            <!-- Joint limits (effort, velocity, lower and upper angle limits in radians) -->
     </joint>
 
     <joint name="fin_joint1" type="revolute">
