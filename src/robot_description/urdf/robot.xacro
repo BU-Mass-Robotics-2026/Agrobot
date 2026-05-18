@@ -242,11 +242,11 @@
     <joint name="joint6" type="revolute">
         <parent link="link5"/>                                                  <!-- Parent link for joint6 -->
         <child link="link6"/>                                                   <!-- Child link for joint6 -->
-        <origin xyz="-0.047 0 -0.055033" rpy="0 -1.57079 0"/>                   <!-- Origin of the joint -->
+        <origin xyz="-0.057 0 -0.055033" rpy="0 -1.57079 0"/>                   <!-- Origin of the joint -->
         <axis xyz="0 0 1"/>                                                     <!-- Axis of rotation for the revolute joint (z-axis) -->
         <limit effort="24" velocity="3.5" lower="0" upper="2.0944"/>            <!-- Joint limits (effort, velocity, lower and upper angle limits in radians) -->
     </joint>
-
+    
     <joint name="fin_joint1" type="revolute">
         <parent link="link6"/>                                                  <!-- Parent link for fin_joint1 -->
         <child link="fin_link1"/>                                               <!-- Child link for fin_joint1 -->
