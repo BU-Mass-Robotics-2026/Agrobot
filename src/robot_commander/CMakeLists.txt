@@ -40,6 +40,7 @@ install(TARGETS
 
 install(PROGRAMS
   src/tomato_picker.py
+  src/tests/test_multi_tomato.py
   DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY
