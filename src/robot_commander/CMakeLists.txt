@@ -8,12 +8,14 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(moveit_ros_planning_interface REQUIRED)
 find_package(example_interfaces REQUIRED)
 find_package(robot_interfaces REQUIRED)
-find_package(geometry_msgs REQUIRED)
 find_package(tf2 REQUIRED)
+find_package(std_srvs REQUIRED)
 
 add_executable(named_goal src/tests/named_goal.cpp)
 ament_target_dependencies(named_goal rclcpp moveit_ros_planning_interface)
@@ -40,7 +42,9 @@ install(TARGETS
 
 install(PROGRAMS
   src/tomato_picker.py
+  src/sequencer.py
   src/tests/test_multi_tomato.py
+  src/tests/test_button_server.py
   DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY

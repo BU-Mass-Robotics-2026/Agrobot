@@ -61,7 +61,7 @@ class TomatoPicker(Node):
         self.tf_buffer   = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-        # --- state ---
+        # --- Safety states ---
         self.safe_to_pick = True
         self.picked_ids   = set()
 

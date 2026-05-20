@@ -60,3 +60,4 @@ CATKIN_IGNORE
 
 # Claude
 CLAUDE.md
+.claude/*

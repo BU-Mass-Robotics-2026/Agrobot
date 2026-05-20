@@ -1,8 +1,10 @@
 #include <rclcpp/rclcpp.hpp>
+#include <rclcpp_action/rclcpp_action.hpp>
 #include <moveit/move_group_interface/move_group_interface.hpp>
 #include <robot_interfaces/msg/joint_command.hpp>
 #include <robot_interfaces/msg/pose_command.hpp>
 #include <robot_interfaces/msg/position_command.hpp>
+#include <robot_interfaces/action/pick_sequence.hpp>
 #include <geometry_msgs/msg/pose_array.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <tf2/LinearMath/Matrix3x3.h>
@@ -12,6 +14,8 @@ using MoveGroupInterface = moveit::planning_interface::MoveGroupInterface;
 using PoseCommand = robot_interfaces::msg::PoseCommand;
 using JointCommand = robot_interfaces::msg::JointCommand;
 using PositionCommand = robot_interfaces::msg::PositionCommand;
+using PickSequence = robot_interfaces::action::PickSequence;
+using GoalHandlePickSeq = rclcpp_action::ServerGoalHandle<PickSequence>;
 using PoseArray = geometry_msgs::msg::PoseArray;
 using Pose = geometry_msgs::msg::Pose;
 using Bool = std_msgs::msg::Bool;
@@ -23,7 +27,9 @@ class Commander
 {
     public:
 
-        // --------------------------------------- Constructor ---------------------------------------
+        // -------------------------------------------------------------------------------------------------
+        // Constructor
+        // -------------------------------------------------------------------------------------------------
 
         // Constructor for the Commander class, which takes a shared pointer to a ROS 2 node as an argument
         Commander(std::shared_ptr<rclcpp::Node> node)
@@ -35,22 +41,32 @@ class Commander
             arm_->setMaxAccelerationScalingFactor(1.0);                // Set the maximum acceleration scaling factor
             arm_->setEndEffectorLink("link6");                         // Set the end effector link
 
-            // Create subscriptions for receiving command messages and bind them to their respective callback functions
-            named_pose_cmd_sub_ = node_->create_subscription<PoseCommand>("/agrobot/named_pose_cmd", 10, std::bind(&Commander::namedPoseCmdCallback, this, _1));
+            // Create subscriptions for receiving motion command messages and bind them to their respective callback functions
+            pose_cmd_sub_ = node_->create_subscription<PoseCommand>("/agrobot/pose_cmd", 10, std::bind(&Commander::poseCmdCallback, this, _1));
             joint_cmd_sub_ = node_->create_subscription<JointCommand>("/agrobot/joint_cmd", 10, std::bind(&Commander::jointCmdCallback, this, _1));
             position_cmd_sub_ = node_->create_subscription<PositionCommand>("/agrobot/position_cmd", 10, std::bind(&Commander::positionCmdCallback, this, _1));
 
-            // Create subscriptions for receiving pick target poses and safe to pick signals, and bind them to their respective callback functions
-            pick_target_sub_ = node_->create_subscription<PoseArray>("/agrobot/pick_targets", 10, std::bind(&Commander::pickTargetCallback, this, _1));
-            safe_to_pick_pub_ = node_->create_publisher<Bool>("/agrobot/safe_to_pick", 10);
+            // Create a subscription for receiving proceed signals and bind it to the proceed callback function
+            proceed_sub_ = node_->create_subscription<Bool>("/agrobot/proceed", 10, std::bind(&Commander::proceedCallback, this, _1));
+
+            // Create an action server for handling pick sequence goals and bind it to the goal, cancel, and accepted callback functions
+            action_server_ = rclcpp_action::create_server<PickSequence>(
+                node_, 
+                "/agrobot/pick_sequence", 
+                std::bind(&Commander::handleGoal, this, _1, _2), 
+                std::bind(&Commander::handleCancel, this, _1), 
+                std::bind(&Commander::handleAccepted, this, _1)
+            );
 
             RCLCPP_INFO(node_->get_logger(), "Commander node initialized and ready to receive commands."); // Log that the commander node has been initialized
         }
 
-        // ------------------------------------- Public methods -------------------------------------
+        // -------------------------------------------------------------------------------------------------
+        // Motion helpers
+        // -------------------------------------------------------------------------------------------------
 
         // Method to move the arm to a named pose target
-        void goToNamedTarget(const std::string &name)
+        void goToPoseTarget(const std::string &name)
         {
             arm_->setStartStateToCurrentState(); // Set the start state to the current state
             arm_->setNamedTarget(name);          // Set the named target
@@ -88,7 +104,6 @@ class Commander
                 arm_->setPoseTarget(target_pose);    // Set the pose target
                 planAndExecute(arm_);                // Plan and execute the motion to the pose target
             }
-
             // If cartesian_path is true, plan and execute a Cartesian path to the pose target
             else
             {
@@ -118,46 +133,36 @@ class Commander
 
     private:
 
-        // ------------------------------------- Private members -------------------------------------
+        // -------------------------------------------------------------------------------------------------
+        // Private members
+        // -------------------------------------------------------------------------------------------------
 
         std::shared_ptr<rclcpp::Node> node_;      // Member variable to hold the shared pointer to the ROS 2 node
         std::shared_ptr<MoveGroupInterface> arm_; // Member variable to hold the MoveGroupInterface for controlling the robot's arm
 
-        rclcpp::Subscription<PoseCommand>::SharedPtr named_pose_cmd_sub_;         // Subscription for receiving named target command messages
+        rclcpp::Subscription<PoseCommand>::SharedPtr pose_cmd_sub_;         // Subscription for receiving named target command messages
         rclcpp::Subscription<JointCommand>::SharedPtr joint_cmd_sub_;       // Subscription for receiving joint command messages
         rclcpp::Subscription<PositionCommand>::SharedPtr position_cmd_sub_; // Subscription for receiving position command messages
+        rclcpp::Subscription<Bool>::SharedPtr proceed_sub_;                 // Subscription for receiving proceed signals
 
-        rclcpp::Subscription<PoseArray>::SharedPtr pick_target_sub_; // Subscription for receiving pick target poses
-        rclcpp::Publisher<Bool>::SharedPtr safe_to_pick_pub_;    // Publisher for sending safe to pick signals
+        rclcpp_action::Server<PickSequence>::SharedPtr action_server_; // Action server for handling pick sequence goals
 
-        bool is_picking_ = false; // Flag to indicate whether the robot is currently in the process of picking an object
-
-        // ------------------------------------- Helper functions -------------------------------------
+        std::mutex proceed_mutex_;           // Mutex for synchronizing access to the proceed flag
+        std::condition_variable proceed_cv_; // Condition variable for waiting on proceed signals
+        bool proceed_flag_ = false;          // Flag to indicate whether a proceed signal has been received
         
-        // Helper function to plan and execute a motion using the MoveGroupInterface
-        void planAndExecute(const std::shared_ptr<MoveGroupInterface> &interface)
-        {
-            MoveGroupInterface::Plan plan; // Create a plan object
+        // -------------------------------------------------------------------------------------------------
+        // Topic callbacks
+        // -------------------------------------------------------------------------------------------------
 
-            bool success = (interface->plan(plan) == moveit::core::MoveItErrorCode::SUCCESS); // Plan to the named target and check if it was successful
-            if (success)
-            {
-                interface->execute(plan); // Execute the plan if it was successful
-            }
-            else
-            {
-                RCLCPP_ERROR(node_->get_logger(), "Failed to plan a motion to the target."); // Log an error message if planning failed
-            }
-        }
-
-        // Callback function to handle incoming named target command messages
-        void namedPoseCmdCallback(const PoseCommand::SharedPtr msg)
+        // Callback function to handle incoming named pose command messages
+        void poseCmdCallback(const PoseCommand::SharedPtr msg)
         {
             std::string target_name(msg->pose_name); // Get the target name from the message
 
             if (target_name == "crouch" || target_name == "attention" || target_name == "vertical" || target_name == "bin") // Check if the target name is one of the valid named targets
             {
-                goToNamedTarget(target_name); // Plan and execute a motion to the named target
+                goToPoseTarget(target_name); // Plan and execute a motion to the named target
             }
         }
 
@@ -174,69 +179,161 @@ class Commander
             goToPositionTarget(msg->x, msg->y, msg->z, msg->roll, msg->pitch, msg->yaw, msg->cartesian_path); // Plan and execute a motion to the position target specified in the message
         }
 
-        // Pick target callback function to handle incoming pick target poses
-        void pickTargetCallback(const PoseArray::SharedPtr msg)
+        void proceedCallback(const Bool::SharedPtr msg)
         {
-            // --- Error handling ----
-            if (is_picking_) // If the robot is already in the process of picking, ignore new pick targets
-            {
-                RCLCPP_WARN(node_->get_logger(), "Received new pick targets while already picking. Ignoring new targets."); // Log a warning message
+            if (!msg->data)                                 // If the proceed signal is false, ignore it
                 return;
-            }
 
-            if (msg->poses.size() % POSES_PER_TOMATO != 0) // Check if the number of poses in the message is a multiple of the expected number of poses per tomato
-            {
-                RCLCPP_ERROR(node_->get_logger(), "Received pick targets with an invalid number of poses. Expected a multiple of %d, but got %zu. Ignoring targets.", POSES_PER_TOMATO, msg->poses.size()); // Log an error message
-                return;
-            }
-
-            setSafeToPick(false); // Set the safe to pick flag to false to indicate that the robot is not yet safe to pick
-            is_picking_ = true;   // Set the picking flag to true to indicate that the robot is now in the process of picking
-
-            const size_t num_tomatoes = msg->poses.size() / POSES_PER_TOMATO; // Calculate the number of tomatoes based on the number of poses in the message
-            RCLCPP_INFO(node_->get_logger(), "Received pick targets for %zu tomatoes.", num_tomatoes); // Log the number of tomatoes for which pick targets were received
-
-            // Loop through each tomato and execute the pick sequence for each one
-            for (size_t i = 0; i < msg->poses.size(); i += POSES_PER_TOMATO)
-            {
-                const Pose & approach = msg->poses[i];    // Get the approach pose for the current tomato
-                const Pose & grasp = msg->poses[i + 1];   // Get the grasp pose for the current tomato
-                const Pose & retract = msg->poses[i + 2]; // Get the retract pose for the current tomato
-
-                size_t tomato_idx = (i / POSES_PER_TOMATO) + 1; // Calculate the tomato number for logging purposes
-
-                // ----- Motion sequence -----
-                // Execute motion to crouch pose before any picking is done
-                RCLCPP_INFO(node_->get_logger(), "Moving to crouch pose.");
-                goToNamedTarget("crouch");
-
-                // Execute the approach, grasp, and retract motions to the positions in sequence for the current tomato
-                RCLCPP_INFO(node_->get_logger(), "Picking tomato %zu / %zu", tomato_idx, num_tomatoes);
-
-                RCLCPP_INFO(node_->get_logger(), "Planning & executing approach for tomato %zu / %zu", tomato_idx, num_tomatoes);
-                goToPoseTarget(approach);
-
-                RCLCPP_INFO(node_->get_logger(), "Planning & executing grasp for tomato %zu / %zu", tomato_idx, num_tomatoes);
-                goToPoseTarget(grasp);
-
-                RCLCPP_INFO(node_->get_logger(), "Planning & executing retract for tomato %zu / %zu", tomato_idx, num_tomatoes);
-                goToPoseTarget(retract);
-                
-                // Execute motion to bin pose after picking each tomato
-                RCLCPP_INFO(node_->get_logger(), "Planning & executing to bin pose for tomato %zu / %zu", tomato_idx, num_tomatoes);
-                goToNamedTarget("bin");
-            }
-
-            RCLCPP_INFO(node_->get_logger(), "Finished executing pick targets for all tomatoes."); // Log that the pick sequence has been completed for all tomatoes
-            setSafeToPick(true); // Set the safe to pick flag to true to indicate that the robot is now safe to pick again
-            is_picking_ = false; // Set the picking flag to false to indicate that the robot is no longer in the process of picking
+            std::lock_guard<std::mutex> lk(proceed_mutex_); // Lock the mutex to safely update the proceed flag
+            proceed_flag_ = true;                           // Set the proceed flag to true to indicate that a proceed signal has been received
+            proceed_cv_.notify_all();                       // Notify any waiting threads that a proceed signal has been received
         }
 
-        void setSafeToPick(bool safe)
+        // -------------------------------------------------------------------------------------------------
+        // Action server callbacks
+        // -------------------------------------------------------------------------------------------------
+
+        // Callback function to handle incoming pick sequence goals
+        rclcpp_action::GoalResponse handleGoal(const rclcpp_action::GoalUUID &uuid, std::shared_ptr<const PickSequence::Goal> goal)
         {
-            std_msgs::msg::Bool msg; // Create a Bool message to hold the safe to pick status
-            msg.data = safe; // Set the data field of the message to the value of the safe parameter
-            safe_to_pick_pub_->publish(msg); // Publish the safe to pick status message
+            (void)uuid;
+            if (goal->targets.poses.size() % POSES_PER_TOMATO != 0) // Check if the number of poses in the goal is a multiple of the number of poses per tomato
+            {
+                RCLCPP_ERROR(node_->get_logger(), "Rejecting goal: pose count %zu not a multiple of %d", goal->targets.poses.size(), POSES_PER_TOMATO);
+                return rclcpp_action::GoalResponse::REJECT; // Reject the goal if the pose count is not valid
+            }
+
+            return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE; // Accept and execute the goal if the pose count is valid
+        }
+
+        // Callback function to handle cancel requests for pick sequence goals
+        rclcpp_action::CancelResponse handleCancel(const std::shared_ptr<GoalHandlePickSeq> goal_handle)
+        {
+            (void)goal_handle;
+            RCLCPP_INFO(node_->get_logger(), "Cancel requested"); // Log that a cancel request has been received
+            proceed_cv_.notify_all();                             // Notify any waiting threads to unblock them, allowing the canceling thread to proceed
+            return rclcpp_action::CancelResponse::ACCEPT;         // Accept the cancel request
+        }
+
+        // Callback function to handle accepted pick sequence goals, which starts the execution of the pick sequence in a detached thread
+        void handleAccepted(const std::shared_ptr<GoalHandlePickSeq> goal_handle)
+        {
+            std::thread{[this, goal_handle]() { executeSequence(goal_handle); }}.detach();
+        }
+
+        // -------------------------------------------------------------------------------------------------
+        // Pick sequence helper functions
+        // -------------------------------------------------------------------------------------------------
+
+        // Helper function to publish feedback about the current step of the pick sequence to the action client
+        void publishStep(const std::shared_ptr<GoalHandlePickSeq> &goal_handle, std::shared_ptr<PickSequence::Feedback> &feedback, const std::string &step, bool awaiting)
+        {
+            feedback->step = step;                   // Update the feedback message with the current step
+            feedback->awaiting_confirm = awaiting;   // Update the feedback message to indicate whether we are awaiting confirmation to proceed
+            goal_handle->publish_feedback(feedback); // Publish the feedback message to the action client
+        }
+
+        // Helper function to wait for a proceed signal from the action client before continuing to the next step of the pick sequence, while also checking for cancel requests
+        void waitForProceed(const std::shared_ptr<GoalHandlePickSeq> &goal_handle, std::shared_ptr<PickSequence::Feedback> &feedback)
+        {
+            {
+                std::lock_guard<std::mutex> lk(proceed_mutex_); // Lock the mutex to safely update the proceed flag
+                proceed_flag_ = false;                          // Reset the proceed flag to false before waiting for the next proceed signal
+            }
+
+            publishStep(goal_handle, feedback, feedback->step, true);                                            // Publish feedback indicating that we are awaiting confirmation to proceed
+            std::unique_lock<std::mutex> lk(proceed_mutex_);                                                     // Lock the mutex to wait for a proceed signal or a cancel request
+            proceed_cv_.wait(lk, [this, &goal_handle] { return proceed_flag_ || goal_handle->is_canceling(); }); // Wait until either a proceed signal is received or a cancel request is made
+        }
+
+        // Helper function to execute a step using an explicit Pose object (approach, grasp, retract)
+        bool executeStep(const std::shared_ptr<GoalHandlePickSeq> &goal_handle, std::shared_ptr<PickSequence::Feedback> &feedback, const geometry_msgs::msg::Pose &pose_target, const std::string &step, const size_t log_idx, const size_t n)
+        {
+            if (goal_handle->is_canceling()) return false;
+
+            RCLCPP_INFO(node_->get_logger(), "Tomato %zu/%zu: %s", log_idx, n, step.c_str()); // Log the current step of the pick sequence for the current tomato
+            publishStep(goal_handle, feedback, step, false);                                  // Publish feedback about the current step to the action client
+            goToPoseTarget(pose_target);                                                      // Execute the motion for the current step
+
+            return !goal_handle->is_canceling();
+        }
+
+        // Helper function to execute a step using a Named String target (binning)
+        bool executeStep(const std::shared_ptr<GoalHandlePickSeq> &goal_handle, std::shared_ptr<PickSequence::Feedback> &feedback, const std::string &named_target, const std::string &step, const size_t log_idx, const size_t n)
+        {
+            if (goal_handle->is_canceling()) return false;
+
+            RCLCPP_INFO(node_->get_logger(), "Tomato %zu/%zu: %s", log_idx, n, step.c_str()); // Log the current step of the pick sequence for the current tomato
+            publishStep(goal_handle, feedback, step, false);                                  // Publish feedback about the current step to the action client
+            goToPoseTarget(named_target);                                                     // Execute the motion for the current step
+
+            return !goal_handle->is_canceling();
+        }
+
+        // -------------------------------------------------------------------------------------------------
+        // Pick sequence execution (runs in detached thread)
+        // -------------------------------------------------------------------------------------------------
+
+        void executeSequence(const std::shared_ptr<GoalHandlePickSeq> goal_handle)
+        {
+            auto feedback = std::make_shared<PickSequence::Feedback>(); // Create a shared pointer to a feedback message that will be sent to the action client during execution
+            auto result = std::make_shared<PickSequence::Result>();     // Create a shared pointer to a result message that will be sent to the action client when execution is complete
+
+            const auto &poses = goal_handle->get_goal()->targets.poses; // Get the target poses from the goal message
+            const size_t n = poses.size() / POSES_PER_TOMATO;           // Calculate the number of tomatoes to pick based on the number of poses and the number of poses per tomato
+            feedback->total_tomatoes = static_cast<uint32_t>(n);        // Update the feedback message with the total number of tomatoes to pick
+
+            RCLCPP_INFO(node_->get_logger(), "Starting pick sequence for %zu tomatoes", n);
+
+            // Main loop to iterate through the poses for each tomato and execute the pick sequence steps (approach, grasp, retract, bin)
+            for (size_t i = 0; i < poses.size(); i += POSES_PER_TOMATO)
+            {
+                if (goal_handle->is_canceling()) break; // Check if a cancel request has been made before starting the next tomato's pick sequence
+
+                // Fixed: Changed 'current_tomato' to 'tomato_index' to match your PickSequence.action definitions exactly
+                feedback->tomato_index = static_cast<uint32_t>(i / POSES_PER_TOMATO) + 1; // Update the feedback message with the index of the current tomato being processed (1-based index for user-friendly display)
+                const size_t log_idx = feedback->tomato_index;                            // Calculate the index for logging purposes (1-based index)
+
+                if (!executeStep(goal_handle, feedback, poses[i], "approaching", log_idx, n)) break;
+                if (!executeStep(goal_handle, feedback, poses[i+1], "grasping", log_idx, n)) break;
+                if (!executeStep(goal_handle, feedback, poses[i+2], "retracting", log_idx, n)) break;
+                if (!executeStep(goal_handle, feedback, "bin", "binning", log_idx, n)) break;
+            }
+
+            // Centralized cancellation/success handling
+            if (goal_handle->is_canceling())
+            {
+                result->success = false;
+                result->message = "Sequence was canceled.";
+                goal_handle->canceled(result);
+                RCLCPP_INFO(node_->get_logger(), "Sequence processing canceled.");
+            }
+            else
+            {
+                result->success = true;
+                result->message = "All tomatoes successfully processed!";
+                goal_handle->succeed(result);
+                RCLCPP_INFO(node_->get_logger(), "Sequence processing completed successfully.");
+            }
+        }
+
+        // -------------------------------------------------------------------------------------------------
+        // Plan and execute helper function
+        // -------------------------------------------------------------------------------------------------
+
+        void planAndExecute(const std::shared_ptr<MoveGroupInterface> &interface)
+        {
+            MoveGroupInterface::Plan plan; // Create a Plan object to hold the planned trajectory
+            bool success = (interface->plan(plan) == moveit::core::MoveItErrorCode::SUCCESS); // Attempt to plan a motion using the provided MoveGroupInterface and check if it was successful
+
+            if (success)
+            {
+                interface->execute(plan); // If planning was successful, execute the planned trajectory
+            }
+            else
+            {
+                RCLCPP_ERROR(node_->get_logger(), "Planning failed"); // Log an error message if planning failed
+            }
         }
 };
 

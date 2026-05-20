@@ -7,6 +7,8 @@
   <maintainer email="bostonuniversityrobotics@gmail.com">robotics-club</maintainer>
   <license>TODO: License declaration</license>
 
+  <depend>geometry_msgs</depend>
+
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>ament_cmake_python</buildtool_depend>
 
@@ -21,7 +23,6 @@
 
   <depend>rclpy</depend>
   <depend>std_msgs</depend>
-  <depend>geometry_msgs</depend>
   <depend>python3-scipy</depend>
 
   <test_depend>ament_lint_auto</test_depend>
