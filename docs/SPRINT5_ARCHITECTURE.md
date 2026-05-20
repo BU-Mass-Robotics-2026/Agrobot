@@ -89,9 +89,9 @@ Think of each feature vector as a learned "fingerprint" of that image region. DI
 
 We pre-built four **prototype vectors** (called `query_embedding_k4.pt`) from the training images:
 
-- Prototype 0 → fingerprint of green/unripe tomatoes
+- Prototype 0 → fingegerprint of green/unripe tomatoes
 - Prototype 1 → fingerprint of yellow/partially-ripe tomatoes
-- Prototype 2 → fingerprint of red/fully-ripe tomatoes
+- Prototype 2 → finrprint of red/fully-ripe tomatoes
 - Prototype 3 → fingerprint of partially-occluded tomatoes
 
 For each SAM2 mask proposal, we compute how similar the image patches *inside* the mask are to each prototype, using **cosine similarity** (a measure of direction-match between two vectors, −1 to +1). We take the **max across the four prototypes** — so a green tomato can score high on prototype 0 even if prototypes 1–3 are all about ripe tomatoes.

@@ -4,7 +4,7 @@
 
 ## Live ROS 2 pipeline — NucBox
 
-Five terminal windows. Run in order. Each terminal enters the same running container.
+Six terminal windows. Run in order. Each terminal enters the same running container.
 
 ### Terminal 1 — Camera [start new container here]
 ```bash
@@ -34,9 +34,17 @@ ros2 launch realsense2_camera rs_launch.py \
 
 ---
 
-### Terminal 2 — Detector (NODE 1)
+### Terminal 2 — All Perception Nodes (NODEs 1–3)
+
+> **First run only:** install VLM deps and pre-download model (~6GB, ~15 min).
+> ```bash
+> docker exec -it $(docker ps -q) bash
+> pip install transformers qwen-vl-utils Pillow --break-system-packages
+> ```
+
 ```bash
 docker exec -it $(docker ps -q) bash
+cd /workspace                                            # colcon must run from the workspace root
 source /opt/ros/jazzy/setup.bash
 colcon build --packages-select agrobot_perception --symlink-install
 source /workspace/install/setup.bash
@@ -47,102 +55,60 @@ ros2 launch agrobot_perception perception.launch.py \
   depth_camera_info_topic:=/camera/camera/depth/camera_info
 ```
 
-Wait for `TomatoDetectorNode initialized`.
+The launch file starts **all four perception nodes** in one process group:
+- `tomato_detector` — SAM2 AMG + DINOv2 (NODE 1)
+- `tomato_spatial` — PointCloud sphere-fit (NODE 2)
+- `tomato_tracker` — Hungarian + EMA (NODE 2b)
+- `qwen_vl` — Qwen2.5-VL pick selection (NODE 3)
 
-> `AGROBOT_FORCE_CPU=1`, `HIP_VISIBLE_DEVICES=-1`, `ROCR_VISIBLE_DEVICES=-1` are baked
-> into the launch file — no need to export them manually.
->
-> `colcon build` only needed once per session (or after code changes). Do NOT set
-> `PYTHONPATH` — it breaks `ros2`.
-
----
-
-### Terminal 3 — Spatial Node (NODE 2)
-```bash
-docker exec -it $(docker ps -q) bash
-source /opt/ros/jazzy/setup.bash && source /workspace/install/setup.bash
-export ROS_DOMAIN_ID=42
-
-ros2 run agrobot_perception tomato_spatial
+Expected startup sequence:
 ```
-
-Wait for:
-```
-[INFO] [tomato_spatial]: Camera intrinsics cached: fx=... fy=... cx=... cy=... res=640×480
-```
-
-Then every ~17s when the detector fires:
-```
-[INFO] [tomato_spatial]: Published 2/2 tomato spatial estimates.
-```
-
----
-
-### Terminal 4 — Tracker (NODE 2b)
-```bash
-docker exec -it $(docker ps -q) bash
-source /opt/ros/jazzy/setup.bash && source /workspace/install/setup.bash
-export ROS_DOMAIN_ID=42
-
-ros2 run agrobot_perception tomato_tracker
-```
-
-Wait for:
-```
+[INFO] [tomato_detector]: TomatoDetectorNode initialized. detector=SAM2AMGDetector
+[INFO] [tomato_spatial]: TomatoSpatialNode initialized.
 [INFO] [tomato_tracker]: TomatoTrackerNode initialized. threshold=8cm max_missed=3 alpha=0.4
-```
-
-Then after 3 frames (`age≥3`, `smoothed=True`):
-```
-[INFO] [tomato_tracker]: Frame 3: 2 active tracks [0, 1] (registry size=2).
-```
-
----
-
-### Terminal 5 — Qwen-VL Pick Selection (NODE 3)
-
-> **First run only:** install deps and pre-download model (~6GB, ~15 min).
-> ```bash
-> pip install transformers qwen-vl-utils Pillow --break-system-packages
-> ```
-
-```bash
-docker exec -it $(docker ps -q) bash
-source /opt/ros/jazzy/setup.bash && source /workspace/install/setup.bash
-export ROS_DOMAIN_ID=42
-
-ros2 run agrobot_perception qwen_vl
-```
-
-Model loads in background (~30s). Once ready:
-```
+[INFO] [qwen_vl]: QwenVLNode initialized. policy='ripe_first'  min_age=3
+# ~30s later, once Qwen model finishes loading in background:
 [INFO] [qwen_vl]: Qwen2.5-VL loaded. VLM-guided pick selection active.
 ```
 
-Then when tracker publishes smoothed tracks (age≥3):
-```
-[INFO] [qwen_vl]: VLM response: 'Tomato 0 is closer and appears ripe.\n0'
-[INFO] [qwen_vl]: Published pick_target: persistent_id=0 x=-0.062 y=+0.012 z=0.382m
-```
+> `AGROBOT_FORCE_CPU=1`, `HIP_VISIBLE_DEVICES=-1`, `ROCR_VISIBLE_DEVICES=-1` are baked
+> into the launch file — do not export them manually.
+>
+> `colcon build` is required once per container session and after any code change.
+> Do NOT set `PYTHONPATH` manually — it breaks `ros2 launch`.
+>
+> If the build fails silently, run `colcon build` again without `--packages-select`
+> to see the full error output.
 
 ---
 
-### Terminal 6 — Verify
+### Terminal 3 — Monitor Detector output
+
 ```bash
 docker exec -it $(docker ps -q) bash
 source /opt/ros/jazzy/setup.bash && source /workspace/install/setup.bash
 export ROS_DOMAIN_ID=42
 
-# Camera rate
-ros2 topic hz /camera/camera/color/image_raw
-
-# 2D detections (every ~17s)
+# 2D detections arriving every ~21s
 ros2 topic echo /agrobot/detections
 
-# Arm gate
+# Arm safety gate
 ros2 topic echo /agrobot/safe_to_pick
+```
 
-# Tracked tomatoes with persistent IDs (pretty-print)
+---
+
+### Terminal 4 — Monitor Spatial + Tracker output
+
+```bash
+docker exec -it $(docker ps -q) bash
+source /opt/ros/jazzy/setup.bash && source /workspace/install/setup.bash
+export ROS_DOMAIN_ID=42
+
+# Sphere-fit JSON from NODE 2 (raw per-frame)
+ros2 topic echo /agrobot/tomato_spatial
+
+# EMA-smoothed persistent tracks from NODE 2b (pretty-print)
 cat > /tmp/show_tracks.py << 'EOF'
 import sys, json
 raw = sys.stdin.read()
@@ -154,29 +120,67 @@ for t in data:
     print(f"  score    : {t['confidence']:.3f}")
 EOF
 ros2 topic echo --full-length /agrobot/tomato_tracks --once | python3 /tmp/show_tracks.py
+```
 
-# VLM pick target (geometry_msgs/PoseStamped → Dani's arm planner)
+Wait for `smoothed=True` (requires `age≥3`, i.e. 3 detector cycles ≈ 60s on CPU).
+
+---
+
+### Terminal 5 — Monitor VLM pick target
+
+```bash
+docker exec -it $(docker ps -q) bash
+source /opt/ros/jazzy/setup.bash && source /workspace/install/setup.bash
+export ROS_DOMAIN_ID=42
+
+# VLM reasoning text (what Qwen said and why)
+ros2 topic echo /agrobot/vlm_reasoning
+
+# Pick target pose sent to Dani's arm planner
 ros2 topic echo /agrobot/pick_target --once
+```
 
-# VLM reasoning text
-ros2 topic echo /agrobot/vlm_reasoning --once
+Expected once Qwen is loaded and `age≥3` tracks arrive:
+```
+[INFO] [qwen_vl]: VLM multi-tomato response: 'Tomato 0 is closer and appears ripe.\n0'
+[INFO] [qwen_vl]: Published pick_target: persistent_id=0 x=-0.062 y=+0.012 z=0.382m
+```
+
+---
+
+### Terminal 6 — Health check
+
+```bash
+docker exec -it $(docker ps -q) bash
+source /opt/ros/jazzy/setup.bash && source /workspace/install/setup.bash
+export ROS_DOMAIN_ID=42
+
+# Confirm all 4 perception nodes are alive
+ros2 node list | grep agrobot
+
+# Camera frame rate
+ros2 topic hz /camera/camera/color/image_raw
+```
+
+Expected `ros2 node list` output:
+```
+/agrobot/tomato_detector
+/agrobot/tomato_spatial
+/agrobot/tomato_tracker
+/agrobot/qwen_vl
 ```
 
 ---
 
 ### Expected output — full pipeline (2 tomatoes in scene)
 ```
-# Terminal 3 — spatial
+# Terminal 2 launch console — all nodes in one view
 [INFO] [tomato_spatial]: Published 2/2 tomato spatial estimates.
-
-# Terminal 4 — tracker (frame 3+)
 [INFO] [tomato_tracker]: Frame 3: 2 active tracks [0, 1] (registry size=2).
-
-# Terminal 5 — qwen_vl
-[INFO] [qwen_vl]: VLM response: 'Tomato 0 is closer and appears ripe.\n0'
+[INFO] [qwen_vl]: VLM multi-tomato response: 'Tomato 0 is closer and appears ripe.\n0'
 [INFO] [qwen_vl]: Published pick_target: persistent_id=0 x=-0.062 y=+0.012 z=0.382m
 
-# Terminal 6 — /agrobot/pick_target
+# Terminal 5 — /agrobot/pick_target
 header:
   frame_id: camera_color_optical_frame
 pose:

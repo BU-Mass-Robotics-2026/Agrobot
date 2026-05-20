@@ -279,7 +279,8 @@ class QwenVLNode(Node):
                 f"(z={selected['centroid']['z']:.3f}m, closest)."
             )
 
-        self._publish_selection(selected)
+        if selected is not None:
+            self._publish_selection(selected)
 
     # ── VLM inference ─────────────────────────────────────────────────────────
 
@@ -291,7 +292,7 @@ class QwenVLNode(Node):
             self.get_logger().error(f"JPEG decode failed: {exc}")
             return None
 
-    def _run_vlm(self, candidates: list[dict]) -> dict:
+    def _run_vlm(self, candidates: list[dict]) -> dict | None:
         """Run Qwen2.5-VL inference and return the selected tomato dict."""
         policy_text = _POLICY_PROMPTS.get(
             self._policy, _POLICY_PROMPTS["ripe_first"]
@@ -320,7 +321,16 @@ class QwenVLNode(Node):
             self.get_logger().info(
                 f"VLM single-tomato response: '{response}'"
             )
-            # For single candidate, publish regardless of YES/NO answer.
+            reasoning_msg = String()
+            reasoning_msg.data = response
+            self._reasoning_pub.publish(reasoning_msg)
+            # Explicit NO means the only visible tomato is unripe/unsuitable — suppress pick.
+            if "NO" in response.upper():
+                self.get_logger().info(
+                    f"VLM rejected single tomato persistent_id={t['persistent_id']} "
+                    "— not publishing pick_target."
+                )
+                return None
             return t
 
         # Multiple candidates — show all crops in one prompt.
@@ -349,6 +359,9 @@ class QwenVLNode(Node):
 
         response = self._infer(messages)
         self.get_logger().info(f"VLM multi-tomato response: '{response}'")
+        reasoning_msg = String()
+        reasoning_msg.data = response
+        self._reasoning_pub.publish(reasoning_msg)
 
         selected = self._parse_selection(response, candidates)
         self.get_logger().info(
@@ -388,13 +401,15 @@ class QwenVLNode(Node):
     ) -> dict:
         """Extract the selected persistent_id from the VLM response text.
 
-        Looks for the first integer in the response and maps it to a candidate.
+        The prompt asks the model to end with ONLY the tomato number on the last
+        line, so we take the last integer found. Numbers earlier in the reasoning
+        sentence (e.g. "3 times larger") would cause wrong picks if we used [0].
         Falls back to closest (min z) if parsing fails or the id is unknown.
         """
         import re
         nums = re.findall(r"\b(\d+)\b", response)
         if nums:
-            pid = int(nums[0])
+            pid = int(nums[-1])
             for t in candidates:
                 if t["persistent_id"] == pid:
                     return t
