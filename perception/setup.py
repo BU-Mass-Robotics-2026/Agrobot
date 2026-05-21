@@ -16,7 +16,7 @@ setup(
         ("share/ament_index/resource_index/packages", [f"resource/{package_name}"]),
         (f"share/{package_name}", ["package.xml"]),
         # Install launch files so `ros2 launch agrobot_perception` works.
-        (f"share/{package_name}/launch", ["launch/perception.launch.py"]),
+        (f"share/{package_name}/launch", ["launch/perception.launch.py", "launch/perception_gpu.launch.py"]),
     ],
     install_requires=["setuptools"],
     zip_safe=True,

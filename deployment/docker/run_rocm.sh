@@ -28,6 +28,12 @@ KFD_GID=""
 if [ -c /dev/kfd ]; then
   KFD_GID=$(stat -c '%g' /dev/kfd 2>/dev/null || true)
 fi
+# GID that owns /dev/dri/renderD* — replaces --group-add render (name may not exist
+# after purging amdgpu-dkms, which is what creates the "render" group on Ubuntu).
+RENDER_GID=""
+for rnode in /dev/dri/renderD*; do
+  [ -e "$rnode" ] && RENDER_GID=$(stat -c '%g' "$rnode" 2>/dev/null || true) && break
+done
 # Optional: host "video" group for /dev/dri/card*
 VIDEO_GID=""
 if getent group video &>/dev/null; then
@@ -35,8 +41,9 @@ if getent group video &>/dev/null; then
 fi
 
 GROUP_ADD_ARGS=()
-[ -n "$KFD_GID" ] && GROUP_ADD_ARGS+=(--group-add "$KFD_GID")
-[ -n "$VIDEO_GID" ] && [ "$VIDEO_GID" != "$KFD_GID" ] && GROUP_ADD_ARGS+=(--group-add "$VIDEO_GID")
+[ -n "$KFD_GID" ]    && GROUP_ADD_ARGS+=(--group-add "$KFD_GID")
+[ -n "$RENDER_GID" ] && [ "$RENDER_GID" != "$KFD_GID" ] && GROUP_ADD_ARGS+=(--group-add "$RENDER_GID")
+[ -n "$VIDEO_GID" ]  && [ "$VIDEO_GID"  != "$KFD_GID" ] && [ "$VIDEO_GID" != "$RENDER_GID" ] && GROUP_ADD_ARGS+=(--group-add "$VIDEO_GID")
 
 # USB passthrough for Intel RealSense D456 (optional; no-op if /dev/bus/usb missing)
 VOLUME_ARGS=(-v "${REPO_ROOT}:/workspace")
@@ -53,6 +60,9 @@ for dev in /dev/video*; do
 done
 
 docker run --rm -it \
+  --network host \
+  --ipc host \
+  -e ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-42}" \
   --device=/dev/kfd \
   --device=/dev/dri \
   "${GROUP_ADD_ARGS[@]}" \

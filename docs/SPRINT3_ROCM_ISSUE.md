@@ -1,36 +1,56 @@
-# Sprint 3 — ROCm GPU Blocker (NucBox / gfx1151)
+# Sprint 3 — ROCm GPU Enablement (NucBox / gfx1151)
 
-**Status: BLOCKED** — MIGraphX GPU benchmark deferred. CPU path fully functional.  
-**Last updated:** March 2026  
-**Affects:** S3.2 only (`migraphx-driver perf --gpu`). All other tasks unaffected.
+**Status: RESOLVED (PyTorch GPU path) — 2026-05-20**
+**MIGraphX ONNX path:** untested post-fix — may still be blocked by rocm-libraries#4070.
+**Last updated:** May 2026
 
----
+PyTorch GPU compute (DINOv2 + SAM2 via HIP) is fully functional after purging the
+broken `amdgpu-dkms` driver and stale MES firmware. See fix procedure below.
 
-## Current blocker (TL;DR)
-
-**Kernel 6.14 is working.** WiFi, RealSense (RSUSB), ROCm, and `rocminfo` all succeed.
-
-**MIGraphX GPU inference still segfaults** during "Compiling..." when building the ONNX
-graph to gfx1151 kernels. Root cause: **MIOpen Conv2d compilation bug on gfx1151**
-(Strix Halo). DINOv2's patch embedding uses Conv2d; MIOpen fails to compile it.
-See [rocm-libraries#4070](https://github.com/ROCm/rocm-libraries/issues/4070).
-
-**Fixed-batch export tested:** `dino_vitb14_patches_fixed.onnx` (no dynamic shapes)
-still segfaults. Confirms this is upstream ROCm/MIOpen, not our ONNX export.
-
-**No known workaround.** Wait for ROCm 7.3+ or try TheRock nightly builds.
+**GPU eval result (pts=28, 161 images):**
+- Mean latency: **11.8 s/frame** (vs ~21 s CPU — 1.8× speedup)
+- COCO mAP@[.5:.95]: **0.4041** | AP@0.50: **0.5497** | AP@0.75: **0.4381**
+- Legacy mAP@0.5: **0.4859** | Precision: **0.8655** | Recall: **0.5696**
 
 ---
 
-## Root cause summary (from AMD platform investigation)
+## Root cause of the original page fault (resolved 2026-05-20)
 
-AMD sent their newest integrated GPU platform (Strix Halo, gfx1151). Two separate issues:
+The GPU fault was **not** a PyTorch or ROCm version problem. It was a broken local
+driver install: `amdgpu-install` had layered an out-of-tree `amdgpu-dkms` driver
+(v6.16.13) **and** a stale MES firmware override on top of the system.
 
-1. **Page fault (kernel 6.17):** ROCm 7.2's HIP memory allocator was built for older AMDKFD (AMD Kernel Fusion Driver) behavior. Kernel 6.17 changed that ABI; ROCm couldn't initialize the GPU. **Fix:** Switch to kernel 6.14, which uses the older AMDKFD ABI that ROCm 7.2 expects. `rocminfo` now works and the GPU is detected.
+| Layer | Problem |
+|---|---|
+| `amdgpu-dkms` v6.16.13 | Out-of-tree module in broken/inconsistent DKMS state, shadowing the kernel's in-tree amdgpu driver |
+| `/lib/firmware/updates/amdgpu/` | Stale MES microcode; kernel prefers `updates/` over `linux-firmware`, causing `CPF` page fault on every HIP memory operation |
 
-2. **MIOpen Conv2d (gfx1151):** ROCm 7.2 added gfx1151 support, but MIOpen's Conv2d path for this architecture still has bugs. The chip is newer than the current ROCm release; some ops (e.g. Conv2d in DINOv2's patch embedding) aren't fully validated. **Fix:** Wait for ROCm 7.3.
+**Fix (one-time, host-side):**
+```bash
+sudo apt purge -y 'amdgpu-dkms*' 'amdgpu-dkms-firmware*' dkms
+sudo apt autoremove --purge -y
+sudo mkdir -p /root/firmware-override-backup
+if [ -d /lib/firmware/updates/amdgpu ]; then
+  sudo cp -a /lib/firmware/updates/amdgpu \
+    /root/firmware-override-backup/amdgpu.$(date +%Y%m%d-%H%M%S)
+  sudo rm -rf /lib/firmware/updates/amdgpu
+fi
+sudo apt update && sudo apt install --reinstall -y linux-firmware
+sudo update-initramfs -u -k all && sudo update-grub
+# Reboot into OEM kernel: 6.17.0-1023-oem
+```
 
-**Bottom line:** CPU for now. Real-time inference unlikely until AMD ships ROCm 7.3 with MIOpen fixes for gfx1151.
+**Stack after fix:** kernel `6.17.0-1023-oem` · ROCm 7.2.1 · `torch 2.9.1+rocm7.2.1`
+(via AMD validated container `rocm/pytorch:rocm7.2.1_ubuntu24.04_py3.12_pytorch_release_2.9.1`).
+
+**Why `torch+rocm7.0` wheels segfault:** the PyTorch.org `+rocm7.0` index wheels are
+compiled against the ROCm 7.0 HIP ABI. On a host running ROCm 7.2.1, these segfault
+at model-to-GPU transfer. The AMD validated container ships `2.9.1+rocm7.2.1` which
+is ABI-matched and works correctly. The Dockerfile now uses this container as its base.
+
+---
+
+## Prior root cause summary (from March 2026 investigation — superseded)
 
 ---
 
