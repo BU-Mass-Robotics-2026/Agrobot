@@ -4,13 +4,13 @@
     joint_id: "j4"
     topic_prefix: "/epos2/j4"
     fjt_action_name: "/j4_position_controller/follow_joint_trajectory"
-    drive_node_id: 4
+    drive_node_id: 113
     joint_name: "joint4"
 
     # ---------------- CAN / kinematics ----------------
     can_interface: "can0"
-    encoder_qc_per_motor_rev: 25600.0
-    gear_ratio_motor_per_joint_rev: 100.0
+    encoder_qc_per_motor_rev: 16384.0
+    gear_ratio_motor_per_joint_rev: 344.0
     sign: 1.0
     zero_offset_qc: 0.0
 

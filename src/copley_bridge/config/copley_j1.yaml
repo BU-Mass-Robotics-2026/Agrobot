@@ -1,0 +1,21 @@
+# Copley APZ-090-50 bridge config for joint 1. See copley_j0.yaml for
+# required-override fields.
+
+copley_j1_bridge:
+  ros__parameters:
+    can_interface: "can0"
+    drive_node_id: 22
+    joint_name: "joint1"
+
+    encoder_qc_per_motor_rev: 65536.0     # 17-bit absolute encoder (2^17)
+    gear_ratio_motor_per_joint_rev: 81.0   # 81:1 reducer
+    sign: -1.0
+    zero_offset_qc: 0.0
+
+    joint_state_rate_hz: 50.0
+    ipm_default_segment_ms: 100
+    goal_position_tolerance_rad: 0.03
+
+    fault_clear_on_startup: true
+    enable_on_startup: false
+    force_ipm_on_startup: false
