@@ -13,113 +13,106 @@ from tf2_ros import Buffer, TransformListener, LookupException, ExtrapolationExc
 import tf2_geometry_msgs
 from geometry_msgs.msg import PointStamped
 
-#Beginning Date: 03/22/2026
-#Updated: 4/26
-#Completed: 4/27?
-#Beginning Date: 03/22/2026
+from robot_interfaces.srv import GetPoses
 
-#pre-grasp position --> target point - offset 10 cm to the tomato
-#grasp position --> actual target point of tomato
-#safe retraction --> target point + some kind of offset 
-
-#from kaedin's own words "you're going to get a list of JSON objects --> closest neighbor search / traveling salesmen problem & generate list of closest tomatoes
-#--> for each tomato in list generate gripper pose,generate target interpolation points, & complete list--> pick tomato (emily's job) 
-#--> move to drop tomato in basket--> go to safe position to pick next tomato"
-#notes: moving on linear stage, think about optimizations
-#Use TSP/greedy sort 
-#what this code is NOT doing: planning the robot dynamics (that's Emily's job with moveit)
-#ordered coordinate list is location of tomato centroid relative to AgroBot base
-
-#----HOW THIS SCRIPT WORKS----
-#Setup:when the node starts, it initializes a TF2 listener (for coordinate frame transforms), two subscribers, and one publisher
-#It also keeps track of safe_to_pick state and a set of already-picked tomato IDs so it doesn't re-queue the same tomato across detection batches
-
-#Safety gate — it listens to /agrobot/safe_to_pick. If that's False, any incoming detection batch is immediately ignored. 
-#---> This is a persistent flag, NOT a one-shot check!!!!4
-
-#Main picking logic — when a detection batch arrives on /agrobot/tomato_spatial, it runs through four steps:
-        #1. Filters out tomatoes below the confidence threshold and ones already picked
-        #2. Transforms each surviving centroid from the camera's coordinate frame into the robot arm's base frame using TF2, and drops any that fall outside the arm's reach
-        #3. Sorts the remaining tomatoes greedily along the Y axis, which corresponds to the linear stage direction
-        #4. For each tomato, computes three waypoints:
-            #an approach point backed off from the tomato surface by radius + 5cm,
-            #the grasp point at the centroid itself, 
-            #and a retract point 7cm above +++++++++++++
-
-#Output — all of those poses are packed into a single PoseArray and published to /agrobot/pick_target, where Emily's MoveIt node takes it for motion planning
-#----------------------------------------------------------
 CONFIDENCE_THRESHOLD = 0.6   # ignore low-confidence detections
 APPROACH_STANDOFF    = 0.05  # 5 cm before tomato surface on approach
 RETRACT_STANDOFF     = 0.15  # 15 cm back along approach vector after grasp
 
-#------------------------------------------
+# Examples, need to get actual positions
+NAMED_POSE_COORDS = {
+    'attention': {'x': 0.5, 'y': 0.0, 'z': 0.5, 'roll': 0.0, 'pitch': 0.0, 'yaw': 0.0},
+    'crouch':    {'x': 0.3, 'y': 0.0, 'z': 0.2, 'roll': 0.0, 'pitch': 0.0, 'yaw': 0.0},
+    'bin':       {'x': 0.6, 'y': -0.3, 'z': 0.4, 'roll': 0.0, 'pitch': 0.0, 'yaw': 0.0},
+}
+
 class TomatoPicker(Node):
+
     def __init__(self):
+
         super().__init__('tomato_picker')
 
-        # --- TF2 setup for camera -> base frame transform ---
-        self.tf_buffer   = Buffer()
-        self.tf_listener = TransformListener(self.tf_buffer, self)
+        # -------- Members --------
+        self.tf_buffer   = Buffer()                                # TF2 buffer to store transforms
+        self.tf_listener = TransformListener(self.tf_buffer, self) # TF2 listener to populate the buffer with transforms from the TF tree
 
-        # --- Safety states ---
         self.safe_to_pick = True
         self.picked_ids   = set()
 
-        # --- Subscribers ---
-        self.create_subscription(
-            Bool,
-            '/agrobot/safe_to_pick',
-            self.safety_callback,
-            10
-        )
-        self.create_subscription(
-            String,
-            '/agrobot/tomato_spatial',
-            self.spatial_callback,
-            10
-        )
+        self.poses_list: list = [] # Latest computed batch of pose coordinates
 
-        # --- Publisher ---
-        # PoseArray to MoveIt; each tomato contributes 3 poses:
-        # [approach, grasp, retract] then a basket drop pose
-        self.publisher_ = self.create_publisher(PoseArray, '/agrobot/pick_targets', 10)
+        # -------- Subscribers --------
+        self.create_subscription(Bool, '/agrobot/safe_to_pick', self.safety_callback, 10)      # Safety gate subscriber: listens to Node 1's assessment of whether it's currently safe to pick. If False, the main picking callback will ignore incoming detections until it turns True again
+        self.create_subscription(String, '/agrobot/tomato_spatial', self.spatial_callback, 10) # Main detection subscriber: listens to spatial detections from Node 2 as JSON string, triggers the main picking logic in spatial_callback
+
+        # -------- Publishers --------
+        self.publisher_ = self.create_publisher(PoseArray, '/agrobot/pick_targets', 10) # PoseArray of pick targets for MoveIt, published after processing each detection batch. Each Pose's position is a pick waypoint and orientation encodes the gripper approach direction
+
+        # -------- Services --------
+        self.create_service(GetPoses, '/agrobot/get_coords', self.get_poses_callback)
+
 
         self.get_logger().info('TomatoPicker ready, waiting for detections...')
 
     # ------------------------------------------------------------------
-    # Safety gate
+    # Safety gate callback: updates safe_to_pick state based on Node 1's assessment of robot safety
     # ------------------------------------------------------------------
     def safety_callback(self, msg: Bool):
-        self.safe_to_pick = msg.data
+
+        self.safe_to_pick = msg.data # Update the persistent safety flag based on incoming message
+
+        # Log any time we enter an unsafe state, but don't log every time we receive detections while unsafe to avoid spamming the logs
         if not self.safe_to_pick:
             self.get_logger().warn('safe_to_pick is False — picking paused')
+
+    # ------------------------------------------------------------------
+    # Get poses service callback: returns the latest computed list of pick poses for MoveIt as a JSON string
+    # ------------------------------------------------------------------
+    def get_poses_callback(self, request, response):
+
+        if not self.poses_list:
+            response.success = False
+            response.message = 'No poses available yet'
+            response.poses_json = '[]'
+
+        else:
+            response.success = True
+            response.message = f'Returning {len(self.poses_list)} tomato(es) pick poses as JSON'
+            response.poses_json = json.dumps(self.poses_list)
+
+        return response
 
     # ------------------------------------------------------------------
     # Main callback: fires every time Node 2 publishes a detection batch
     # ------------------------------------------------------------------
     def spatial_callback(self, msg: String):
+
+        # Safety gate check: if it's currently not safe to pick, ignore this batch of detections entirely and wait for the next one
+        # This prevents us from queuing up a bunch of pick targets while the robot is in an unsafe state, which could lead to a backlog of targets that all get published at once when we become safe again
         if not self.safe_to_pick:
             self.get_logger().warn('Received detections but safe_to_pick = False, skipping')
             return
 
+        # Parse the incoming JSON string into a list of tomato detections. Each detection is expected to have a unique tomato_id, a confidence score, a centroid in camera coordinates, and a sphere radius
         try:
             tomatoes = json.loads(msg.data)
         except json.JSONDecodeError as e:
             self.get_logger().error(f'Failed to parse tomato_spatial JSON: {e}')
             return
 
-        # 1. Filter: confidence threshold + already picked
+        # Filter out low-confidence detections and ones we've already picked in previous batches
         candidates = [
             t for t in tomatoes
             if t['confidence'] >= CONFIDENCE_THRESHOLD
             and t['tomato_id'] not in self.picked_ids
         ]
 
+        # Log how many tomatoes we have to work with after filtering, or if we have none and will skip this batch
         if not candidates:
             self.get_logger().info('No new pickable tomatoes in this batch')
             return
 
-        # 2. Transform centroids from camera frame -> robot base frame via TF2
+        # Transform centroids from camera frame -> robot base frame via TF2
         base_frame_candidates = []
         for t in candidates:
             base_pos = self.transform_to_base(t['centroid'])
@@ -132,33 +125,44 @@ class TomatoPicker(Node):
                 )
                 continue
             base_frame_candidates.append({
-                'id':     t['tomato_id'],
-                'pos':    base_pos,
+                'id': t['tomato_id'],
+                'pos': base_pos,
                 'radius': t['sphere']['radius'],
             })
 
         if not base_frame_candidates:
             return
+        
+        self.poses_list = [] # Clear the latest poses list before building a new one for this batch
 
-        # 3. Greedy sort along Y 
-        base_frame_candidates.sort(key=lambda t: t['pos']['y'])
+        # For each candidate tomato, compute the approach vector and build the list of poses for MoveIt, which includes approach, grasp, and retract waypoints along with the gripper orientation encoded as a quaternion. 
+        # This is stored in self.poses_list as a structured dictionary
+        for idx, t in enumerate(base_frame_candidates, start=1):
+            approach_vec = self.approach_vector(t['pos'])
+            self.poses_list.append(self.build_poses_list(t['id'], idx, t['pos'], t['radius'], approach_vec))
 
-        # 4. Build PoseArray
+        # Output the list to a JSON file
+        out_path = '/home/krtom/agrobot_ws/src/robot_commander/src/latest_poses.json'
+        with open(out_path, 'w') as f:
+            json.dump(self.poses_list, f, indent=2)
+        self.get_logger().info(f'Wrote latest poses list to {out_path}')
+        
+        # Build the pose array for MoveIt
         pick_msg = PoseArray()
-        pick_msg.header.frame_id  = 'linear_rail_link'
-        pick_msg.header.stamp     = self.get_clock().now().to_msg()
+        pick_msg.header.frame_id = 'linear_rail_link'
+        pick_msg.header.stamp = self.get_clock().now().to_msg()
 
+        # For each candidate tomato, compute approach vector, waypoints, and gripper orientation, then pack them into the PoseArray message. Also mark this tomato ID as picked so we don't re-queue it in future batches
         for t in base_frame_candidates:
             approach_vec = self.approach_vector(t['pos'])
-
             waypoints = self.get_waypoints(t['pos'], approach_vec, t['radius'])
-            quat      = self.get_quaternion(approach_vec)
+            quat = self.get_quaternion(approach_vec)
 
             for wp in waypoints:
                 pose = Pose()
-                pose.position.x    = wp['x']
-                pose.position.y    = wp['y']
-                pose.position.z    = wp['z']
+                pose.position.x = wp['x']
+                pose.position.y = wp['y']
+                pose.position.z = wp['z']
                 pose.orientation.x = quat[0]
                 pose.orientation.y = quat[1]
                 pose.orientation.z = quat[2]
@@ -168,10 +172,9 @@ class TomatoPicker(Node):
             self.picked_ids.add(t['id'])
             self.get_logger().info(f'Queued tomato {t["id"]} for picking')
 
+        # Publish the PoseArray of pick targets for MoveIt to consume
         self.publisher_.publish(pick_msg)
-        self.get_logger().info(
-            f'Published {len(base_frame_candidates)} tomatoes to /agrobot/pick_targets'
-        )
+        self.get_logger().info(f'Published {len(base_frame_candidates)} tomatoes to /agrobot/pick_targets')
 
     # ------------------------------------------------------------------
     # Coordinate transform: camera frame -> robot base frame via TF2
@@ -248,6 +251,45 @@ class TomatoPicker(Node):
         rotation, _ = R.align_vectors([target], [current])
         return rotation.as_quat()  # [x, y, z, w]
 
+
+    # ------------------------------------------------------------------
+    # Convert scipy quaternion [x, y, z, w] to (roll, pitch, yaw) in radians
+    # ------------------------------------------------------------------
+    def quat_to_rpy(self, quat: np.ndarray) -> tuple:
+        return tuple(R.from_quat(quat).as_euler('xyz'))
+
+    # ------------------------------------------------------------------
+    # Build the list of poses for MoveIt, including approach, grasp, and retract waypoints, along with the gripper orientation encoded as a quaternion
+    # This is returned as a structured dictionary
+    # ------------------------------------------------------------------
+    def build_poses_list(self, tomato_id, tomato_index, base_pos, radius, approach_vec):
+
+        quat = self.get_quaternion(approach_vec)
+        roll, pitch, yaw = self.quat_to_rpy(quat)
+        waypoints = self.get_waypoints(base_pos, approach_vec, radius)
+        
+        poses_list = []
+        poses_list.append({'step': 'attention', 'type': 'named_pose', 'pose': NAMED_POSE_COORDS['attention']})
+        poses_list.append({'step': 'crouch', 'type': 'named_pose', 'pose': NAMED_POSE_COORDS['crouch']})
+
+        for name, waypoint in zip(['approach', 'grasp', 'retract'], waypoints):
+            poses_list.append({
+                'step': name,
+                'type': 'waypoint',
+                'pose': {
+                    'x': waypoint['x'],
+                    'y': waypoint['y'],
+                    'z': waypoint['z'],
+                    'roll': roll,
+                    'pitch': pitch,
+                    'yaw': yaw,
+                }
+            })
+
+        poses_list.append({'step': 'bin', 'type': 'named_pose', 'pose': NAMED_POSE_COORDS['bin']})
+        poses_list.append({'step': 'crouch', 'type': 'named_pose', 'pose': NAMED_POSE_COORDS['crouch']})
+        
+        return {'tomato_id': tomato_id, 'tomato_index': tomato_index, 'poses': poses_list}
 
 # ----------------------------------------------------------------------
 

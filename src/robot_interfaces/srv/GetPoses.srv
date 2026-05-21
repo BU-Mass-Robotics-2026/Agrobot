@@ -1,0 +1,5 @@
+# Request — empty; caller requests the latest computed batch
+---
+bool    success
+string  message
+string  poses_json
