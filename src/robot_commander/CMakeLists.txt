@@ -42,7 +42,6 @@ install(TARGETS
 
 install(PROGRAMS
   src/tomato_picker.py
-  src/sequencer.py
   src/tests/test_multi_tomato.py
   src/tests/test_button_server.py
   DESTINATION lib/${PROJECT_NAME})

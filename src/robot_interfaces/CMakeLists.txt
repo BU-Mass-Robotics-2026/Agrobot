@@ -12,10 +12,11 @@ find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/JointCommand.msg"
+  "msg/NamedCommand.msg"
   "msg/PoseCommand.msg"
-  "msg/PositionCommand.msg"
   "action/PickSequence.action"
   "srv/SetIndicator.srv"
+  "srv/GetPoses.srv"
   DEPENDENCIES geometry_msgs
 )
 

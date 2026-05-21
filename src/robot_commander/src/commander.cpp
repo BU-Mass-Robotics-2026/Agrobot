@@ -2,8 +2,8 @@
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <moveit/move_group_interface/move_group_interface.hpp>
 #include <robot_interfaces/msg/joint_command.hpp>
+#include <robot_interfaces/msg/named_command.hpp>
 #include <robot_interfaces/msg/pose_command.hpp>
-#include <robot_interfaces/msg/position_command.hpp>
 #include <robot_interfaces/action/pick_sequence.hpp>
 #include <geometry_msgs/msg/pose_array.hpp>
 #include <std_msgs/msg/bool.hpp>
@@ -11,9 +11,9 @@
 #include <tf2/LinearMath/Quaternion.h>
 
 using MoveGroupInterface = moveit::planning_interface::MoveGroupInterface;
-using PoseCommand = robot_interfaces::msg::PoseCommand;
 using JointCommand = robot_interfaces::msg::JointCommand;
-using PositionCommand = robot_interfaces::msg::PositionCommand;
+using NamedCommand = robot_interfaces::msg::NamedCommand;
+using PoseCommand = robot_interfaces::msg::PoseCommand;
 using PickSequence = robot_interfaces::action::PickSequence;
 using GoalHandlePickSeq = rclcpp_action::ServerGoalHandle<PickSequence>;
 using PoseArray = geometry_msgs::msg::PoseArray;
@@ -42,9 +42,9 @@ class Commander
             arm_->setEndEffectorLink("link6");                         // Set the end effector link
 
             // Create subscriptions for receiving motion command messages and bind them to their respective callback functions
-            pose_cmd_sub_ = node_->create_subscription<PoseCommand>("/agrobot/pose_cmd", 10, std::bind(&Commander::poseCmdCallback, this, _1));
             joint_cmd_sub_ = node_->create_subscription<JointCommand>("/agrobot/joint_cmd", 10, std::bind(&Commander::jointCmdCallback, this, _1));
-            position_cmd_sub_ = node_->create_subscription<PositionCommand>("/agrobot/position_cmd", 10, std::bind(&Commander::positionCmdCallback, this, _1));
+            named_cmd_sub_ = node_->create_subscription<NamedCommand>("/agrobot/named_cmd", 10, std::bind(&Commander::namedCmdCallback, this, _1));
+            pose_cmd_sub_ = node_->create_subscription<PoseCommand>("/agrobot/pose_cmd", 10, std::bind(&Commander::poseCmdCallback, this, _1));
 
             // Create a subscription for receiving proceed signals and bind it to the proceed callback function
             proceed_sub_ = node_->create_subscription<Bool>("/agrobot/proceed", 10, std::bind(&Commander::proceedCallback, this, _1));
@@ -65,14 +65,6 @@ class Commander
         // Motion helpers
         // -------------------------------------------------------------------------------------------------
 
-        // Method to move the arm to a named pose target
-        void goToPoseTarget(const std::string &name)
-        {
-            arm_->setStartStateToCurrentState(); // Set the start state to the current state
-            arm_->setNamedTarget(name);          // Set the named target
-            planAndExecute(arm_);                // Plan and execute the motion to the named target
-        }
-
         // Method to move the arm to a joint target specified by a vector of joint values
         void goToJointTarget(const std::vector<double> &joints)
         {
@@ -81,45 +73,15 @@ class Commander
             planAndExecute(arm_);                // Plan and execute the motion to the joint target
         }
 
-        // Method to move the arm to a position target specified by position (x, y, z) and orientation (roll, pitch, yaw) values, with an option to use Cartesian path planning
-        void goToPositionTarget(double x, double y, double z, double roll, double pitch, double yaw, bool cartesian_path = false)
+        // Method to move the arm to a named pose target
+        void goToNamedTarget(const std::string &name)
         {
-            tf2::Quaternion q;          // Create a quaternion to represent the orientation
-            q.setRPY(roll, pitch, yaw); // Set the roll, pitch, and yaw of the quaternion
-            q = q.normalize();          // Normalize the quaternion
-
-            geometry_msgs::msg::PoseStamped target_pose; // Create a Pose message to hold the target pose
-            target_pose.header.frame_id = "world_frame"; // Set the frame of reference for the target pose
-            target_pose.pose.position.x = x;             // Set the x position of the target pose
-            target_pose.pose.position.y = y;             // Set the y position of the target pose
-            target_pose.pose.position.z = z;             // Set the z position of the target pose
-            target_pose.pose.orientation.x = q.getX();   // Set the x orientation of the target pose
-            target_pose.pose.orientation.y = q.getY();   // Set the y orientation of the target pose
-            target_pose.pose.orientation.z = q.getZ();   // Set the z orientation of the target pose
-            target_pose.pose.orientation.w = q.getW();   // Set the w orientation of the target pose
-
-            // If cartesian_path is false, plan and execute a motion to the pose target
-            if (!cartesian_path)
-            {
-                arm_->setPoseTarget(target_pose);    // Set the pose target
-                planAndExecute(arm_);                // Plan and execute the motion to the pose target
-            }
-            // If cartesian_path is true, plan and execute a Cartesian path to the pose target
-            else
-            {
-                std::vector<geometry_msgs::msg::Pose> waypoints; // Create a vector to hold the waypoints for the Cartesian path
-                waypoints.push_back(target_pose.pose);           // Add the target pose to the waypoints
-                moveit_msgs::msg::RobotTrajectory trajectory;    // Create a RobotTrajectory message to hold the trajectory of the Cartesian path
-
-                double fraction = arm_->computeCartesianPath(waypoints, 0.01, trajectory); // Try to plan a Cartesian path through the waypoints with a step size of 1 cm, returning the fraction of the path that was successfully planned
-                
-                if (fraction == 1)  // Check if the entire path was planned successfully
-                {
-                    arm_->execute(trajectory); // Execute the planned trajectory if it was successful
-                }
-            }
+            arm_->setStartStateToCurrentState(); // Set the start state to the current state
+            arm_->setNamedTarget(name);          // Set the named target
+            planAndExecute(arm_);                // Plan and execute the motion to the named target
         }
 
+        // Method to move the arm to a pose target specified by a geometry_msgs::msg::Pose message (which has position)
         void goToPoseTarget(const Pose &pose)
         {
             geometry_msgs::msg::PoseStamped stamped;
@@ -140,10 +102,10 @@ class Commander
         std::shared_ptr<rclcpp::Node> node_;      // Member variable to hold the shared pointer to the ROS 2 node
         std::shared_ptr<MoveGroupInterface> arm_; // Member variable to hold the MoveGroupInterface for controlling the robot's arm
 
-        rclcpp::Subscription<PoseCommand>::SharedPtr pose_cmd_sub_;         // Subscription for receiving named target command messages
-        rclcpp::Subscription<JointCommand>::SharedPtr joint_cmd_sub_;       // Subscription for receiving joint command messages
-        rclcpp::Subscription<PositionCommand>::SharedPtr position_cmd_sub_; // Subscription for receiving position command messages
-        rclcpp::Subscription<Bool>::SharedPtr proceed_sub_;                 // Subscription for receiving proceed signals
+        rclcpp::Subscription<JointCommand>::SharedPtr joint_cmd_sub_;  // Subscription for receiving joint command messages
+        rclcpp::Subscription<NamedCommand>::SharedPtr named_cmd_sub_;  // Subscription for receiving named target command messages
+        rclcpp::Subscription<PoseCommand>::SharedPtr pose_cmd_sub_;    // Subscription for receiving pose command messages
+        rclcpp::Subscription<Bool>::SharedPtr proceed_sub_;            // Subscription for receiving proceed signals
 
         rclcpp_action::Server<PickSequence>::SharedPtr action_server_; // Action server for handling pick sequence goals
 
@@ -155,17 +117,6 @@ class Commander
         // Topic callbacks
         // -------------------------------------------------------------------------------------------------
 
-        // Callback function to handle incoming named pose command messages
-        void poseCmdCallback(const PoseCommand::SharedPtr msg)
-        {
-            std::string target_name(msg->pose_name); // Get the target name from the message
-
-            if (target_name == "crouch" || target_name == "attention" || target_name == "vertical" || target_name == "bin") // Check if the target name is one of the valid named targets
-            {
-                goToPoseTarget(target_name); // Plan and execute a motion to the named target
-            }
-        }
-
         // Callback function to handle incoming joint command messages
         void jointCmdCallback(const JointCommand::SharedPtr msg)
         {
@@ -173,12 +124,37 @@ class Commander
             goToJointTarget(joints);
         }
 
-        // Callback function to handle incoming position command messages
-        void positionCmdCallback(const PositionCommand::SharedPtr msg)
+        // Callback function to handle incoming named pose command messages
+        void namedCmdCallback(const NamedCommand::SharedPtr msg)
         {
-            goToPositionTarget(msg->x, msg->y, msg->z, msg->roll, msg->pitch, msg->yaw, msg->cartesian_path); // Plan and execute a motion to the position target specified in the message
+            std::string target_name(msg->pose_name); // Get the target name from the message
+
+            if (target_name == "crouch" || target_name == "attention" || target_name == "vertical" || target_name == "bin") // Check if the target name is one of the valid named targets
+            {
+                goToNamedTarget(target_name); // Plan and execute a motion to the named target
+            }
         }
 
+        // Callback function to handle incoming pose command messages, which converts the roll, pitch, and yaw angles from the message into a quaternion, constructs a Pose message, and plans and executes a motion to the target pose
+        void poseCmdCallback(const PoseCommand::SharedPtr msg)
+        {
+            tf2::Quaternion q;
+            q.setRPY(msg->roll, msg->pitch, msg->yaw); // Convert the roll, pitch, and yaw angles from the message into a quaternion
+            q = q.normalize(); // Normalize the quaternion to ensure it represents a valid rotation
+
+            Pose pose; // Create a Pose message to hold the target pose
+            pose.position.x = msg->x;   // Set the x position from the message
+            pose.position.y = msg->y;   // Set the y position from the message
+            pose.position.z = msg->z;   // Set the z position from the message
+            pose.orientation.x = q.x(); // Set the x component of the orientation from the quaternion
+            pose.orientation.y = q.y(); // Set the y component of the orientation from the quaternion
+            pose.orientation.z = q.z(); // Set the z component of the orientation from the quaternion
+            pose.orientation.w = q.w(); // Set the w component of the orientation from the quaternion
+
+            goToPoseTarget(pose); // Plan and execute a motion to the target pose
+        }
+
+        // Callback function to handle incoming proceed signals, which sets the proceed flag and notifies any waiting threads to continue with the pick sequence execution
         void proceedCallback(const Bool::SharedPtr msg)
         {
             if (!msg->data)                                 // If the proceed signal is false, ignore it
@@ -210,9 +186,11 @@ class Commander
         rclcpp_action::CancelResponse handleCancel(const std::shared_ptr<GoalHandlePickSeq> goal_handle)
         {
             (void)goal_handle;
-            RCLCPP_INFO(node_->get_logger(), "Cancel requested"); // Log that a cancel request has been received
-            proceed_cv_.notify_all();                             // Notify any waiting threads to unblock them, allowing the canceling thread to proceed
-            return rclcpp_action::CancelResponse::ACCEPT;         // Accept the cancel request
+            RCLCPP_INFO(node_->get_logger(), "Cancel requested");
+
+            arm_->stop();             // Interrupt any motion currently executing
+            proceed_cv_.notify_all(); // Notify any waiting threads to unblock and check for cancellation
+            return rclcpp_action::CancelResponse::ACCEPT;
         }
 
         // Callback function to handle accepted pick sequence goals, which starts the execution of the pick sequence in a detached thread
@@ -246,28 +224,26 @@ class Commander
             proceed_cv_.wait(lk, [this, &goal_handle] { return proceed_flag_ || goal_handle->is_canceling(); }); // Wait until either a proceed signal is received or a cancel request is made
         }
 
-        // Helper function to execute a step using an explicit Pose object (approach, grasp, retract)
-        bool executeStep(const std::shared_ptr<GoalHandlePickSeq> &goal_handle, std::shared_ptr<PickSequence::Feedback> &feedback, const geometry_msgs::msg::Pose &pose_target, const std::string &step, const size_t log_idx, const size_t n)
+        // Returns false if the step was interrupted by a cancel request
+        bool executeStep(const std::shared_ptr<GoalHandlePickSeq> &goal_handle, std::shared_ptr<PickSequence::Feedback> &feedback, const Pose &pose_target, const std::string &step, const size_t log_idx, const size_t n)
         {
-            if (goal_handle->is_canceling()) return false;
+            if (goal_handle->is_canceling()) return false;                                      // Check for cancel request before starting the step
 
-            RCLCPP_INFO(node_->get_logger(), "Tomato %zu/%zu: %s", log_idx, n, step.c_str()); // Log the current step of the pick sequence for the current tomato
-            publishStep(goal_handle, feedback, step, false);                                  // Publish feedback about the current step to the action client
-            goToPoseTarget(pose_target);                                                      // Execute the motion for the current step
-
-            return !goal_handle->is_canceling();
+            RCLCPP_INFO(node_->get_logger(), "Tomato %zu/%zu: %s", log_idx, n, step.c_str());
+            publishStep(goal_handle, feedback, step, false);                                    // Publish feedback about the current step to the action client
+            goToPoseTarget(pose_target);                                                        // Plan and execute a motion to the target pose
+            return !goal_handle->is_canceling();                                                // Check for cancel request after completing the step and return false if a cancel request was made during the step
         }
 
-        // Helper function to execute a step using a Named String target (binning)
+        // Returns false if the step was interrupted by a cancel request
         bool executeStep(const std::shared_ptr<GoalHandlePickSeq> &goal_handle, std::shared_ptr<PickSequence::Feedback> &feedback, const std::string &named_target, const std::string &step, const size_t log_idx, const size_t n)
         {
-            if (goal_handle->is_canceling()) return false;
+            if (goal_handle->is_canceling()) return false;                                      // Check for cancel request before starting the step
 
-            RCLCPP_INFO(node_->get_logger(), "Tomato %zu/%zu: %s", log_idx, n, step.c_str()); // Log the current step of the pick sequence for the current tomato
-            publishStep(goal_handle, feedback, step, false);                                  // Publish feedback about the current step to the action client
-            goToPoseTarget(named_target);                                                     // Execute the motion for the current step
-
-            return !goal_handle->is_canceling();
+            RCLCPP_INFO(node_->get_logger(), "Tomato %zu/%zu: %s", log_idx, n, step.c_str());
+            publishStep(goal_handle, feedback, step, false);                                    // Publish feedback about the current step to the action client
+            goToNamedTarget(named_target);                                                      // Plan and execute a motion to the target pose
+            return !goal_handle->is_canceling();                                                // Check for cancel request after completing the step and return false if a cancel request was made during the step
         }
 
         // -------------------------------------------------------------------------------------------------
@@ -276,44 +252,44 @@ class Commander
 
         void executeSequence(const std::shared_ptr<GoalHandlePickSeq> goal_handle)
         {
-            auto feedback = std::make_shared<PickSequence::Feedback>(); // Create a shared pointer to a feedback message that will be sent to the action client during execution
-            auto result = std::make_shared<PickSequence::Result>();     // Create a shared pointer to a result message that will be sent to the action client when execution is complete
+            auto feedback = std::make_shared<PickSequence::Feedback>(); // Create a shared pointer to a Feedback message to send feedback to the action client during the execution of the pick sequence
+            auto result   = std::make_shared<PickSequence::Result>();   // Create a shared pointer to a Result message to send the final result to the action client at the end of the pick sequence
 
             const auto &poses = goal_handle->get_goal()->targets.poses; // Get the target poses from the goal message
-            const size_t n = poses.size() / POSES_PER_TOMATO;           // Calculate the number of tomatoes to pick based on the number of poses and the number of poses per tomato
-            feedback->total_tomatoes = static_cast<uint32_t>(n);        // Update the feedback message with the total number of tomatoes to pick
+            const size_t n = poses.size() / POSES_PER_TOMATO;           // Calculate the number of tomatoes to process based on the number of poses and the number of poses per tomato
+            feedback->total_tomatoes = static_cast<uint32_t>(n);        // Set the total number of tomatoes in the feedback message so it can be included in feedback updates during the sequence execution
 
             RCLCPP_INFO(node_->get_logger(), "Starting pick sequence for %zu tomatoes", n);
 
-            // Main loop to iterate through the poses for each tomato and execute the pick sequence steps (approach, grasp, retract, bin)
-            for (size_t i = 0; i < poses.size(); i += POSES_PER_TOMATO)
+            // Sequence loop
+            for (size_t i = 0; i < poses.size() && !goal_handle->is_canceling(); i += POSES_PER_TOMATO)
             {
-                if (goal_handle->is_canceling()) break; // Check if a cancel request has been made before starting the next tomato's pick sequence
+                const size_t log_idx = i / POSES_PER_TOMATO + 1;         // Calculate the current tomato index for logging and feedback purposes (1-based index)
+                feedback->tomato_index = static_cast<uint32_t>(log_idx); // Update the current tomato index in the feedback message so it can be included in feedback updates during the sequence execution
 
-                // Fixed: Changed 'current_tomato' to 'tomato_index' to match your PickSequence.action definitions exactly
-                feedback->tomato_index = static_cast<uint32_t>(i / POSES_PER_TOMATO) + 1; // Update the feedback message with the index of the current tomato being processed (1-based index for user-friendly display)
-                const size_t log_idx = feedback->tomato_index;                            // Calculate the index for logging purposes (1-based index)
-
-                if (!executeStep(goal_handle, feedback, poses[i], "approaching", log_idx, n)) break;
-                if (!executeStep(goal_handle, feedback, poses[i+1], "grasping", log_idx, n)) break;
-                if (!executeStep(goal_handle, feedback, poses[i+2], "retracting", log_idx, n)) break;
-                if (!executeStep(goal_handle, feedback, "bin", "binning", log_idx, n)) break;
+                if (!executeStep(goal_handle, feedback, "attention", "resetting", log_idx, n)) break; // Move to the attention pose before processing each tomato
+                if (!executeStep(goal_handle, feedback, "crouch", "crouching", log_idx, n)) break;    // Move to crouch pose before processing each tomato
+                if (!executeStep(goal_handle, feedback, poses[i], "approaching", log_idx, n)) break;  // Move to the approach pose for the current tomato
+                if (!executeStep(goal_handle, feedback, poses[i+1], "grasping", log_idx, n)) break;   // Move to the grasp pose for the current tomato
+                if (!executeStep(goal_handle, feedback, poses[i+2], "retracting", log_idx, n)) break; // Move to the retract pose for the current tomato
+                if (!executeStep(goal_handle, feedback, "bin", "binning", log_idx, n)) break;         // Move to the bin pose to drop the current tomato
+                if (!executeStep(goal_handle, feedback, "crouch", "crouching", log_idx, n)) break;    // Move back to crouch pose after dropping each tomato
             }
 
-            // Centralized cancellation/success handling
+            // Check if the sequence was completed successfully or if it was canceled, and send the appropriate result to the action client
             if (goal_handle->is_canceling())
             {
                 result->success = false;
                 result->message = "Sequence was canceled.";
                 goal_handle->canceled(result);
-                RCLCPP_INFO(node_->get_logger(), "Sequence processing canceled.");
+                RCLCPP_INFO(node_->get_logger(), "Sequence canceled.");
             }
             else
             {
                 result->success = true;
                 result->message = "All tomatoes successfully processed!";
                 goal_handle->succeed(result);
-                RCLCPP_INFO(node_->get_logger(), "Sequence processing completed successfully.");
+                RCLCPP_INFO(node_->get_logger(), "Sequence completed successfully.");
             }
         }
 
