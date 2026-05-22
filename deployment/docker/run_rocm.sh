@@ -63,6 +63,9 @@ docker run --rm -it \
   --network host \
   --ipc host \
   -e ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-0}" \
+  -e HSA_OVERRIDE_GFX_VERSION="${HSA_OVERRIDE_GFX_VERSION:-11.5.1}" \
+  -e HSA_ENABLE_SDMA="${HSA_ENABLE_SDMA:-0}" \
+  -e GPU_MAX_HW_QUEUES="${GPU_MAX_HW_QUEUES:-8}" \
   --device=/dev/kfd \
   --device=/dev/dri \
   "${GROUP_ADD_ARGS[@]}" \

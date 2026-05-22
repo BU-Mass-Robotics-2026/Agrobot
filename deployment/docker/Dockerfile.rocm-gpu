@@ -43,17 +43,21 @@ RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
     && rm -rf /var/lib/apt/lists/*
 
 # ── Perception Python deps ────────────────────────────────────────────────────
-# torch / torchvision are ALREADY in the base image (2.9.1+rocm7.2.1) — do NOT
-# reinstall them, that would clobber the verified-good wheels. Only add what the
-# perception nodes need on top.
+# CRITICAL: the rocm/pytorch base image keeps its Python (and the verified-good
+# torch 2.9.1+rocm7.2.1) in a venv at /opt/venv — NOT system Python. Perception
+# deps MUST install into that same venv or the nodes cannot import torch.
+# (Verified 2026-05-22: the earlier `pip3 --break-system-packages` installed to
+# system Python and every perception node failed with ModuleNotFoundError.)
 #
-# --break-system-packages: the base image's Python is system Python; this matches
-# how the perception nodes already expect to be installed (see REPRODUCE.md).
-RUN pip3 install --break-system-packages --no-cache-dir \
+# numpy<2 is pinned LAST: cv_bridge is built against the numpy 1.x ABI and
+# segfaults under numpy 2.x, which torch otherwise pulls in.
+RUN /opt/venv/bin/pip install --no-cache-dir \
     sam2 \
     hydra-core iopath \
     scipy \
-    transformers qwen-vl-utils Pillow
+    transformers sentencepiece qwen-vl-utils Pillow \
+    opencv-python-headless \
+    'numpy<2'
 
 # ── Environment ───────────────────────────────────────────────────────────────
 WORKDIR /workspace
@@ -61,12 +65,21 @@ RUN mkdir -p /ros2_ws/src
 
 ENV ROS_DOMAIN_ID=0
 ENV ROS_AUTOMATIC_DISCOVERY_RANGE=SUBNET
-ENV PATH=/opt/rocm/bin:${PATH}
+ENV PATH=/opt/venv/bin:/opt/rocm/bin:${PATH}
 
-# NOTE: deliberately NOT setting HSA_OVERRIDE_GFX_VERSION or HSA_ENABLE_SDMA.
-# Verified 2026-05-20: gfx1151 is auto-detected correctly on the fixed driver
-# stack, and the AMD container runs the matmul/Conv2d test WITHOUT the override.
-# Setting the override here would diverge from the proven-good configuration.
+# HSA_OVERRIDE_GFX_VERSION: safety fallback — ROCm 7.2.1 auto-detects gfx1151
+# on kernel 6.17.0-1023-oem, but this guards against ISA misdetection if the
+# kernel or driver ever changes. Do NOT use 11.0.x — those target gfx1100
+# (discrete RDNA 3) and SIGBUS on gfx1151's unified memory controller.
+ENV HSA_OVERRIDE_GFX_VERSION=11.5.1
+
+# GPU_MAX_HW_QUEUES: 8 CU clusters on Strix Halo — maximises parallelism for
+# concurrent DINOv2 + SAM2 inference streams.
+ENV GPU_MAX_HW_QUEUES=8
+
+# HSA_ENABLE_SDMA=0: SDMA overhead is higher than CPU memcpy on unified memory
+# (no discrete VRAM). Forces ROCm to use CPU-side blit copies instead.
+ENV HSA_ENABLE_SDMA=0
 
 RUN echo "source /opt/ros/jazzy/setup.bash" >> /root/.bashrc
 
