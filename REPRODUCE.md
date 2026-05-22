@@ -49,7 +49,7 @@ docker exec -it $(docker ps -lq) bash
 ```
 ```bash
 source /opt/ros/jazzy/setup.bash
-colcon build --packages-select agrobot_perception --symlink-install
+colcon build --packages-select agrobot_perception
 ```
 
 Wait for `Summary: 1 package finished` before continuing.
