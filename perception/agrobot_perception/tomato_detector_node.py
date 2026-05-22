@@ -221,7 +221,7 @@ class TomatoDetectorNode(Node):
                 _siglip_model = self.get_parameter("siglip_model").value
                 _mlp_conf = self.get_parameter("mlp_confidence_threshold").value
                 self.get_logger().info(
-                    "Loading SigLIP model %s (this takes ~30s)...", _siglip_model
+                    f"Loading SigLIP model {_siglip_model} (this takes ~30s)..."
                 )
                 self._detector = SigLIPRescoringWrapper(
                     base=self._detector,
@@ -243,18 +243,17 @@ class TomatoDetectorNode(Node):
                     device=_device,
                 )
                 self.get_logger().info(
-                    "SigLIP + Fusion MLP pipeline active "
-                    "(mlp_conf=%.2f, dino=%.1f, siglip=%.1f, pred_iou=%.1f)",
-                    _mlp_conf,
-                    self.get_parameter("siglip_dino_weight").value,
-                    self.get_parameter("siglip_weight").value,
-                    self.get_parameter("siglip_pred_iou_weight").value,
+                    f"SigLIP + Fusion MLP pipeline active "
+                    f"(mlp_conf={_mlp_conf:.2f}, "
+                    f"dino={self.get_parameter('siglip_dino_weight').value:.1f}, "
+                    f"siglip={self.get_parameter('siglip_weight').value:.1f}, "
+                    f"pred_iou={self.get_parameter('siglip_pred_iou_weight').value:.1f})"
                 )
             except Exception as exc:
                 self.get_logger().warning(
-                    "SigLIP+MLP pipeline unavailable (%s). "
-                    "Falling back to DINOv2-only with confidence_threshold=%.2f.",
-                    exc, self._conf_threshold,
+                    f"SigLIP+MLP pipeline unavailable ({exc}). "
+                    f"Falling back to DINOv2-only with "
+                    f"confidence_threshold={self._conf_threshold:.2f}."
                 )
                 # Re-create base detector with the raw confidence threshold so
                 # DINOv2-only mode gates correctly.
