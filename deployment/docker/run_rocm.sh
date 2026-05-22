@@ -46,7 +46,16 @@ GROUP_ADD_ARGS=()
 [ -n "$VIDEO_GID" ]  && [ "$VIDEO_GID"  != "$KFD_GID" ] && [ "$VIDEO_GID" != "$RENDER_GID" ] && GROUP_ADD_ARGS+=(--group-add "$VIDEO_GID")
 
 # USB passthrough for Intel RealSense D456 (optional; no-op if /dev/bus/usb missing)
-VOLUME_ARGS=(-v "${REPO_ROOT}:/workspace")
+# Torch hub + HuggingFace caches are mounted from the host so DINOv2/SAM2/SigLIP weights
+# survive container restarts. TORCH_HOME and HF_HOME point into /workspace/.cache so the
+# --user UID (non-root) can write there without needing access to /root/.
+# Pre-create on the host so Docker doesn't create them as root (which would deny writes).
+mkdir -p "${HOME}/.cache/torch" "${HOME}/.cache/huggingface"
+VOLUME_ARGS=(
+  -v "${REPO_ROOT}:/workspace"
+  -v "${HOME}/.cache/torch:/workspace/.cache/torch"
+  -v "${HOME}/.cache/huggingface:/workspace/.cache/huggingface"
+)
 if [ -d /dev/bus/usb ]; then
   VOLUME_ARGS+=(-v /dev/bus/usb:/dev/bus/usb)
 fi
@@ -63,6 +72,8 @@ docker run --rm -it \
   --network host \
   --ipc host \
   -e ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-0}" \
+  -e TORCH_HOME=/workspace/.cache/torch \
+  -e HF_HOME=/workspace/.cache/huggingface \
   -e HSA_OVERRIDE_GFX_VERSION="${HSA_OVERRIDE_GFX_VERSION:-11.5.1}" \
   -e HSA_ENABLE_SDMA="${HSA_ENABLE_SDMA:-0}" \
   -e GPU_MAX_HW_QUEUES="${GPU_MAX_HW_QUEUES:-8}" \

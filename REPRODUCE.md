@@ -264,7 +264,7 @@ PYTHONPATH=perception \
   --negative-weight 1.0 \
   --siglip --fusion-mlp models/fusion_mlp.pt \
   --metric coco \
-  --visualize-dir eval_reports/p2_2_mlp_gpu_pts32
+  --visualize-dir eval_reports/FINAL
 ```
 
 > `--confidence 0.0` lets all SAM2 proposals reach the MLP.

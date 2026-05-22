@@ -55,7 +55,7 @@ RUN /opt/venv/bin/pip install --no-cache-dir \
     sam2 \
     hydra-core iopath \
     scipy \
-    transformers sentencepiece qwen-vl-utils Pillow \
+    transformers sentencepiece protobuf qwen-vl-utils Pillow \
     opencv-python-headless \
     'numpy<2'
 
