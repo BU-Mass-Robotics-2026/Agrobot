@@ -68,6 +68,12 @@ ENV ROS_DOMAIN_ID=0
 ENV ROS_AUTOMATIC_DISCOVERY_RANGE=SUBNET
 ENV PATH=/opt/venv/bin:/opt/rocm/bin:${PATH}
 
+# Make venv packages (torch, scipy, sam2, transformers, etc.) visible to the
+# system Python used by colcon entry point scripts (shebang #!/usr/bin/python3).
+# source /opt/ros/jazzy/setup.bash prepends its own site-packages, so ROS
+# packages take priority — this does not conflict with ros2 package resolution.
+ENV PYTHONPATH=/opt/venv/lib/python3.12/site-packages
+
 # HSA_OVERRIDE_GFX_VERSION: safety fallback — ROCm 7.2.1 auto-detects gfx1151
 # on kernel 6.17.0-1023-oem, but this guards against ISA misdetection if the
 # kernel or driver ever changes. Do NOT use 11.0.x — those target gfx1100

@@ -72,6 +72,7 @@ docker run --rm -it \
   --network host \
   --ipc host \
   -e ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-0}" \
+  -e PYTHONPATH="/opt/venv/lib/python3.12/site-packages" \
   -e TORCH_HOME=/workspace/.cache/torch \
   -e HF_HOME=/workspace/.cache/huggingface \
   -e HSA_OVERRIDE_GFX_VERSION="${HSA_OVERRIDE_GFX_VERSION:-11.5.1}" \
