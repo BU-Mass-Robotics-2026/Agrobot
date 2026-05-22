@@ -112,6 +112,28 @@ def generate_launch_description() -> LaunchDescription:
         ),
     )
 
+    # ── SigLIP + Fusion MLP pipeline ──────────────────────────────────────────
+    siglip_enabled_arg = DeclareLaunchArgument(
+        "siglip_enabled",
+        default_value="true",
+        description="Enable SigLIP + Fusion MLP rescoring. Set false for DINOv2-only fallback.",
+    )
+    siglip_model_arg = DeclareLaunchArgument(
+        "siglip_model",
+        default_value="google/siglip-base-patch16-224",
+        description="HuggingFace SigLIP model id. Cached after first download.",
+    )
+    fusion_mlp_path_arg = DeclareLaunchArgument(
+        "fusion_mlp_path",
+        default_value="models/fusion_mlp.pt",
+        description="Path to trained FusionMLP weights (relative to /workspace).",
+    )
+    mlp_conf_arg = DeclareLaunchArgument(
+        "mlp_confidence_threshold",
+        default_value="0.40",
+        description="MLP output probability threshold [0,1]. GPU sweep best: 0.40.",
+    )
+
     # ── Debug ──────────────────────────────────────────────────────────────────
     publish_debug_arg = DeclareLaunchArgument(
         "publish_debug_image",
@@ -160,6 +182,10 @@ def generate_launch_description() -> LaunchDescription:
                 "query_embedding_path": LaunchConfiguration("query_embedding_path"),
                 "negative_embedding_path": LaunchConfiguration("negative_embedding_path"),
                 "sam2_checkpoint": LaunchConfiguration("sam2_checkpoint"),
+                "siglip_enabled": LaunchConfiguration("siglip_enabled"),
+                "siglip_model": LaunchConfiguration("siglip_model"),
+                "fusion_mlp_path": LaunchConfiguration("fusion_mlp_path"),
+                "mlp_confidence_threshold": LaunchConfiguration("mlp_confidence_threshold"),
             }
         ],
     )
@@ -263,6 +289,10 @@ def generate_launch_description() -> LaunchDescription:
             query_emb_arg,
             neg_emb_arg,
             sam2_ckpt_arg,
+            siglip_enabled_arg,
+            siglip_model_arg,
+            fusion_mlp_path_arg,
+            mlp_conf_arg,
             publish_debug_arg,
             pick_policy_arg,
             qwen_model_arg,

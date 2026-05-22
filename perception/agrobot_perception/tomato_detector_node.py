@@ -145,16 +145,25 @@ class TomatoDetectorNode(Node):
         # Watchdog timeout must exceed worst-case inference time (~17s on CPU).
         # Default 60s prevents false-positives during SAM2+DINOv2 processing.
         self.declare_parameter("watchdog_timeout_ms", 60000)
-        # SAM2AMGDetector parameters — S4.12 production config.
-        # Override at launch: ros2 launch ... amg_points_per_side:=28
-        self.declare_parameter("amg_points_per_side", 28)
+        # SAM2AMGDetector parameters — GPU ablation best config (2026-05-21).
+        # Override at launch: ros2 launch ... amg_points_per_side:=32
+        self.declare_parameter("amg_points_per_side", 32)
         self.declare_parameter("max_detections", 30)
-        self.declare_parameter("nms_iou_threshold", 0.5)
+        self.declare_parameter("nms_iou_threshold", 0.4)
         self.declare_parameter("dino_score_weight", 0.7)
         self.declare_parameter("negative_weight", 1.0)
         self.declare_parameter("query_embedding_path", "models/query_embedding_k4.pt")
         self.declare_parameter("negative_embedding_path", "models/negative_embedding.pt")
         self.declare_parameter("sam2_checkpoint", "")
+        # SigLIP + Fusion MLP pipeline (eval-matched, full accuracy).
+        # Set siglip_enabled:=false to fall back to DINOv2-only scoring.
+        self.declare_parameter("siglip_enabled", True)
+        self.declare_parameter("siglip_model", "google/siglip-base-patch16-224")
+        self.declare_parameter("fusion_mlp_path", "models/fusion_mlp.pt")
+        self.declare_parameter("mlp_confidence_threshold", 0.40)
+        self.declare_parameter("siglip_dino_weight", 0.4)
+        self.declare_parameter("siglip_weight", 0.4)
+        self.declare_parameter("siglip_pred_iou_weight", 0.2)
 
         self._conf_threshold = self.get_parameter("confidence_threshold").value
         self._input_size = (
@@ -175,21 +184,92 @@ class TomatoDetectorNode(Node):
 
         # ── Core Components ───────────────────────────────────────────────────
         self._bridge = CvBridge()
-        # SAM2AMGDetector: Sprint 4 production detector (mAP=0.377, S4.12).
-        # SAM2 AMG proposes pixel-precise masks; DINOv2 scores for tomatoness.
-        # Parameters match the S4.12 best config in REPRODUCE.md.
+        _device = _select_device()
+        _siglip_enabled = self.get_parameter("siglip_enabled").value
+        _nms = self.get_parameter("nms_iou_threshold").value
+        _max_det = self.get_parameter("max_detections").value
+
+        # When the SigLIP+MLP pipeline is active, confidence_threshold=0.0 lets
+        # all SAM2 proposals reach the MLP; the MLP's own threshold gates the
+        # final output. When DINOv2-only, the raw DINOv2 confidence_threshold
+        # is the gate.
+        _base_conf = 0.0 if _siglip_enabled else self._conf_threshold
+
         self._detector = SAM2AMGDetector(
-            device=_select_device(),
-            confidence_threshold=self._conf_threshold,
+            device=_device,
+            confidence_threshold=_base_conf,
             points_per_side=self.get_parameter("amg_points_per_side").value,
-            max_detections=self.get_parameter("max_detections").value,
-            nms_iou_threshold=self.get_parameter("nms_iou_threshold").value,
+            max_detections=_max_det,
+            nms_iou_threshold=_nms,
             dino_score_weight=self.get_parameter("dino_score_weight").value,
             negative_weight=self.get_parameter("negative_weight").value,
             query_embedding_path=_query_emb,
             negative_embedding_path=_neg_emb,
             sam2_checkpoint=_sam2_ckpt,
         )
+
+        if _siglip_enabled:
+            import os
+            _mlp_path = self.get_parameter("fusion_mlp_path").value
+            if not os.path.isabs(_mlp_path):
+                _mlp_path = os.path.join("/workspace", _mlp_path)
+            try:
+                from eval.siglip_rescoring import SigLIPRescoringWrapper
+                from eval.fusion_mlp import FusionMLPWrapper
+                if not os.path.exists(_mlp_path):
+                    raise FileNotFoundError(f"fusion_mlp not found: {_mlp_path}")
+                _siglip_model = self.get_parameter("siglip_model").value
+                _mlp_conf = self.get_parameter("mlp_confidence_threshold").value
+                self.get_logger().info(
+                    "Loading SigLIP model %s (this takes ~30s)...", _siglip_model
+                )
+                self._detector = SigLIPRescoringWrapper(
+                    base=self._detector,
+                    model_id=_siglip_model,
+                    w_dino=self.get_parameter("siglip_dino_weight").value,
+                    w_siglip=self.get_parameter("siglip_weight").value,
+                    w_pred_iou=self.get_parameter("siglip_pred_iou_weight").value,
+                    nms_iou_threshold=_nms,
+                    max_detections=_max_det,
+                    confidence_threshold=0.0,
+                    device=_device,
+                )
+                self._detector = FusionMLPWrapper(
+                    base=self._detector,
+                    mlp_path=_mlp_path,
+                    nms_iou_threshold=_nms,
+                    max_detections=_max_det,
+                    confidence_threshold=_mlp_conf,
+                    device=_device,
+                )
+                self.get_logger().info(
+                    "SigLIP + Fusion MLP pipeline active "
+                    "(mlp_conf=%.2f, dino=%.1f, siglip=%.1f, pred_iou=%.1f)",
+                    _mlp_conf,
+                    self.get_parameter("siglip_dino_weight").value,
+                    self.get_parameter("siglip_weight").value,
+                    self.get_parameter("siglip_pred_iou_weight").value,
+                )
+            except Exception as exc:
+                self.get_logger().warning(
+                    "SigLIP+MLP pipeline unavailable (%s). "
+                    "Falling back to DINOv2-only with confidence_threshold=%.2f.",
+                    exc, self._conf_threshold,
+                )
+                # Re-create base detector with the raw confidence threshold so
+                # DINOv2-only mode gates correctly.
+                self._detector = SAM2AMGDetector(
+                    device=_device,
+                    confidence_threshold=self._conf_threshold,
+                    points_per_side=self.get_parameter("amg_points_per_side").value,
+                    max_detections=_max_det,
+                    nms_iou_threshold=_nms,
+                    dino_score_weight=self.get_parameter("dino_score_weight").value,
+                    negative_weight=self.get_parameter("negative_weight").value,
+                    query_embedding_path=_query_emb,
+                    negative_embedding_path=_neg_emb,
+                    sam2_checkpoint=_sam2_ckpt,
+                )
 
         # ── Subscribers ───────────────────────────────────────────────────────
         self._image_sub = self.create_subscription(

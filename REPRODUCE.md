@@ -58,7 +58,14 @@ ros2 launch agrobot_perception perception.launch.py \
   depth_camera_info_topic:=/camera/camera/depth/camera_info
 ```
 
-Wait for `TomatoDetectorNode initialized`.
+Wait for:
+```
+[INFO] [tomato_detector]: SigLIP + Fusion MLP pipeline active (mlp_conf=0.40, ...)
+[INFO] [tomato_detector]: TomatoDetectorNode initialized.
+```
+
+> SigLIP model loads on first run (~30s, then cached). If `models/fusion_mlp.pt`
+> is missing the node falls back to DINOv2-only and logs a warning.
 
 > GPU is enabled by default — no CPU-forcing env vars needed.
 >
