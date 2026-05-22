@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>agrobot_motion</name>
+  <version>0.1.0</version>
+  <description>
+    Motion service nodes for Agrobot TOM v2. Wraps MoveIt planning groups
+    behind simple ROS 2 services so the perception/supervisor layer can
+    command motion without depending on MoveIt directly.
+    Currently provides rail_mover (joint0 / linear rail). Arm pick service
+    to follow.
+  </description>
+  <maintainer email="robotics-club@example.com">Agrobot Team</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>rosidl_default_generators</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>moveit_ros_planning_interface</depend>
+
+  <exec_depend>rosidl_default_runtime</exec_depend>
+  <member_of_group>rosidl_interface_packages</member_of_group>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

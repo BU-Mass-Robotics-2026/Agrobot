@@ -1,0 +1,21 @@
+# RailGoto.srv
+# Move the rail joint (joint0, prismatic) to an absolute coordinate.
+# The caller (supervisor) computes the absolute target; this service executes it.
+#
+# Out-of-range targets are CLAMPED into the usable range [0.05, 1.30], not
+# rejected. The usable range is intentionally inset from the URDF hard limits
+# [0.0, 1.35] to keep a 5 cm safety margin off each physical end-stop.
+
+# --- Request ---
+float64 target_position    # Desired absolute joint0 coordinate (metres).
+                           # Clamped into [0.05, 1.30] before execution.
+---
+# --- Response ---
+bool success               # true  = MoveIt planned AND executed to (clamped) target
+                           # false = planning or execution failed
+bool clamped               # true  = the requested target was outside [0.05, 1.30]
+                           #         and was truncated. The supervisor can treat
+                           #         clamped==true as an END-OF-RAIL signal.
+float64 requested_position # The raw target the caller asked for (pre-clamp)
+float64 final_position     # Actual joint0 position after the call (from /joint_states)
+string message             # Human-readable result / failure reason
