@@ -17,14 +17,19 @@ ros2 launch realsense2_camera rs_launch.py \
   align_depth.enable:=true \
   pointcloud.enable:=true \
   rgb_camera.color_profile:=640x480x30 \
-  depth_module.depth_profile:=640x480x30 \
   enable_gyro:=false \
   enable_accel:=false
 ```
 
 Wait for `RealSense Node Is Up!` before continuing.
 
-**Fallback (USB 2 or driver rejects 30 FPS):**
+> Do NOT add `depth_module.depth_profile:=640x480x30`. The D456 depth sensor's
+> native resolution is 848x480 — forcing 640x480 causes `VIDIOC_S_FMT errno=5`
+> and the device resets and disappears. `align_depth.enable:=true` reprojects
+> depth onto the color frame, so downstream nodes get aligned depth at 640x480
+> regardless of the depth sensor's native resolution.
+
+**Fallback (USB 2 or driver rejects 30 FPS on color):**
 ```bash
 ros2 launch realsense2_camera rs_launch.py \
   align_depth.enable:=true \
@@ -33,7 +38,7 @@ ros2 launch realsense2_camera rs_launch.py \
   enable_accel:=false
 ```
 
-> Higher camera FPS does **not** speed up the detector (~12s/frame on GPU). It only
+> Higher camera FPS does **not** speed up the detector (~14s/frame on GPU). It only
 > makes `/camera/...` topics smoother for debugging.
 
 ---
@@ -69,8 +74,14 @@ Wait for:
 
 > GPU is enabled by default — no CPU-forcing env vars needed.
 >
-> `colcon build` only needed once per session (or after code changes). Do NOT set
-> `PYTHONPATH` — it breaks `ros2`.
+> `colcon build` only needed once per session (or after code changes).
+>
+> Do NOT set `PYTHONPATH=perception` — that eval-only hack remaps import roots
+> and breaks `ros2` package resolution.
+>
+> `/opt/venv/lib/python3.12/site-packages` is on `PYTHONPATH` automatically
+> (baked into the image as an `ENV` instruction). `torch`, `scipy`, `sam2`,
+> `transformers`, etc. are all visible to the system Python that colcon uses.
 
 ---
 
