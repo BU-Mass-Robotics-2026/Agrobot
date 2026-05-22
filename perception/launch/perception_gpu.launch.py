@@ -66,10 +66,12 @@ def generate_launch_description() -> LaunchDescription:
     # ── SAM2 AMG parameters ────────────────────────────────────────────────────
     amg_points_arg = DeclareLaunchArgument(
         "amg_points_per_side",
-        default_value="28",
+        default_value="32",
         description=(
-            "SAM2 AMG grid density. 28 → 784 proposals. "
-            "S4.12 best: 28. Higher = more recall, slower (32 = 22s/frame CPU)."
+            "SAM2 AMG grid density. 32 → 1024 proposals. "
+            "GPU ablation (2026-05-21) selected 32 as Pareto-best: "
+            "COCO mAP=0.417, recall=0.610, mean 6.2 s/frame on warm gfx1151. "
+            "Fewer points (24) saves ~1.4 s/frame but costs −0.06 mAP and −0.10 recall."
         ),
     )
     max_detections_arg = DeclareLaunchArgument(

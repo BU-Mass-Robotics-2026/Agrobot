@@ -4,12 +4,11 @@ perception.launch.py — Launch file for the Agrobot perception stack.
 ROS 2 launch files are Python scripts. They describe which nodes to start,
 with what parameters, remappings, and in what namespace.
 
-Run inside the container:
+Run inside the container (GPU enabled — uses agrobot-tom-v2/rocm-gpu:latest):
     ros2 launch agrobot_perception perception.launch.py
     ros2 launch agrobot_perception perception.launch.py confidence_threshold:=0.3
 
-Production config (S4.12 — matches REPRODUCE.md best result):
-    AGROBOT_FORCE_CPU=1 HIP_VISIBLE_DEVICES="" \\
+Production config (P2.2 — current best, see REPRODUCE.md):
     ros2 launch agrobot_perception perception.launch.py \\
       depth_topic:=/camera/camera/depth/image_rect_raw \\
       depth_camera_info_topic:=/camera/camera/depth/camera_info
@@ -142,16 +141,6 @@ def generate_launch_description() -> LaunchDescription:
         name="tomato_detector",
         namespace="agrobot",
         output="screen",
-        # Force CPU and disable ROCm at the OS level for this node's process.
-        # SAM2's C++ extensions probe the AMD GPU driver at import time regardless
-        # of the Python device flag, triggering a gfx1151 kernel crash. Setting
-        # these here guarantees they are set for the spawned process, not just
-        # inherited from the shell (which ros2 launch does not reliably propagate).
-        additional_env={
-            "AGROBOT_FORCE_CPU": "1",
-            "HIP_VISIBLE_DEVICES": "-1",
-            "ROCR_VISIBLE_DEVICES": "-1",
-        },
         remappings=[
             ("/camera/image_raw", LaunchConfiguration("camera_topic")),
         ],
@@ -185,11 +174,6 @@ def generate_launch_description() -> LaunchDescription:
         name="tomato_spatial",
         namespace="agrobot",
         output="screen",
-        additional_env={
-            "AGROBOT_FORCE_CPU": "1",
-            "HIP_VISIBLE_DEVICES": "-1",
-            "ROCR_VISIBLE_DEVICES": "-1",
-        },
         parameters=[
             {
                 "pointcloud_topic": LaunchConfiguration("pointcloud_topic"),
@@ -252,11 +236,6 @@ def generate_launch_description() -> LaunchDescription:
         name="qwen_vl",
         namespace="agrobot",
         output="screen",
-        additional_env={
-            "AGROBOT_FORCE_CPU": "1",
-            "HIP_VISIBLE_DEVICES": "-1",
-            "ROCR_VISIBLE_DEVICES": "-1",
-        },
         parameters=[
             {
                 "model_path": LaunchConfiguration("qwen_model_path"),

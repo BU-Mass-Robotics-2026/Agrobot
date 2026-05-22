@@ -1,0 +1,78 @@
+# syntax=docker/dockerfile:1.7
+###############################################################################
+# Dockerfile.rocm-gpu — GPU-enabled perception image for gfx1151 (Strix Halo)
+#
+# DIFFERENCE FROM Dockerfile.rocm:
+#   Dockerfile.rocm builds ROCm + a +rocm7.0 PyTorch wheel on plain ubuntu:24.04.
+#   That wheel page-faults on gfx1151 (verified 2026-05-20). This file instead
+#   bases on AMD's VALIDATED container, which ships torch 2.9.1+rocm7.2.1 — the
+#   exact stack proven to run zeros/matmul/Conv2d on gfx1151 without faulting.
+#   ROS 2 Jazzy + perception deps are layered ON TOP of that known-good base.
+#
+#   Base OS of rocm/pytorch:rocm7.2.1_ubuntu24.04_... is Ubuntu 24.04, so
+#   ROS 2 Jazzy (which requires 24.04 / noble) installs cleanly.
+#
+# Build (on the NucBox, from repo root):
+#   docker build \
+#     --file deployment/docker/Dockerfile.rocm-gpu \
+#     --tag agrobot-tom-v2/rocm-gpu:latest \
+#     .
+#
+# This does NOT overwrite agrobot-tom-v2/rocm:latest (the CPU image). Both
+# coexist; run_rocm.sh picks via the IMAGE env var.
+###############################################################################
+
+FROM rocm/pytorch:rocm7.2.1_ubuntu24.04_py3.12_pytorch_release_2.9.1 AS base
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# ── ROS 2 Jazzy ───────────────────────────────────────────────────────────────
+RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
+        -o /usr/share/keyrings/ros-archive-keyring.gpg && \
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] \
+        http://packages.ros.org/ros2/ubuntu noble main" \
+        > /etc/apt/sources.list.d/ros2.list && \
+    apt-get update && apt-get install -y --no-install-recommends \
+    ros-jazzy-ros-base \
+    ros-jazzy-cv-bridge \
+    ros-jazzy-image-transport \
+    ros-jazzy-vision-msgs \
+    ros-jazzy-realsense2-camera \
+    python3-colcon-common-extensions \
+    git tmux htop vim \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Perception Python deps ────────────────────────────────────────────────────
+# torch / torchvision are ALREADY in the base image (2.9.1+rocm7.2.1) — do NOT
+# reinstall them, that would clobber the verified-good wheels. Only add what the
+# perception nodes need on top.
+#
+# --break-system-packages: the base image's Python is system Python; this matches
+# how the perception nodes already expect to be installed (see REPRODUCE.md).
+RUN pip3 install --break-system-packages --no-cache-dir \
+    sam2 \
+    hydra-core iopath \
+    scipy \
+    transformers qwen-vl-utils Pillow
+
+# ── Environment ───────────────────────────────────────────────────────────────
+WORKDIR /workspace
+RUN mkdir -p /ros2_ws/src
+
+ENV ROS_DOMAIN_ID=0
+ENV ROS_AUTOMATIC_DISCOVERY_RANGE=SUBNET
+ENV PATH=/opt/rocm/bin:${PATH}
+
+# NOTE: deliberately NOT setting HSA_OVERRIDE_GFX_VERSION or HSA_ENABLE_SDMA.
+# Verified 2026-05-20: gfx1151 is auto-detected correctly on the fixed driver
+# stack, and the AMD container runs the matmul/Conv2d test WITHOUT the override.
+# Setting the override here would diverge from the proven-good configuration.
+
+RUN echo "source /opt/ros/jazzy/setup.bash" >> /root/.bashrc
+
+# entrypoint.sh is copied if present; falls back to bash otherwise.
+COPY deployment/docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh || true
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["bash"]

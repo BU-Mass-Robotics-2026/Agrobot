@@ -1,3 +1,8 @@
+# Colcon build artifacts
+build/
+install/
+log/
+
 # Bazel
 bazel-*
 .bazel/

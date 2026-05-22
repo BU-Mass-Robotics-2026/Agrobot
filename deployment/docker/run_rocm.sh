@@ -21,7 +21,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-IMAGE="${IMAGE:-agrobot-tom-v2/rocm:latest}"
+IMAGE="${IMAGE:-agrobot-tom-v2/rocm-gpu:latest}"
 
 # Host GID that owns /dev/kfd (and usually the DRI render node)
 KFD_GID=""
@@ -62,7 +62,7 @@ done
 docker run --rm -it \
   --network host \
   --ipc host \
-  -e ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-42}" \
+  -e ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-0}" \
   --device=/dev/kfd \
   --device=/dev/dri \
   "${GROUP_ADD_ARGS[@]}" \
