@@ -44,6 +44,7 @@ install(PROGRAMS
   src/tomato_picker.py
   src/tests/test_multi_tomato.py
   src/tests/test_button_server.py
+  src/tests/get_pose_coords.py
   DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY

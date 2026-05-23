@@ -21,9 +21,9 @@ RETRACT_STANDOFF     = 0.15  # 15 cm back along approach vector after grasp
 
 # Examples, need to get actual positions
 NAMED_POSE_COORDS = {
-    'attention': {'x': 0.5, 'y': 0.0, 'z': 0.5, 'roll': 0.0, 'pitch': 0.0, 'yaw': 0.0},
-    'crouch':    {'x': 0.3, 'y': 0.0, 'z': 0.2, 'roll': 0.0, 'pitch': 0.0, 'yaw': 0.0},
-    'bin':       {'x': 0.6, 'y': -0.3, 'z': 0.4, 'roll': 0.0, 'pitch': 0.0, 'yaw': 0.0},
+    'attention': {'x': 0.8644, 'y': 0.6048, 'z': 0.8177, 'roll': 0.-1.7748, 'pitch': -1.5708, 'yaw': 0.2043},
+    'crouch':    {'x': 0.7553, 'y': 0.0930, 'z': 0.3605, 'roll': 0.-2.4707, 'pitch': -0.0085, 'yaw': 0.0193},
+    'bin':       {'x': 0.8094, 'y': -1.1524, 'z': 0.2916, 'roll': 0.-3.1414, 'pitch': 0.0003, 'yaw': 3.141688},
 }
 
 class TomatoPicker(Node):
