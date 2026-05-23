@@ -10,7 +10,7 @@
     # ---------------- CAN / kinematics ----------------
     can_interface: "can0"
     encoder_qc_per_motor_rev: 25600.0
-    gear_ratio_motor_per_joint_rev: 168.0
+    gear_ratio_motor_per_joint_rev: 160.0
     sign: 1.0
     zero_offset_qc: 0.0
 

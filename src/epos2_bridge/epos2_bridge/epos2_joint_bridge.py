@@ -2663,21 +2663,54 @@ class Epos2JointBridge(Node):
         return result
 
     def _convert_trajectory_points_to_pvt(self, points: List[JointTrajectoryPoint]) -> List[PVTPoint]:
+        import math
         out: List[PVTPoint] = []
-        prev_t = 0.0
         default_seg_ms = int(self.get_parameter("ipm_default_segment_ms").value)
+
+        # Seed interpolation with the drive's current pose so the first
+        # MoveIt segment has a sensible starting position/velocity.
+        with self.state_lock:
+            prev_q = self.kin.motor_qc_to_joint_rad(
+                to_signed_32(self.state.position_actual_qc)
+            )
+        prev_v = 0.0
+        prev_t = 0.0
+
         for pt in points:
             if len(pt.positions) != 1:
                 raise ValueError("Each point must have exactly one position")
-            target_qc = self.kin.joint_rad_to_motor_qc(pt.positions[0])
-            vel_rpm = 0
-            if len(pt.velocities) == 1:
-                vel_rpm = self.kin.joint_rad_s_to_motor_rpm(pt.velocities[0])
+            q = float(pt.positions[0])
+            v = float(pt.velocities[0]) if len(pt.velocities) == 1 else 0.0
             t = self._duration_msg_to_sec(pt.time_from_start)
             dt = t - prev_t
             prev_t = t
-            seg_ms = max(1, int(round(dt * 1000.0))) if dt > 0.0 else default_seg_ms
-            out.append(PVTPoint(seg_ms, vel_rpm, target_qc))
+
+            if dt <= 0.0:
+                # Treat zero-dt as a single default-length hold step (rare;
+                # MoveIt usually produces monotonic time_from_start).
+                target_qc = self.kin.joint_rad_to_motor_qc(q)
+                vel_rpm = self.kin.joint_rad_s_to_motor_rpm(v)
+                out.append(PVTPoint(default_seg_ms, vel_rpm, target_qc))
+            else:
+                # EPOS2 time_ms is u8 (1..255). Subdivide longer segments
+                # into equal sub-segments and linearly interpolate position
+                # and velocity. Mirrors the Copley bridge subdivision.
+                n = max(1, math.ceil(dt / 0.255))
+                for k in range(1, n + 1):
+                    frac = k / n
+                    qk = prev_q + frac * (q - prev_q)
+                    vk = prev_v + frac * (v - prev_v)
+                    dtk = dt / n
+                    pos_qc = self.kin.joint_rad_to_motor_qc(qk)
+                    vel_rpm = self.kin.joint_rad_s_to_motor_rpm(vk)
+                    time_ms = max(1, min(255, int(round(dtk * 1000.0))))
+                    out.append(PVTPoint(time_ms=time_ms,
+                                        velocity_rpm=vel_rpm,
+                                        position_qc=pos_qc))
+
+            prev_q = q
+            prev_v = v
+
         return out
 
     def _wait_for_goal(self, goal_handle, feedback: FollowJointTrajectory.Feedback) -> bool:

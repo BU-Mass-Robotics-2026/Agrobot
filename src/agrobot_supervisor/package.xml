@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>agrobot_supervisor</name>
+  <version>0.1.0</version>
+  <description>
+    Discrete step-and-shoot picking supervisor for Agrobot TOM v2.
+    A state-machine orchestrator that steps the rail, captures perception
+    snapshots, deduplicates tomatoes by persistent_id, and builds a pick
+    queue. Capture-only in this revision; arm picking is stubbed.
+  </description>
+  <maintainer email="robotics-club@example.com">Agrobot Team</maintainer>
+  <license>MIT</license>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>agrobot_motion</exec_depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
