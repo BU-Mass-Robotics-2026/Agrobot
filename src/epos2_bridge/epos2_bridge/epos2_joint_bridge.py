@@ -299,7 +299,7 @@ class Epos2JointBridge(Node):
         self.declare_parameter("sign", 1.0)
         self.declare_parameter("zero_offset_qc", 0.0)
         self.declare_parameter("joint_state_rate_hz", 50.0)
-        self.declare_parameter("telemetry_rate_hz", 10.0)
+        self.declare_parameter("telemetry_rate_hz", 0.2)
         self.declare_parameter("pdo_rx_thread_hz", 500.0)
         self.declare_parameter("ipm_default_segment_ms", 10)
         self.declare_parameter("j2_active_pvt_cap_ms", 100)

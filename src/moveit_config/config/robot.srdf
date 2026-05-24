@@ -23,8 +23,8 @@
         <joint name="joint0"/>
     </group>
 
-    <!-- Anthro: arm joints J1-J5. Chain base_link->link6 includes joint1..joint6;
-         joint6 is a FIXED joint so it adds no DOF — effective movable set is J1-J5.
+    <!-- Anthro: arm joints J1-J6. Chain base_link->link6 includes joint1..joint6;
+         joint6 is now an active revolute joint.
          Rail (joint0) and gripper excluded. -->
     <group name="anthro">
         <chain base_link="base_link" tip_link="link6"/>
@@ -48,6 +48,7 @@
         <joint name="joint3" value="1.4"/>
         <joint name="joint4" value="1.55"/>
         <joint name="joint5" value="0.25"/>
+        <joint name="joint6" value="0"/>
     </group_state>
 
     <group_state name="attention" group="arm">
@@ -57,6 +58,7 @@
         <joint name="joint3" value="0"/>
         <joint name="joint4" value="0"/>
         <joint name="joint5" value="0"/>
+        <joint name="joint6" value="0"/>
     </group_state>
 
     <group_state name="vertical" group="arm">
@@ -66,6 +68,7 @@
         <joint name="joint3" value="-1.5708"/>
         <joint name="joint4" value="0"/>
         <joint name="joint5" value="0"/>
+        <joint name="joint6" value="0"/>
     </group_state>
 
     <group_state name="bin" group="arm">
@@ -75,6 +78,7 @@
         <joint name="joint3" value="-0.959931"/>
         <joint name="joint4" value="1.5708"/>
         <joint name="joint5" value="-1.309"/>
+        <joint name="joint6" value="0"/>
     </group_state>
 
     <!-- Gripper group states -->
