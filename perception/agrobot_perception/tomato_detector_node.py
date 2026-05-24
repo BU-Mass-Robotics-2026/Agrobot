@@ -164,6 +164,21 @@ class TomatoDetectorNode(Node):
         self.declare_parameter("siglip_dino_weight", 0.4)
         self.declare_parameter("siglip_weight", 0.4)
         self.declare_parameter("siglip_pred_iou_weight", 0.2)
+        # Pipe-separated overrides for SigLIP text prompts. Empty = built-in defaults.
+        # In scenes with green foliage but only ripe red tomatoes, remove the
+        # "green unripe tomato" positive prompt — it co-fires with leaves.
+        self.declare_parameter("siglip_positive_prompts", "")
+        self.declare_parameter("siglip_negative_prompts", "")
+        # Optional red-color post-filter (FM-7: leaf-wall false-positives).
+        # When enabled, detections whose bbox crop contains <min_red_fraction
+        # red-saturated pixels are dropped. The MLP's HSV features alone do not
+        # strongly bias against green in single-ripe scenes — this is a hard prior.
+        self.declare_parameter("color_filter_enabled", False)
+        self.declare_parameter("color_min_red_fraction", 0.15)
+        self.declare_parameter("color_red_hue_max", 12)        # OpenCV H in [0, 180]
+        self.declare_parameter("color_red_hue_min", 168)
+        self.declare_parameter("color_red_min_saturation", 90)
+        self.declare_parameter("color_red_min_value", 60)
 
         self._conf_threshold = self.get_parameter("confidence_threshold").value
         self._input_size = (
@@ -177,6 +192,13 @@ class TomatoDetectorNode(Node):
         self._depth_K: tuple[float, float, float, float] | None = None
         self._watchdog_timeout_ms: int = self.get_parameter("watchdog_timeout_ms").value
         self._last_frame_time: float = 0.0
+
+        self._color_filter_enabled: bool = bool(self.get_parameter("color_filter_enabled").value)
+        self._color_min_red_fraction: float = float(self.get_parameter("color_min_red_fraction").value)
+        self._color_red_hue_max: int = int(self.get_parameter("color_red_hue_max").value)
+        self._color_red_hue_min: int = int(self.get_parameter("color_red_hue_min").value)
+        self._color_red_min_sat: int = int(self.get_parameter("color_red_min_saturation").value)
+        self._color_red_min_val: int = int(self.get_parameter("color_red_min_value").value)
 
         _query_emb = self.get_parameter("query_embedding_path").value or None
         _neg_emb = self.get_parameter("negative_embedding_path").value or None
@@ -223,6 +245,18 @@ class TomatoDetectorNode(Node):
                 self.get_logger().info(
                     f"Loading SigLIP model {_siglip_model} (this takes ~30s)..."
                 )
+                _pos_raw = self.get_parameter("siglip_positive_prompts").value or ""
+                _neg_raw = self.get_parameter("siglip_negative_prompts").value or ""
+                _pos_prompts = tuple(p.strip() for p in _pos_raw.split("|") if p.strip())
+                _neg_prompts = tuple(p.strip() for p in _neg_raw.split("|") if p.strip())
+                # Build kwargs so SigLIPRescoringWrapper's built-in defaults stay
+                # the source of truth when no override is supplied. Passing an
+                # empty tuple here would silently disable the prompt set.
+                _siglip_kwargs = {}
+                if _pos_prompts:
+                    _siglip_kwargs["positive_prompts"] = _pos_prompts
+                if _neg_prompts:
+                    _siglip_kwargs["negative_prompts"] = _neg_prompts
                 self._detector = SigLIPRescoringWrapper(
                     base=self._detector,
                     model_id=_siglip_model,
@@ -233,7 +267,13 @@ class TomatoDetectorNode(Node):
                     max_detections=_max_det,
                     confidence_threshold=0.0,
                     device=_device,
+                    **_siglip_kwargs,
                 )
+                if _pos_prompts or _neg_prompts:
+                    self.get_logger().info(
+                        f"SigLIP prompt overrides — pos={list(_pos_prompts) or 'defaults'}, "
+                        f"neg={list(_neg_prompts) or 'defaults'}"
+                    )
                 self._detector = FusionMLPWrapper(
                     base=self._detector,
                     mlp_path=_mlp_path,
@@ -324,6 +364,14 @@ class TomatoDetectorNode(Node):
                 f"in {self._watchdog_timeout_ms} ms."
             )
 
+        if self._color_filter_enabled:
+            self.get_logger().info(
+                f"Red-color post-filter ENABLED: min_red_fraction="
+                f"{self._color_min_red_fraction:.2f}, "
+                f"hue ∈ [0,{self._color_red_hue_max}]∪[{self._color_red_hue_min},180], "
+                f"S≥{self._color_red_min_sat}, V≥{self._color_red_min_val}."
+            )
+
         self.get_logger().info(
             f"TomatoDetectorNode initialized. "
             f"conf_threshold={self._conf_threshold}, "
@@ -357,6 +405,46 @@ class TomatoDetectorNode(Node):
         msg.data = safe
         self._safe_to_pick_pub.publish(msg)
 
+    def _bbox_redness(self, bgr_frame: np.ndarray, bbox_518: list[float]) -> float:
+        """Return the fraction [0,1] of bbox pixels that look saturated-red.
+
+        The detector returns boxes in 518×518 letterboxed space. This helper
+        un-letterboxes back to the native BGR frame, then masks pixels whose
+        OpenCV hue lies in the red band (red wraps H=0/180) with high enough
+        saturation and value to exclude shadow noise. Cheap (~µs per box) and
+        operates on raw camera pixels, not the ImageNet-normalised tensor — so
+        the colour stats are not corrupted by ViT preprocessing.
+        """
+        h, w = bgr_frame.shape[:2]
+        iw, ih = self._input_size
+        scale = min(iw / w, ih / h)
+        new_w, new_h = int(w * scale), int(h * scale)
+        pad_x = (iw - new_w) // 2
+        pad_y = (ih - new_h) // 2
+
+        x1_518, y1_518, x2_518, y2_518 = bbox_518
+        x1 = max(0, int((x1_518 - pad_x) / scale))
+        y1 = max(0, int((y1_518 - pad_y) / scale))
+        x2 = min(w, int((x2_518 - pad_x) / scale))
+        y2 = min(h, int((y2_518 - pad_y) / scale))
+        if x2 <= x1 or y2 <= y1:
+            return 0.0
+
+        crop = bgr_frame[y1:y2, x1:x2]
+        if crop.size == 0:
+            return 0.0
+
+        hsv = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
+        h_chan = hsv[:, :, 0]
+        s_chan = hsv[:, :, 1]
+        v_chan = hsv[:, :, 2]
+        red_mask = (
+            ((h_chan <= self._color_red_hue_max) | (h_chan >= self._color_red_hue_min))
+            & (s_chan >= self._color_red_min_sat)
+            & (v_chan >= self._color_red_min_val)
+        )
+        return float(red_mask.mean())
+
     def _image_callback(self, msg: Image) -> None:
         """Called for every incoming camera frame."""
         self._last_frame_time = time.monotonic()
@@ -370,6 +458,29 @@ class TomatoDetectorNode(Node):
         preprocessed = preprocess_for_dino(bgr_frame, input_size=self._input_size)
         raw_detections = self._detector.detect(preprocessed)
         detections = [d for d in raw_detections if d["score"] >= self._conf_threshold]
+
+        if self._color_filter_enabled and detections:
+            n_before = len(detections)
+            scored = [
+                (d, self._bbox_redness(bgr_frame, d["box"])) for d in detections
+            ]
+            detections = [
+                d for d, red in scored if red >= self._color_min_red_fraction
+            ]
+            if n_before > 0 and not detections:
+                # Surface the best red-score seen so operators can tune the threshold
+                # without re-running with debug logging enabled.
+                best = max(scored, key=lambda kv: kv[1])
+                self.get_logger().info(
+                    f"Color filter dropped all {n_before} detections "
+                    f"(best red_fraction={best[1]:.3f} < "
+                    f"{self._color_min_red_fraction:.3f}).",
+                    throttle_duration_sec=5.0,
+                )
+            elif n_before > 0:
+                self.get_logger().debug(
+                    f"Color filter kept {len(detections)}/{n_before} detections."
+                )
 
         self._publish_detections(detections, msg.header)
         # Explicit safe_to_pick signal every frame — planner doesn't need to

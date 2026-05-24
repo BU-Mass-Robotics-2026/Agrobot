@@ -6,7 +6,7 @@ with what parameters, remappings, and in what namespace.
 
 Run inside the container (GPU enabled — uses agrobot-tom-v2/rocm-gpu:latest):
     ros2 launch agrobot_perception perception.launch.py
-    ros2 launch agrobot_perception perception.launch.py confidence_threshold:=0.3
+    ros2 launch agrobot_perception perception.launch.py mlp_confidence_threshold:=0.5
 
 Production config (P2.2 — current best, see REPRODUCE.md):
     ros2 launch agrobot_perception perception.launch.py \\
@@ -53,22 +53,29 @@ def generate_launch_description() -> LaunchDescription:
     # ── Detection thresholds ───────────────────────────────────────────────────
     conf_threshold_arg = DeclareLaunchArgument(
         "confidence_threshold",
-        default_value="0.35",
-        description="Minimum detection score [0.0, 1.0]. S4.12 best: 0.35.",
+        default_value="0.0",
+        description=(
+            "Pre-MLP DINOv2 score gate [0.0, 1.0]. P2.2 best: 0.0 — "
+            "pass all SAM2 proposals to the MLP; mlp_confidence_threshold gates instead."
+        ),
     )
     nms_iou_arg = DeclareLaunchArgument(
         "nms_iou_threshold",
-        default_value="0.5",
-        description="IoU threshold for box NMS. S4.12 best: 0.5.",
+        default_value="0.4",
+        description="IoU threshold for box NMS. P2.2 best: 0.40.",
     )
 
     # ── SAM2 AMG parameters ────────────────────────────────────────────────────
     amg_points_arg = DeclareLaunchArgument(
         "amg_points_per_side",
-        default_value="28",
+        default_value="40",
         description=(
-            "SAM2 AMG grid density. 28 → 784 proposals. "
-            "S4.12 best: 28. Higher = more recall, slower (32 = 22s/frame CPU)."
+            "SAM2 AMG grid density. 40 → 1600 proposals. "
+            "Live default raised from 32 (P2.2 eval best) to 40 for better "
+            "coverage on small/distant tomatoes during real-time demos with "
+            "a moving rail-mounted camera. Cycle time ~8–10s/frame GPU. "
+            "Drop to 32 (faster, P2.2 eval-best) or 24 (4.8s, -18% recall) "
+            "if latency dominates over recall in your scenario."
         ),
     )
     max_detections_arg = DeclareLaunchArgument(
@@ -130,8 +137,12 @@ def generate_launch_description() -> LaunchDescription:
     )
     mlp_conf_arg = DeclareLaunchArgument(
         "mlp_confidence_threshold",
-        default_value="0.40",
-        description="MLP output probability threshold [0,1]. GPU sweep best: 0.40.",
+        default_value="0.25",
+        description=(
+            "MLP output probability threshold [0,1]. GPU eval best: 0.40 (high precision). "
+            "Live default: 0.25 — more permissive to recover from scene variation and "
+            "avoid track loss at ~6s/frame cadence. Raise to 0.40 if false positives appear."
+        ),
     )
 
     # ── Debug ──────────────────────────────────────────────────────────────────
@@ -246,7 +257,12 @@ def generate_launch_description() -> LaunchDescription:
                 "spatial_topic": "/agrobot/tomato_spatial",
                 "tracks_topic": "/agrobot/tomato_tracks",
                 "match_threshold_m": 0.08,
-                "max_missed_frames": 3,
+                # 5 missed cycles ≈ 30 s at the ~6 s/frame detector cadence.
+                # Sweet spot for demos: long enough to survive a brief miss
+                # (avoids ID-thrashing on a still tomato), short enough that a
+                # moved/removed tomato clears within half a minute and a new one
+                # can take the next persistent_id cleanly.
+                "max_missed_frames": 5,
                 "smoothing_alpha": 0.4,
             }
         ],

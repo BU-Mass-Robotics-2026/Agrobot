@@ -161,7 +161,7 @@ export ROS_DOMAIN_ID=42
 # Camera rate
 ros2 topic hz /camera/camera/color/image_raw
 
-# 2D detections (every ~17s)
+# 2D detections (every ~5s)
 ros2 topic echo /agrobot/detections
 
 # Arm gate
@@ -208,6 +208,53 @@ pose:
   position: {x: -0.062, y: 0.012, z: 0.382}
   orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}
 ```
+
+---
+
+### Optional — Perception Dashboard (GUI on Mac via VNC)
+
+Run these three blocks in order at the start of each NucBox session.
+
+**Step 1 — Cursor terminal (NucBox host, outside container):**
+```bash
+# Start virtual framebuffer only if not already running
+if ! pgrep -x Xvfb > /dev/null; then
+  rm -f /tmp/.X20-lock /tmp/.X11-unix/X20 2>/dev/null
+  Xvfb :20 -screen 0 1280x800x24 &
+  sleep 1
+fi
+
+# Attach VNC server and grant Docker X11 access
+export DISPLAY=:20
+pkill x11vnc 2>/dev/null
+x11vnc -display :20 -passwd agrobot -listen localhost -forever -quiet &
+xhost +local:docker
+```
+
+**Step 2 — XQuartz xterm on Mac:**
+```bash
+kill $(lsof -t -i:5901) 2>/dev/null
+ssh -L 5901:localhost:5900 -N -o ControlMaster=no robotics-club@NucBox.local &
+open vnc://localhost:5901   # password: agrobot
+```
+
+Mac Screen Sharing opens showing the (black) NucBox virtual desktop.
+
+**Step 3 — Cursor terminal (inside container):**
+```bash
+docker exec -it $(docker ps -lq) bash
+source /opt/ros/jazzy/setup.bash && source /workspace/install/setup.bash
+export ROS_DOMAIN_ID=42
+export DISPLAY=:20
+pip install PyQt5 --break-system-packages   # once per container lifetime; skip if already installed
+PYTHONPATH=perception:$PYTHONPATH python3 perception/tools/viz_dashboard.py
+```
+
+Dashboard appears in Screen Sharing. Panels:
+- **Top-left** — camera feed with bounding-box overlays (cyan=new, green=smoothed, yellow=VLM pick, red=picked) + SAFE TO PICK bar
+- **Top-right** — scrolling detection event stream with per-track z/radius/confidence
+- **Bottom-left** — per-tomato catalog, session-persistent (cards survive track loss)
+- **Bottom-right** — node health dots (green/red per node), detection rate, mean latency, VLM last reasoning
 
 ---
 

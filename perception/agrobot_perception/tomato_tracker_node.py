@@ -198,6 +198,10 @@ class TomatoTrackerNode(Node):
         self.create_subscription(
             String, "/agrobot/mark_picked", self._mark_picked_callback, 10
         )
+        # Dashboard reset button publishes here to wipe all tracks and restart IDs from 0.
+        self.create_subscription(
+            String, "/agrobot/reset_tracker", self._reset_callback, 10
+        )
 
         # ── Publishers ────────────────────────────────────────────────────────
         self._tracks_pub = self.create_publisher(String, tracks_topic, 10)
@@ -210,6 +214,14 @@ class TomatoTrackerNode(Node):
         )
 
     # ── Callbacks ─────────────────────────────────────────────────────────────
+
+    def _reset_callback(self, msg: String) -> None:
+        """Wipe all tracks and restart the persistent ID counter from 0."""
+        self._tracks.clear()
+        self._picked_ids.clear()
+        self._next_id = 0
+        self._frame = 0
+        self.get_logger().info("Tracker reset — all tracks cleared, IDs restart from 0.")
 
     def _mark_picked_callback(self, msg: String) -> None:
         """Arm planner calls this to suppress a track after picking."""

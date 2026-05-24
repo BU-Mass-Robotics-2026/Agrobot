@@ -91,6 +91,7 @@ from PyQt5.QtWidgets import (
     QLabel,
     QMainWindow,
     QMessageBox,
+    QPushButton,
     QScrollArea,
     QSizePolicy,
     QTextEdit,
@@ -108,6 +109,9 @@ CARD_IMAGE_W, CARD_IMAGE_H = 120, 90
 CARD_W,       CARD_H       = 174, 214
 HEALTH_TIMEOUT_S = 10.0
 METRICS_WINDOW   = 30       # rolling window for per-frame detection rate
+# Demo-friendly catalog turnover: drop LOST cards 20 s after they go missing.
+# Picked cards are never auto-evicted (session history).
+LOST_CARD_TTL_S  = 20.0
 
 # Camera topics from RealSense publish with BEST_EFFORT reliability.
 # A RELIABLE subscription here causes a QoS mismatch — the node would
@@ -291,6 +295,8 @@ class AgroVizNode(Node):
         self.create_subscription(Bool,             "/agrobot/safe_to_pick",              self._cb_safe,        _r)
         self.create_subscription(String,           "/agrobot/mark_picked",               self._cb_mark_picked, _r)
 
+        self._reset_pub = self.create_publisher(String, "/agrobot/reset_tracker", 10)
+
         self.get_logger().info(f"{_APP_TITLE} — node ready, 11 subscriptions active.")
 
     # ── Image callbacks ───────────────────────────────────────────────────────
@@ -373,12 +379,17 @@ class AgroVizNode(Node):
                     "_picked": pid in self._picked_ids,
                 }
 
-            # Tracks absent this frame are marked lost without eviction
+            # Tracks absent this frame are marked lost; timestamp the
+            # transition so panel 3 can auto-evict stale LOST cards.
             for pid, entry in self._catalog.items():
                 if (pid not in active_ids
                         and not entry.get("_picked")
                         and not entry.get("_lost")):
-                    self._catalog[pid] = {**entry, "_lost": True}
+                    self._catalog[pid] = {
+                        **entry,
+                        "_lost": True,
+                        "_lost_at": now,
+                    }
 
             self._lost_count = sum(
                 1 for e in self._catalog.values()
@@ -671,6 +682,18 @@ class MainWindow(QMainWindow):
 
     def _panel3(self) -> QFrame:
         f, v = self._titled_frame("▶  TOMATO CATALOG")
+
+        btn = QPushButton("⟳  Reset Catalog")
+        btn.setFixedHeight(26)
+        btn.setStyleSheet(
+            f"QPushButton{{background:#2a1a0d;color:{_QT_AMBER};border:1px solid {_QT_AMBER};"
+            f"border-radius:4px;font-family:Monospace;font-size:9pt;}}"
+            f"QPushButton:hover{{background:#3a2a1d;}}"
+            f"QPushButton:pressed{{background:#1a0d00;}}"
+        )
+        btn.clicked.connect(self._reset_catalog)
+        v.addWidget(btn)
+
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setStyleSheet("border:none;")
@@ -781,13 +804,15 @@ class MainWindow(QMainWindow):
             safe    = self._node._safe_to_pick
             cam     = self._node._cam_info
 
-        now       = time.monotonic()
-        use_debug = d_frame is not None and (now - d_ts < 5.0)
+        now = time.monotonic()
 
-        if use_debug:
-            frame = d_frame.copy()
-        elif r_frame is not None:
+        # Always prefer raw_frame — the debug_frame has boxes pre-drawn by the
+        # detector in 518×518 coordinates on a 640×480 canvas, which produces a
+        # second misaligned overlay when the dashboard draws its own boxes.
+        if r_frame is not None:
             frame = r_frame.copy()
+        elif d_frame is not None:
+            frame = d_frame.copy()
         else:
             self._cam_lbl.setText("⏳ Waiting for camera…")
             return
@@ -818,7 +843,10 @@ class MainWindow(QMainWindow):
             key = min(by_conf, key=lambda k: abs(k - round(det["score"], 4)))
             return by_conf[key]
 
-        # Draw overlays at native resolution; resize once at the end
+        # Draw overlays at native resolution; resize once at the end.
+        # Track which persistent_ids were covered by a fresh detection box.
+        drawn_pids: set = set()
+
         for det in dets:
             x1_n, y1_n = _unletterbox_pt(det["bbox"][0], det["bbox"][1], orig_w, orig_h)
             x2_n, y2_n = _unletterbox_pt(det["bbox"][2], det["bbox"][3], orig_w, orig_h)
@@ -827,6 +855,7 @@ class MainWindow(QMainWindow):
             t = _match_det(det)
             if t:
                 pid = t["persistent_id"]
+                drawn_pids.add(pid)
                 z   = t["centroid"]["z"]
                 r   = t["sphere"]["radius"] * 100.0
                 if pid in picked:
@@ -849,6 +878,40 @@ class MainWindow(QMainWindow):
                 frame, label, (x1 + 2, y1 - 4),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 0), 1, cv2.LINE_AA,
             )
+
+        # For active tracks not covered by a fresh detection, project the EMA-smoothed
+        # 3D centroid back to 2D and draw an estimated box (thin border, ~ suffix).
+        if cam is not None:
+            for t in tracks:
+                pid = t["persistent_id"]
+                if pid in drawn_pids:
+                    continue
+                proj = _project_to_native(t["centroid"], cam)
+                if proj is None:
+                    continue
+                u, v = int(proj[0]), int(proj[1])
+                z = t["centroid"]["z"]
+                r_px = max(10, int(cam["fx"] * t["sphere"]["radius"] / z))
+                if pid in picked:
+                    color = _BGR_RED
+                elif pid == vlm_id:
+                    color = _BGR_YELLOW
+                elif t.get("smoothed") and t.get("age", 0) >= 3:
+                    color = _BGR_GREEN
+                else:
+                    color = _BGR_CYAN
+                bx1, by1, bx2, by2 = u - r_px, v - r_px, u + r_px, v + r_px
+                cv2.rectangle(frame, (bx1, by1), (bx2, by2), color, 1)
+                # Thin border + ellipsis label communicates "tracker memory,
+                # detector is between cycles" — better UX than showing a stale
+                # numeric estimate the user might misread as a fresh measurement.
+                elabel = f"#{pid} \u00b7 processing..."
+                (tw, th), _ = cv2.getTextSize(elabel, cv2.FONT_HERSHEY_SIMPLEX, 0.4, 1)
+                cv2.rectangle(frame, (bx1, by1 - th - 4), (bx1 + tw + 4, by1), color, cv2.FILLED)
+                cv2.putText(
+                    frame, elabel, (bx1 + 2, by1 - 3),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA,
+                )
 
         lw, lh = self._cam_lbl.width(), self._cam_lbl.height()
         if lw > 10 and lh > 10:
@@ -895,17 +958,40 @@ class MainWindow(QMainWindow):
             picked  = set(self._node._picked_ids)
             vlm_id  = self._node._vlm_id
 
+        # Auto-evict LOST cards that have aged past LOST_CARD_TTL_S so the
+        # catalog stays current during demos. Picked cards are kept forever
+        # as session history.
+        now = time.monotonic()
+        to_evict = [
+            pid for pid, entry in catalog.items()
+            if (entry.get("_lost")
+                and not entry.get("_picked")
+                and now - entry.get("_lost_at", now) > LOST_CARD_TTL_S)
+        ]
+        if to_evict:
+            with self._node._lock:
+                for pid in to_evict:
+                    self._node._catalog.pop(pid, None)
+                    catalog.pop(pid, None)
+
         # Instantiate cards for newly seen IDs
         for pid in catalog:
             if pid not in self._cards:
                 self._cards[pid] = TomatoCard(pid, self._grid_w)
+
+        # Tear down widgets for evicted ids
+        for pid in to_evict:
+            card = self._cards.pop(pid, None)
+            if card is not None:
+                self._grid_l.removeWidget(card)
+                card.deleteLater()
 
         # Refresh content of all cards
         for pid, card in self._cards.items():
             if pid in catalog:
                 card.refresh(catalog[pid], pid in picked, vlm_id)
 
-        # Re-layout only when sort order has changed
+        # Re-layout when sort order or membership changed
         sorted_pids = sorted(self._cards, key=lambda p: self._cards[p].sort_key())
         if sorted_pids != self._sort_order:
             self._sort_order = sorted_pids
@@ -990,6 +1076,10 @@ class MainWindow(QMainWindow):
             card.deleteLater()
         self._cards.clear()
         self._sort_order = []
+        # Tell the tracker to wipe its registry and restart IDs from 0.
+        msg = String()
+        msg.data = "reset"
+        self._node._reset_pub.publish(msg)
 
     def _clear_log(self) -> None:
         with self._node._lock:
