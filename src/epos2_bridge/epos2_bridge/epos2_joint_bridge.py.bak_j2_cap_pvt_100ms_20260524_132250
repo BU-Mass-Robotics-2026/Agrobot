@@ -302,7 +302,6 @@ class Epos2JointBridge(Node):
         self.declare_parameter("telemetry_rate_hz", 10.0)
         self.declare_parameter("pdo_rx_thread_hz", 500.0)
         self.declare_parameter("ipm_default_segment_ms", 10)
-        self.declare_parameter("j2_active_pvt_cap_ms", 100)
         self.declare_parameter("goal_position_tolerance_rad", 0.01)
         self.declare_parameter("goal_velocity_tolerance_rad_s", 0.10)
         self.declare_parameter("fault_clear_on_startup", False)
@@ -575,7 +574,7 @@ class Epos2JointBridge(Node):
         duration_sec = max(0.15, float(duration_sec))
 
         # Current packet builder clearly rejects 1000 ms. Keep segments <= 250 ms.
-        max_seg_ms = int(self.get_parameter("j2_active_pvt_cap_ms").value) if str(getattr(self, "joint_id", "")).lower() == "j2" else 250
+        max_seg_ms = 250
         min_seg_ms = 50
         lead_ms = 80
 
@@ -1676,17 +1675,6 @@ class Epos2JointBridge(Node):
         v[-1] = 0.0
         return v
 
-    def _j2_pvt_cap_ms(self) -> int:
-        if str(getattr(self, "joint_id", "")).lower() == "j2":
-            return int(self.get_parameter("j2_active_pvt_cap_ms").value)
-        return 255
-
-    def _j2_pvt_record_cap_n(self, default_n: int) -> int:
-        if str(getattr(self, "joint_id", "")).lower() == "j2":
-            # 3 s / 100 ms needs ~30 records; leave headroom.
-            return max(default_n, 60)
-        return default_n
-
     def _hermite_pos_vel_acc(
         self,
         q0: float,
@@ -1750,11 +1738,10 @@ class Epos2JointBridge(Node):
         n_acc = max(1, int(math.ceil(a_peak / max_accel_rad_s2))) if max_accel_rad_s2 > 0 else 1
 
         n = max(n_time, n_step, n_dv, n_acc)
-        n = max(1, min(self._j2_pvt_record_cap_n(12), n))
+        n = max(1, min(12, n))
 
         dt_sub = T / n
-        cap_ms = self._j2_pvt_cap_ms()
-        time_ms = max(min_seg_ms, min(cap_ms, int(round(dt_sub * 1000.0))))
+        time_ms = max(min_seg_ms, min(255, int(round(dt_sub * 1000.0))))
 
         pts: List[PVTPoint] = []
         prev_qc = self.kin.joint_rad_to_motor_qc(q0_rad)
@@ -2097,7 +2084,7 @@ class Epos2JointBridge(Node):
 
                     all_points.append(
                         PVTPoint(
-                            time_ms=max(20, min(self._j2_pvt_cap_ms(), int(round(dtk * 1000.0)))),
+                            time_ms=max(20, min(255, int(round(dtk * 1000.0)))),
                             velocity_rpm=int(vel_rpm),
                             position_qc=int(pos_qc),
                         )
@@ -2510,10 +2497,6 @@ class Epos2JointBridge(Node):
         final_target_qc = all_pvt[-1].position_qc
         final_target_rad = self.kin.motor_qc_to_joint_rad(final_target_qc)
         default_seg_ms = max(20, int(self.get_parameter("ipm_default_segment_ms").value))
-        if str(getattr(self, "joint_id", "")).lower() == "j2":
-            self.get_logger().info(
-                f"J2 all active PVT packetizers capped: max active record time_ms={self._j2_pvt_cap_ms()}"
-            )
 
         # ---- Sync-start gating via header.stamp BEFORE IPM activation ----
         # Do not enable IPM and then wait by streaming stationary hold records.

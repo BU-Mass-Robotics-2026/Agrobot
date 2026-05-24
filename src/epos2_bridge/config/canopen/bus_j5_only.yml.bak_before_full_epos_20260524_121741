@@ -1,0 +1,16 @@
+options:
+  dcf_path: "/home/robotics-club/agrobot_ws/src/epos2_bridge/config/canopen"
+
+master:
+  node_id: 100
+  namespace: "/"
+  driver: "ros2_canopen::MasterDriver"
+  package: "canopen_master_driver"
+  sync_period: 20000
+
+node_3:
+  node_id: 3
+  namespace: "/"
+  dcf: "epos2.eds"
+  driver: "ros2_canopen::ProxyDriver"
+  package: "canopen_proxy_driver"

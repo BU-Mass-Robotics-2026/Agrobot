@@ -1676,17 +1676,6 @@ class Epos2JointBridge(Node):
         v[-1] = 0.0
         return v
 
-    def _j2_pvt_cap_ms(self) -> int:
-        if str(getattr(self, "joint_id", "")).lower() == "j2":
-            return int(self.get_parameter("j2_active_pvt_cap_ms").value)
-        return 255
-
-    def _j2_pvt_record_cap_n(self, default_n: int) -> int:
-        if str(getattr(self, "joint_id", "")).lower() == "j2":
-            # 3 s / 100 ms needs ~30 records; leave headroom.
-            return max(default_n, 60)
-        return default_n
-
     def _hermite_pos_vel_acc(
         self,
         q0: float,
@@ -1750,10 +1739,10 @@ class Epos2JointBridge(Node):
         n_acc = max(1, int(math.ceil(a_peak / max_accel_rad_s2))) if max_accel_rad_s2 > 0 else 1
 
         n = max(n_time, n_step, n_dv, n_acc)
-        n = max(1, min(self._j2_pvt_record_cap_n(12), n))
+        n = max(1, min(12, n))
 
         dt_sub = T / n
-        cap_ms = self._j2_pvt_cap_ms()
+        cap_ms = int(self.get_parameter("j2_active_pvt_cap_ms").value) if str(getattr(self, "joint_id", "")).lower() == "j2" else 255
         time_ms = max(min_seg_ms, min(cap_ms, int(round(dt_sub * 1000.0))))
 
         pts: List[PVTPoint] = []
@@ -2097,7 +2086,7 @@ class Epos2JointBridge(Node):
 
                     all_points.append(
                         PVTPoint(
-                            time_ms=max(20, min(self._j2_pvt_cap_ms(), int(round(dtk * 1000.0)))),
+                            time_ms=max(20, min(255, int(round(dtk * 1000.0)))),
                             velocity_rpm=int(vel_rpm),
                             position_qc=int(pos_qc),
                         )
@@ -2512,7 +2501,7 @@ class Epos2JointBridge(Node):
         default_seg_ms = max(20, int(self.get_parameter("ipm_default_segment_ms").value))
         if str(getattr(self, "joint_id", "")).lower() == "j2":
             self.get_logger().info(
-                f"J2 all active PVT packetizers capped: max active record time_ms={self._j2_pvt_cap_ms()}"
+                f"J2 active PVT cap enabled: max active record time_ms={int(self.get_parameter('j2_active_pvt_cap_ms').value)}"
             )
 
         # ---- Sync-start gating via header.stamp BEFORE IPM activation ----
