@@ -1151,7 +1151,7 @@ class Epos2JointBridge(Node):
         target_qc: int,
         tol_qc: int = 50,
         vel_tol_rpm: int = 5,
-        total_timeout_sec: float = 1.5,
+        total_timeout_sec: float = 8.0,
         topup_period_ms: int = 100,
     ) -> bool:
         """Wait until the EPOS drive's pos_demand reaches target_qc with zero velocity.
@@ -1210,17 +1210,21 @@ class Epos2JointBridge(Node):
             # underflowed, and (b) keeps the FIFO from going empty, which
             # would trigger the drive's internal abort behavior.
             if time.monotonic() >= next_topup:
-                try:
-                    self.send_rpdo1_interpolation_record(
-                        PVTPoint(time_ms=topup_period_ms, velocity_rpm=0,
-                                 position_qc=target_qc),
-                        verbose=False,
-                    )
-                    topups_sent += 1
-                except Exception as exc:
-                    self.get_logger().warning(
-                        f"IPM endpoint top-up send raised: {exc}"
-                    )
+                # Only top up when the FIFO is close to empty. If FIFO is already
+                # large, adding more target records hides the real remaining
+                # trajectory time and can keep the endpoint wait from converging.
+                if last_fifo is None or last_fifo <= 4:
+                    try:
+                        self.send_rpdo1_interpolation_record(
+                            PVTPoint(time_ms=topup_period_ms, velocity_rpm=0,
+                                     position_qc=target_qc),
+                            verbose=False,
+                        )
+                        topups_sent += 1
+                    except Exception as exc:
+                        self.get_logger().warning(
+                            f"IPM endpoint top-up send raised: {exc}"
+                        )
                 next_topup = time.monotonic() + (topup_period_ms / 1000.0) * 0.9
 
             time.sleep(0.02)
@@ -1264,15 +1268,45 @@ class Epos2JointBridge(Node):
                 target_qc,
                 tol_qc=50,
                 vel_tol_rpm=5,
-                total_timeout_sec=1.5,
+                total_timeout_sec=8.0,
                 topup_period_ms=100,
             )
             if not endpoint_ok:
-                self.get_logger().warning(
-                    "IPM endpoint wait timed out; proceeding with termination "
-                    "anyway. PPM hold target will be the commanded value but "
-                    "motor may be physically short."
+                actual_now = self.sdo_read(IDX_POSITION_ACTUAL, 0, warn=False)
+                demand_now = self.sdo_read(IDX_POSITION_DEMAND, 0, warn=False)
+
+                if actual_now is not None:
+                    safe_stop_qc = to_signed_32(actual_now)
+                elif demand_now is not None:
+                    safe_stop_qc = to_signed_32(demand_now)
+                else:
+                    safe_stop_qc = target_qc
+
+                self.get_logger().error(
+                    "IPM endpoint wait timed out; aborting trajectory instead of "
+                    f"claiming success. safe_stop_qc={safe_stop_qc} target_qc={target_qc}"
                 )
+
+                try:
+                    # Terminate at the current/near-current position, not the
+                    # commanded endpoint. This avoids forcing a discontinuous
+                    # snap to a target the drive did not physically reach.
+                    self.send_rpdo1_interpolation_record(
+                        PVTPoint(time_ms=0, velocity_rpm=0, position_qc=safe_stop_qc),
+                        verbose=True,
+                    )
+                    self.ipm_armed = False
+                    time.sleep(0.05)
+                    self.sdo_write(IDX_CONTROLWORD, 0, 0x000F, warn=False)
+                    try:
+                        self.command_control_mode(
+                            0x000F, MODE_INTERPOLATED_POSITION,
+                            "endpoint_timeout_abort_bit4_low"
+                        )
+                    except Exception:
+                        pass
+                finally:
+                    return False
 
             # Maxon IPM terminator: delta-T / time byte zero. After the
             # endpoint wait this records the actual settled position.
