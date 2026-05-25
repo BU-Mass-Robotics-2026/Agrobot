@@ -23,3 +23,6 @@
     home_offset_rad: 0.0
     home_hold_rad: 0.0
     action_name: /j2_position_controller/follow_joint_trajectory
+    ipm_rpdo_send_gap_sec: 0.002
+    ipm_prebuffer_verify_settle_sec: 0.08
+    ipm_prebuffer_verify_retries: 3

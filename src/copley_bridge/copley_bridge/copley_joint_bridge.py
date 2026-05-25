@@ -250,6 +250,7 @@ class CopleyJointBridge(Node):
         self.declare_parameter("fault_clear_on_startup", True)
         self.declare_parameter("enable_on_startup", False)
         self.declare_parameter("force_ipm_on_startup", False)
+        self.declare_parameter("prearm_on_every_goal", True)
 
     def _read_kinematics(self) -> None:
         self.kin = JointKinematics(
@@ -840,7 +841,49 @@ class CopleyJointBridge(Node):
 
             self.get_logger().info(
                 f"PVT packetization: {n_in} knots -> {len(points)} segments"
-            )
+            )            # Goal-arrival preflight:
+            # A 48 V bus interruption can leave the bridge's cached state stale.
+            # Mirror the known-good service recovery path before every PVT stream.
+            try:
+                do_prearm = bool(self.get_parameter("prearm_on_every_goal").value)
+            except Exception:
+                do_prearm = True
+            
+            if do_prearm:
+                self.get_logger().info(
+                    "Copley FJT preflight v4: clear_fault + startup_ipm before PVT stream"
+                )
+                try:
+                    ok_clear = self.clear_fault()
+                    ok_start = self.startup_ipm()
+                except Exception as exc:
+                    self.get_logger().error("Copley FJT preflight exception: " + str(exc))
+                    _preflight_result = FollowJointTrajectory.Result()
+                    _preflight_result.error_code = FollowJointTrajectory.Result.PATH_TOLERANCE_VIOLATED
+                    _preflight_result.error_string = "Copley FJT preflight exception: " + str(exc)
+                    try:
+                        goal_handle.abort()
+                    except Exception:
+                        pass
+                    return _preflight_result
+            
+                if not (ok_clear and ok_start):
+                    self.get_logger().error(
+                        "Copley FJT preflight failed: "
+                        + "clear=" + str(ok_clear)
+                        + " startup=" + str(ok_start)
+                    )
+                    _preflight_result = FollowJointTrajectory.Result()
+                    _preflight_result.error_code = FollowJointTrajectory.Result.PATH_TOLERANCE_VIOLATED
+                    _preflight_result.error_string = "Copley FJT preflight failed"
+                    try:
+                        goal_handle.abort()
+                    except Exception:
+                        pass
+                    return _preflight_result
+            
+
+
             self._set_bridge_state(BridgeState.MOVING, "executing PVT trajectory")
 
             try:
