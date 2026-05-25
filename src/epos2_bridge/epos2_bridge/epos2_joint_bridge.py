@@ -275,12 +275,14 @@ class RawSocketCAN:
 
 class Epos2J3Bridge(Node):
     def __init__(self) -> None:
-        super().__init__("epos2_j2_bridge")
+        super().__init__("epos2_joint_bridge")
 
         # ---------------- Parameters ----------------
         self.declare_parameter("can_interface", "can0")
         self.declare_parameter("drive_node_id", 2)
         self.declare_parameter("joint_name", "joint2")
+        self.declare_parameter("topic_prefix", "")
+        self.declare_parameter("action_name", "")
         self.declare_parameter("encoder_qc_per_motor_rev", 4096.0)
         self.declare_parameter("gear_ratio_motor_per_joint_rev", 100.0)
         self.declare_parameter("sign", 1.0)
@@ -319,9 +321,28 @@ class Epos2J3Bridge(Node):
         self.declare_parameter("fjt_spline_max_velocity_rad_s", 0.0)  # 0 disables clamp
 
         self.drive_node_id = int(self.get_parameter("drive_node_id").value)
+        joint_name_param = str(self.get_parameter("joint_name").value)
+
+        # joint2 -> j2, joint3 -> j3, etc. Used for default topic/action names.
+        if joint_name_param.startswith("joint") and joint_name_param[5:].isdigit():
+            joint_alias = "j" + joint_name_param[5:]
+        else:
+            joint_alias = joint_name_param
+
+        topic_prefix_param = str(self.get_parameter("topic_prefix").value).strip()
+        self.topic_prefix = topic_prefix_param if topic_prefix_param else f"/epos2/{joint_alias}"
+        if not self.topic_prefix.startswith("/"):
+            self.topic_prefix = "/" + self.topic_prefix
+        self.topic_prefix = self.topic_prefix.rstrip("/")
+
+        action_name_param = str(self.get_parameter("action_name").value).strip()
+        self.action_name = action_name_param if action_name_param else f"/{joint_alias}_position_controller/follow_joint_trajectory"
+        if not self.action_name.startswith("/"):
+            self.action_name = "/" + self.action_name
+
 
         self.kin = JointKinematics(
-            joint_name=self.get_parameter("joint_name").value,
+            joint_name=joint_name_param,
             encoder_qc_per_motor_rev=float(self.get_parameter("encoder_qc_per_motor_rev").value),
             gear_ratio_motor_per_joint_rev=float(self.get_parameter("gear_ratio_motor_per_joint_rev").value),
             sign=float(self.get_parameter("sign").value),
@@ -370,34 +391,34 @@ class Epos2J3Bridge(Node):
             depth=10,
         )
         self.pub_joint_states = self.create_publisher(JointState, "/joint_states", qos)
-        self.pub_drive_raw = self.create_publisher(Int64MultiArray, "/epos2/j2/state_raw", qos)
-        self.pub_drive_engineering = self.create_publisher(Float64MultiArray, "/epos2/j2/state_engineering", qos)
-        self.pub_drive_summary = self.create_publisher(String, "/epos2/j2/state_summary", qos)
-        self.pub_fault = self.create_publisher(Bool, "/epos2/j2/fault", qos)
+        self.pub_drive_raw = self.create_publisher(Int64MultiArray, f"{self.topic_prefix}/state_raw", qos)
+        self.pub_drive_engineering = self.create_publisher(Float64MultiArray, f"{self.topic_prefix}/state_engineering", qos)
+        self.pub_drive_summary = self.create_publisher(String, f"{self.topic_prefix}/state_summary", qos)
+        self.pub_fault = self.create_publisher(Bool, f"{self.topic_prefix}/fault", qos)
         self.pub_diag = self.create_publisher(DiagnosticArray, "/diagnostics", qos)
 
         # ---------------- Subscriptions ----------------
         self.sub_joint_target = self.create_subscription(
             JointState,
-            "/epos2/j2/joint_target",
+            f"{self.topic_prefix}/joint_target",
             self._joint_target_cb,
             qos,
         )
         self.sub_arm_ipm = self.create_subscription(
             Bool,
-            "/epos2/j2/arm_ipm_now",
+            f"{self.topic_prefix}/arm_ipm_now",
             self._arm_ipm_cb,
             qos,
         )
         self.sub_test_move = self.create_subscription(
             Float64,
-            "/epos2/j2/test_move_rad",
+            f"{self.topic_prefix}/test_move_rad",
             self._test_move_cb,
             qos,
         )
         self.sub_disarm_ipm = self.create_subscription(
             Bool,
-            "/epos2/j2/disarm_ipm_now",
+            f"{self.topic_prefix}/disarm_ipm_now",
             self._disarm_ipm_cb,
             qos,
         )
@@ -405,7 +426,7 @@ class Epos2J3Bridge(Node):
 
         self.sub_reduced_traj = self.create_subscription(
             Float64MultiArray,
-            "/epos2/j2/reduced_traj",
+            f"{self.topic_prefix}/reduced_traj",
             self._reduced_traj_cb,
             qos,
         )
@@ -415,7 +436,7 @@ class Epos2J3Bridge(Node):
         self.action_server = ActionServer(
             self,
             FollowJointTrajectory,
-            "/j2_position_controller/follow_joint_trajectory",
+            self.action_name,
             execute_callback=self._execute_follow_joint_trajectory,
             goal_callback=self._goal_callback,
             cancel_callback=self._cancel_callback,
@@ -424,38 +445,38 @@ class Epos2J3Bridge(Node):
 
         self.srv_clear_fault = self.create_service(
             Trigger,
-            "/epos2/j2/clear_fault",
+            f"{self.topic_prefix}/clear_fault",
             self._clear_fault_srv,
         )
 
         self.srv_arm_ipm = self.create_service(
             Trigger,
-            "/epos2/j2/arm_ipm",
+            f"{self.topic_prefix}/arm_ipm",
             self._arm_ipm_srv,
         )
 
         self.srv_disarm_ipm = self.create_service(
             Trigger,
-            "/epos2/j2/disarm_ipm",
+            f"{self.topic_prefix}/disarm_ipm",
             self._disarm_ipm_srv,
         )
 
         self.srv_move_delta = self.create_service(
             MoveDelta,
-            "/epos2/j2/move_delta",
+            f"{self.topic_prefix}/move_delta",
             self._move_delta_srv,
         )
 
         
         self.srv_move_absolute = self.create_service(
             MoveAbsolute,
-            "/epos2/j2/move_absolute",
+            f"{self.topic_prefix}/move_absolute",
             self._move_absolute_srv,
         )
 
         self.srv_move_absolute_timed = self.create_service(
             MoveAbsoluteTimed,
-            "/epos2/j2/move_absolute_timed",
+            f"{self.topic_prefix}/move_absolute_timed",
             self._move_absolute_timed_srv,
         )
 # ---------------- Timers ----------------
