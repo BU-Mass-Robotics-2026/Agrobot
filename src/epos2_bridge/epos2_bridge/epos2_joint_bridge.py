@@ -309,6 +309,15 @@ class Epos2J3Bridge(Node):
         self.declare_parameter("ipm_feeder_high_water_records", 48)
         self.declare_parameter("ipm_feeder_poll_period_sec", 0.05)
 
+        # FJT -> PVT velocity profile.
+        # auto: use supplied MoveIt velocities if nonzero; otherwise cubic spline.
+        # cubic_spline: always compute clamped cubic-spline knot velocities.
+        # supplied: require/use incoming velocities where available.
+        # zero: legacy stop-at-every-knot behavior, only for debugging.
+        self.declare_parameter("fjt_velocity_profile", "auto")
+        self.declare_parameter("fjt_spline_endpoint_zero_velocity", True)
+        self.declare_parameter("fjt_spline_max_velocity_rad_s", 0.0)  # 0 disables clamp
+
         self.drive_node_id = int(self.get_parameter("drive_node_id").value)
 
         self.kin = JointKinematics(
@@ -1977,6 +1986,260 @@ class Epos2J3Bridge(Node):
             f"fed={feed_count} remaining={len(self._active_pvt_feed_queue)}"
         )
 
+    def _compute_clamped_cubic_spline_derivatives(
+        self,
+        times: List[float],
+        positions: List[float],
+        start_velocity: float = 0.0,
+        end_velocity: float = 0.0,
+    ) -> List[float]:
+        """Return dq/dt at every knot for a clamped cubic spline q(t).
+
+        times and positions include the current actual point at index 0 plus
+        all target knots. The result length matches positions.
+
+        Boundary velocities are clamped because FJT execution starts from the
+        actual stopped/held drive state and usually ends at a stopped target.
+        """
+        n = len(positions) - 1
+        if n <= 0:
+            return [0.0] * len(positions)
+
+        if n == 1:
+            return [float(start_velocity), float(end_velocity)]
+
+        h = []
+        for i in range(n):
+            dt = float(times[i + 1] - times[i])
+            if dt <= 1e-6:
+                dt = 1e-6
+            h.append(dt)
+
+        a = [float(q) for q in positions]
+        alpha = [0.0] * (n + 1)
+
+        alpha[0] = 3.0 * ((a[1] - a[0]) / h[0] - float(start_velocity))
+        alpha[n] = 3.0 * (float(end_velocity) - (a[n] - a[n - 1]) / h[n - 1])
+
+        for i in range(1, n):
+            alpha[i] = (
+                3.0 / h[i] * (a[i + 1] - a[i])
+                - 3.0 / h[i - 1] * (a[i] - a[i - 1])
+            )
+
+        l = [0.0] * (n + 1)
+        mu = [0.0] * (n + 1)
+        z = [0.0] * (n + 1)
+        c = [0.0] * (n + 1)
+        b = [0.0] * n
+        d = [0.0] * n
+
+        l[0] = 2.0 * h[0]
+        mu[0] = 0.5
+        z[0] = alpha[0] / l[0]
+
+        for i in range(1, n):
+            l[i] = 2.0 * (times[i + 1] - times[i - 1]) - h[i - 1] * mu[i - 1]
+            if abs(l[i]) < 1e-9:
+                l[i] = 1e-9
+            mu[i] = h[i] / l[i]
+            z[i] = (alpha[i] - h[i - 1] * z[i - 1]) / l[i]
+
+        l[n] = h[n - 1] * (2.0 - mu[n - 1])
+        if abs(l[n]) < 1e-9:
+            l[n] = 1e-9
+        z[n] = (alpha[n] - h[n - 1] * z[n - 1]) / l[n]
+        c[n] = z[n]
+
+        for j in range(n - 1, -1, -1):
+            c[j] = z[j] - mu[j] * c[j + 1]
+            b[j] = (
+                (a[j + 1] - a[j]) / h[j]
+                - h[j] * (c[j + 1] + 2.0 * c[j]) / 3.0
+            )
+            d[j] = (c[j + 1] - c[j]) / (3.0 * h[j])
+
+        derivs = [0.0] * (n + 1)
+        derivs[0] = float(start_velocity)
+
+        for i in range(1, n):
+            # Derivative from the segment starting at knot i. For a valid
+            # spline this matches the derivative from the previous segment.
+            derivs[i] = b[i]
+
+        # Derivative at final knot from final segment.
+        hn = h[n - 1]
+        derivs[n] = b[n - 1] + 2.0 * c[n - 1] * hn + 3.0 * d[n - 1] * hn * hn
+
+        return derivs
+
+    def _finite_difference_target_velocities(
+        self,
+        times: List[float],
+        positions: List[float],
+    ) -> List[float]:
+        """Fallback derivative estimate for target knots only."""
+        if len(positions) < 2:
+            return []
+
+        target_vels = []
+        n = len(positions)
+
+        for idx in range(1, n):
+            if idx == n - 1:
+                target_vels.append(0.0)
+            elif idx == 1:
+                denom = max(times[idx + 1] - times[0], 1e-6)
+                target_vels.append((positions[idx + 1] - positions[0]) / denom)
+            else:
+                denom = max(times[idx + 1] - times[idx - 1], 1e-6)
+                target_vels.append((positions[idx + 1] - positions[idx - 1]) / denom)
+
+        return [float(v) for v in target_vels]
+
+    def _hermite_eval(
+        self,
+        q0: float,
+        q1: float,
+        v0: float,
+        v1: float,
+        T: float,
+        u: float,
+    ) -> float:
+        """Evaluate cubic Hermite position at normalized time u."""
+        T = max(float(T), 1e-6)
+        h00 = 2.0 * u**3 - 3.0 * u**2 + 1.0
+        h10 = u**3 - 2.0 * u**2 + u
+        h01 = -2.0 * u**3 + 3.0 * u**2
+        h11 = u**3 - u**2
+        return h00 * q0 + h10 * T * v0 + h01 * q1 + h11 * T * v1
+
+    def _velocity_profile_overshoots(
+        self,
+        times: List[float],
+        positions: List[float],
+        derivatives: List[float],
+    ) -> bool:
+        """Detect obvious spline overshoot relative to each segment's endpoints."""
+        if len(positions) < 3:
+            return False
+
+        for i in range(len(positions) - 1):
+            q0 = float(positions[i])
+            q1 = float(positions[i + 1])
+            v0 = float(derivatives[i])
+            v1 = float(derivatives[i + 1])
+            T = max(float(times[i + 1] - times[i]), 1e-6)
+
+            lo = min(q0, q1)
+            hi = max(q0, q1)
+            span = max(abs(q1 - q0), 1e-8)
+            margin = max(1e-5, 0.10 * span)
+
+            for u in (0.25, 0.5, 0.75):
+                q = self._hermite_eval(q0, q1, v0, v1, T, u)
+                if q < lo - margin or q > hi + margin:
+                    self.get_logger().warning(
+                        f"Cubic spline velocity profile overshoot on segment {i}: "
+                        f"q={q:.6f}, bounds=[{lo:.6f},{hi:.6f}], "
+                        f"v0={v0:.6f}, v1={v1:.6f}, T={T:.3f}"
+                    )
+                    return True
+
+        return False
+
+    def _compute_fjt_target_velocities(
+        self,
+        current_rad: float,
+        target_rads: List[float],
+        durations: List[float],
+        raw_target_vels: List[Optional[float]],
+    ) -> Tuple[List[float], str]:
+        """Compute target-knot velocities for FJT -> PVT conversion.
+
+        Returns velocities for target_rads only, not the current point.
+        """
+        if not target_rads:
+            return [], "empty"
+
+        profile = str(self.get_parameter("fjt_velocity_profile").value).strip().lower()
+
+        # Cumulative knot time vector includes current point at t=0.
+        times = [0.0]
+        acc_t = 0.0
+        for dt in durations:
+            acc_t += max(float(dt), 1e-6)
+            times.append(acc_t)
+
+        positions = [float(current_rad)] + [float(q) for q in target_rads]
+
+        supplied_nonzero = any(
+            (v is not None and abs(float(v)) > 1e-7)
+            for v in raw_target_vels
+        )
+
+        if profile in ("supplied", "auto") and supplied_nonzero:
+            vels = [
+                float(v) if v is not None else 0.0
+                for v in raw_target_vels
+            ]
+            source = "supplied"
+        elif profile == "zero":
+            vels = [0.0 for _ in target_rads]
+            source = "zero_debug"
+        else:
+            endpoint_zero = bool(self.get_parameter("fjt_spline_endpoint_zero_velocity").value)
+            start_v = 0.0
+            end_v = 0.0 if endpoint_zero else self._finite_difference_target_velocities(times, positions)[-1]
+
+            derivs = self._compute_clamped_cubic_spline_derivatives(
+                times,
+                positions,
+                start_velocity=start_v,
+                end_velocity=end_v,
+            )
+
+            if self._velocity_profile_overshoots(times, positions, derivs):
+                vels = self._finite_difference_target_velocities(times, positions)
+                source = "finite_difference_fallback"
+            else:
+                vels = [float(v) for v in derivs[1:]]
+                source = "clamped_cubic_spline"
+
+        # Optional clamp. 0 disables clamp.
+        try:
+            max_v = float(self.get_parameter("fjt_spline_max_velocity_rad_s").value)
+        except Exception:
+            max_v = 0.0
+
+        if max_v > 0.0:
+            clipped = []
+            did_clip = False
+            for v in vels:
+                vc = max(-max_v, min(max_v, float(v)))
+                if abs(vc - v) > 1e-9:
+                    did_clip = True
+                clipped.append(vc)
+            vels = clipped
+            if did_clip:
+                source += "_clamped"
+
+        if len(vels) != len(target_rads):
+            self.get_logger().warning(
+                f"Velocity profile length mismatch: got {len(vels)}, expected {len(target_rads)}; "
+                "falling back to zeros"
+            )
+            vels = [0.0 for _ in target_rads]
+            source = "zero_length_mismatch"
+
+        max_abs_v = max((abs(v) for v in vels), default=0.0)
+        self.get_logger().info(
+            f"FJT velocity profile: source={source}, knots={len(vels)}, "
+            f"total_dt={times[-1]:.3f}s, max_abs_v={max_abs_v:.6f} rad/s"
+        )
+
+        return vels, source
+
     async def _execute_follow_joint_trajectory(self, goal_handle):
         """FollowJointTrajectory using strict EPOS IPM lifecycle FSM.
 
@@ -2012,6 +2275,7 @@ class Epos2J3Bridge(Node):
 
         target_rads = []
         durations = []
+        raw_target_vels = []
         prev_t = 0.0
 
         for i, pt in enumerate(points):
@@ -2028,6 +2292,12 @@ class Epos2J3Bridge(Node):
 
             target_rads.append(float(pt.positions[0]))
             durations.append(float(dt))
+
+            if len(pt.velocities) == 1:
+                raw_target_vels.append(float(pt.velocities[0]))
+            else:
+                raw_target_vels.append(None)
+
             prev_t = t
 
         planned_duration = float(sum(durations))
@@ -2084,16 +2354,23 @@ class Epos2J3Bridge(Node):
             all_points: List[PVTPoint] = []
             all_points.append(PVTPoint(time_ms=40, velocity_rpm=0, position_qc=current_qc))
 
+            target_vels, vel_source = self._compute_fjt_target_velocities(
+                current_rad=current_rad,
+                target_rads=target_rads,
+                durations=durations,
+                raw_target_vels=raw_target_vels,
+            )
+
             q_prev = current_rad
             v_prev = 0.0
 
-            for q_target, dt in zip(target_rads, durations):
+            for q_target, v_target, dt in zip(target_rads, target_vels, durations):
                 seg = self._segment_points_between_adaptive(
-                    q_prev, q_target, v_prev, 0.0, dt
+                    q_prev, q_target, v_prev, float(v_target), dt
                 )
                 all_points.extend(seg)
                 q_prev = q_target
-                v_prev = 0.0
+                v_prev = float(v_target)
 
             final_qc = self.kin.joint_rad_to_motor_qc(target_rads[-1])
 
