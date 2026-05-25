@@ -2587,6 +2587,7 @@ class Epos2J3Bridge(Node):
             # from returning before the drive has consumed the queued PVT plan.
             if elapsed >= float(min_wait_sec) and pos_ok and vel_ok:
                 self._last_goal_wait_reason = "success"
+                self._last_goal_wait_reason = "success"
                 self.get_logger().info(
                     f"Goal reached after {elapsed:.3f}s: target={final_target_rad:.6f} "
                     f"actual={actual_rad:.6f} err={final_target_rad - actual_rad:.6f} "
