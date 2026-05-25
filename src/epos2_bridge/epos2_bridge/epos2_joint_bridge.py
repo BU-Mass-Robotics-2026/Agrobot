@@ -51,10 +51,8 @@ from epos2_bridge_interfaces.srv import MoveDelta, MoveAbsolute, MoveAbsoluteTim
 # -----------------------------
 IDX_CONTROLWORD = 0x6040
 IDX_STATUSWORD = 0x6041
-IDX_ERROR_CODE = 0x603F
 IDX_MODES_OF_OPERATION = 0x6060
 IDX_MODES_OF_OPERATION_DISPLAY = 0x6061
-IDX_POSITION_MODE_SETTING_VALUE = 0x2062  # Maxon Position Mode setting value
 IDX_POSITION_DEMAND = 0x6062
 IDX_POSITION_ACTUAL = 0x6064
 IDX_MAX_FOLLOWING_ERROR = 0x6065
@@ -85,7 +83,6 @@ IDX_MAX_ACCELERATION_IPM = 0x60C5
 
 MODE_PROFILE_POSITION = 1
 MODE_INTERPOLATED_POSITION = 7
-MODE_MAXON_POSITION = 0xFF  # EPOS2 manufacturer-specific Position Mode
 
 # COB-IDs for node ID 1 under the current DCF split
 COB_HEARTBEAT = 0x701
@@ -118,7 +115,7 @@ class BridgeState(Enum):
 
 @dataclass
 class JointKinematics:
-    joint_name: str = "joint_3"
+    joint_name: str = "joint2"
     encoder_qc_per_motor_rev: float = 4096.0
     gear_ratio_motor_per_joint_rev: float = 100.0
     sign: float = 1.0
@@ -229,7 +226,7 @@ def pack_interpolation_record(point: PVTPoint) -> bytes:
 
     This ordering should be validated by the first successful motion test.
     """
-    if not (0 <= point.time_ms <= 255):
+    if not (1 <= point.time_ms <= 255):
         raise ValueError(f"time_ms out of range: {point.time_ms}")
 
     vel_u24 = to_unsigned_24(point.velocity_rpm)
@@ -276,41 +273,27 @@ class RawSocketCAN:
         self.sock.close()
 
 
-class Epos2JointBridge(Node):
-    def topic_name(self, suffix: str) -> str:
-        """Return a fully-qualified per-joint ROS name under self.topic_prefix."""
-        suffix = str(suffix).strip("/")
-        if not suffix:
-            return self.topic_prefix
-        return f"{self.topic_prefix}/{suffix}"
-
+class Epos2J3Bridge(Node):
     def __init__(self) -> None:
-        super().__init__("epos2_joint_bridge")
+        super().__init__("epos2_j2_bridge")
 
         # ---------------- Parameters ----------------
         self.declare_parameter("can_interface", "can0")
-        self.declare_parameter("drive_node_id", 1)
-        self.declare_parameter("joint_name", "joint_3")
-        self.declare_parameter("joint_id", "j3")
-        self.declare_parameter("topic_prefix", "")
-        self.declare_parameter("fjt_action_name", "")
+        self.declare_parameter("drive_node_id", 2)
+        self.declare_parameter("joint_name", "joint2")
         self.declare_parameter("encoder_qc_per_motor_rev", 4096.0)
         self.declare_parameter("gear_ratio_motor_per_joint_rev", 100.0)
         self.declare_parameter("sign", 1.0)
         self.declare_parameter("zero_offset_qc", 0.0)
         self.declare_parameter("joint_state_rate_hz", 50.0)
-        self.declare_parameter("telemetry_rate_hz", 0.2)
+        self.declare_parameter("telemetry_rate_hz", 10.0)
         self.declare_parameter("pdo_rx_thread_hz", 500.0)
         self.declare_parameter("ipm_default_segment_ms", 10)
-        self.declare_parameter("j2_active_pvt_cap_ms", 100)
         self.declare_parameter("goal_position_tolerance_rad", 0.01)
         self.declare_parameter("goal_velocity_tolerance_rad_s", 0.10)
         self.declare_parameter("fault_clear_on_startup", False)
         self.declare_parameter("enable_on_startup", False)
-        self.declare_parameter("force_ipm_on_startup", False)
-        self.declare_parameter("ipm_debug_profile_velocity_rpm", 1960)
-        self.declare_parameter("ipm_debug_profile_acceleration_rpm_s", 100000)
-        self.declare_parameter("allow_legacy_ipm_services", False)
+        self.declare_parameter("force_ipm_on_startup", True)
         self.declare_parameter("traj_internal_min_seg_ms", 60)
         self.declare_parameter("traj_internal_max_seg_ms", 120)
         self.declare_parameter("traj_internal_max_step_rad", 0.04)
@@ -332,34 +315,8 @@ class Epos2JointBridge(Node):
         self.state_lock = threading.Lock()
         self.active_goal_lock = threading.Lock()
         self.active_goal_handle = None
-        self.joint_id = str(self.get_parameter("joint_id").value).strip().strip("/")
-        topic_prefix_param = str(self.get_parameter("topic_prefix").value).strip()
-        if topic_prefix_param:
-            self.topic_prefix = topic_prefix_param.rstrip("/")
-            if not self.topic_prefix.startswith("/"):
-                self.topic_prefix = "/" + self.topic_prefix
-        else:
-            self.topic_prefix = f"/epos2/{self.joint_id}"
-
-        fjt_action_name_param = str(self.get_parameter("fjt_action_name").value).strip()
-        if fjt_action_name_param:
-            self.fjt_action_name = fjt_action_name_param
-            if not self.fjt_action_name.startswith("/"):
-                self.fjt_action_name = "/" + self.fjt_action_name
-        else:
-            self.fjt_action_name = f"/{self.joint_id}_position_controller/follow_joint_trajectory"
-
-        self.get_logger().info(
-            f"EPOS2 generic joint namespace: joint_id={self.joint_id} "
-            f"topic_prefix={self.topic_prefix} fjt_action_name={self.fjt_action_name}"
-        )
-
         self.ipm_armed = False
         self.last_hold_qc = 0
-        self.last_commanded_controlword = 0x0000
-        self.last_commanded_mode = 0x00
-        self.last_command_reason = "startup"
-        self.last_command_time = 0.0
         self.bridge_state = BridgeState.IDLE
         self.stream_lock = threading.Lock()
 
@@ -396,34 +353,34 @@ class Epos2JointBridge(Node):
             depth=10,
         )
         self.pub_joint_states = self.create_publisher(JointState, "/joint_states", qos)
-        self.pub_drive_raw = self.create_publisher(Int64MultiArray, self.topic_name("state_raw"), qos)
-        self.pub_drive_engineering = self.create_publisher(Float64MultiArray, self.topic_name("state_engineering"), qos)
-        self.pub_drive_summary = self.create_publisher(String, self.topic_name("state_summary"), qos)
-        self.pub_fault = self.create_publisher(Bool, self.topic_name("fault"), qos)
+        self.pub_drive_raw = self.create_publisher(Int64MultiArray, "/epos2/j2/state_raw", qos)
+        self.pub_drive_engineering = self.create_publisher(Float64MultiArray, "/epos2/j2/state_engineering", qos)
+        self.pub_drive_summary = self.create_publisher(String, "/epos2/j2/state_summary", qos)
+        self.pub_fault = self.create_publisher(Bool, "/epos2/j2/fault", qos)
         self.pub_diag = self.create_publisher(DiagnosticArray, "/diagnostics", qos)
 
         # ---------------- Subscriptions ----------------
         self.sub_joint_target = self.create_subscription(
             JointState,
-            self.topic_name("joint_target"),
+            "/epos2/j2/joint_target",
             self._joint_target_cb,
             qos,
         )
         self.sub_arm_ipm = self.create_subscription(
             Bool,
-            self.topic_name("arm_ipm_now"),
+            "/epos2/j2/arm_ipm_now",
             self._arm_ipm_cb,
             qos,
         )
         self.sub_test_move = self.create_subscription(
             Float64,
-            self.topic_name("test_move_rad"),
+            "/epos2/j2/test_move_rad",
             self._test_move_cb,
             qos,
         )
         self.sub_disarm_ipm = self.create_subscription(
             Bool,
-            self.topic_name("disarm_ipm_now"),
+            "/epos2/j2/disarm_ipm_now",
             self._disarm_ipm_cb,
             qos,
         )
@@ -431,8 +388,8 @@ class Epos2JointBridge(Node):
 
         self.sub_reduced_traj = self.create_subscription(
             Float64MultiArray,
-            self.topic_name("reduced_traj"),
-            self._reduced_traj_cb_native,
+            "/epos2/j2/reduced_traj",
+            self._reduced_traj_cb,
             qos,
         )
 
@@ -441,7 +398,7 @@ class Epos2JointBridge(Node):
         self.action_server = ActionServer(
             self,
             FollowJointTrajectory,
-            self.fjt_action_name,
+            "/j2_position_controller/follow_joint_trajectory",
             execute_callback=self._execute_follow_joint_trajectory,
             goal_callback=self._goal_callback,
             cancel_callback=self._cancel_callback,
@@ -450,38 +407,38 @@ class Epos2JointBridge(Node):
 
         self.srv_clear_fault = self.create_service(
             Trigger,
-            self.topic_name("clear_fault"),
+            "/epos2/j2/clear_fault",
             self._clear_fault_srv,
         )
 
         self.srv_arm_ipm = self.create_service(
             Trigger,
-            self.topic_name("arm_ipm"),
+            "/epos2/j2/arm_ipm",
             self._arm_ipm_srv,
         )
 
         self.srv_disarm_ipm = self.create_service(
             Trigger,
-            self.topic_name("disarm_ipm"),
+            "/epos2/j2/disarm_ipm",
             self._disarm_ipm_srv,
         )
 
         self.srv_move_delta = self.create_service(
             MoveDelta,
-            self.topic_name("move_delta"),
+            "/epos2/j2/move_delta",
             self._move_delta_srv,
         )
 
         
         self.srv_move_absolute = self.create_service(
             MoveAbsolute,
-            self.topic_name("move_absolute"),
+            "/epos2/j2/move_absolute",
             self._move_absolute_srv,
         )
 
         self.srv_move_absolute_timed = self.create_service(
             MoveAbsoluteTimed,
-            self.topic_name("move_absolute_timed"),
+            "/epos2/j2/move_absolute_timed",
             self._move_absolute_timed_srv,
         )
 # ---------------- Timers ----------------
@@ -516,11 +473,6 @@ class Epos2JointBridge(Node):
 
 
     def _arm_ipm_srv(self, request, response):
-        if not self._legacy_ipm_allowed("_arm_ipm_srv"):
-            response.success = False
-            response.message = "Legacy IPM service disabled; use FollowJointTrajectory or Maxon Position Mode hold."
-            return response
-
         ok = self.arm_ipm_hold()
         response.success = ok
         response.message = "arm_ipm succeeded" if ok else "arm_ipm failed"
@@ -533,9 +485,6 @@ class Epos2JointBridge(Node):
         response.message = "disarm_ipm succeeded" if ok else "disarm_ipm failed"
         return response
     def send_test_move_absolute(self, target_rad: float) -> bool:
-        if not self._legacy_ipm_allowed("send_test_move_absolute"):
-            return False
-
         if not self.ipm_armed:
             self.get_logger().warning("IPM not armed; call arm_ipm_hold() first")
             return False
@@ -555,9 +504,6 @@ class Epos2JointBridge(Node):
         return self.send_test_move_delta(delta_rad)
 
     def send_test_move_absolute_timed(self, target_rad: float, duration_sec: float) -> bool:
-        if not self._legacy_ipm_allowed("send_test_move_absolute_timed"):
-            return False
-
         if not self.ipm_armed:
             self.get_logger().warning("IPM not armed; call arm_ipm_hold() first")
             return False
@@ -575,7 +521,7 @@ class Epos2JointBridge(Node):
         duration_sec = max(0.15, float(duration_sec))
 
         # Current packet builder clearly rejects 1000 ms. Keep segments <= 250 ms.
-        max_seg_ms = int(self.get_parameter("j2_active_pvt_cap_ms").value) if str(getattr(self, "joint_id", "")).lower() == "j2" else 250
+        max_seg_ms = 250
         min_seg_ms = 50
         lead_ms = 80
 
@@ -701,11 +647,6 @@ class Epos2JointBridge(Node):
 
 
     def _move_delta_srv(self, request, response):
-        if not self._legacy_ipm_allowed("_move_delta_srv"):
-            response.success = False
-            response.message = "Legacy IPM service disabled; use FollowJointTrajectory or Maxon Position Mode hold."
-            return response
-
         ok = self.send_test_move_delta(float(request.delta_rad))
         response.success = ok
         response.message = (
@@ -716,11 +657,6 @@ class Epos2JointBridge(Node):
         return response
 
     def _move_absolute_srv(self, request, response):
-        if not self._legacy_ipm_allowed("_move_absolute_srv"):
-            response.success = False
-            response.message = "Legacy IPM service disabled; use FollowJointTrajectory or Maxon Position Mode hold."
-            return response
-
         ok = self.send_test_move_absolute(float(request.target_rad))
         response.success = ok
         response.message = (
@@ -731,11 +667,6 @@ class Epos2JointBridge(Node):
         return response
 
     def _move_absolute_timed_srv(self, request, response):
-        if not self._legacy_ipm_allowed("_move_absolute_timed_srv"):
-            response.success = False
-            response.message = "Legacy IPM service disabled; use FollowJointTrajectory or Maxon Position Mode hold."
-            return response
-
         ok = self.send_test_move_absolute_timed(float(request.target_rad), float(request.duration_sec))
         response.success = ok
         response.message = (
@@ -770,25 +701,21 @@ class Epos2JointBridge(Node):
         return int(result.data)
 
     def sdo_write(self, index: int, subindex: int, value: int, warn: bool = True) -> bool:
-        # PATCH2: signed-sdo-marshalling-and-mode-order
-        # canopen_interfaces/srv/COWrite.data is uint32. Negative Python ints
-        # (e.g. signed position counts for 0x2062/0x607A) throw at request
-        # construction time with a PyCapsule "send_request returned a result
-        # with an exception set" error, before any CAN traffic. Mask to 32 bits.
         if not self.write_cli.service_is_ready():
             if warn:
                 self.get_logger().warning(f"SDO write service not ready: 0x{index:04X}:{subindex} value={value}")
             return False
         req = COWrite.Request()
-        req.index = int(index) & 0xFFFF
-        req.subindex = int(subindex) & 0xFF
-        req.data = int(value) & 0xFFFFFFFF
+        req.index = index
+        req.subindex = subindex
+        req.data = value
         future = self.write_cli.call_async(req)
         result = self._wait_future(future, timeout_sec=2.0)
         ok = bool(result is not None and result.success)
         if not ok and warn:
-            self.get_logger().warning(f"SDO write failed: 0x{index:04X}:{subindex} value={value} (masked=0x{int(value) & 0xFFFFFFFF:08X})")
+            self.get_logger().warning(f"SDO write failed: 0x{index:04X}:{subindex} value={value}")
         return ok
+
     def _startup_once(self) -> None:
         if self.startup_complete:
             return
@@ -852,518 +779,30 @@ class Epos2JointBridge(Node):
 
         return ok0, ok1, ipm_buf
     def enable_ipm_active(self) -> bool:
-        # Official activation point: only call this after the IPM FIFO has been prefilled.
-        ok_sdo = self.sdo_write(IDX_CONTROLWORD, 0, 0x001F, warn=False)
-        ok_rpdo2 = self.command_control_mode(
-            0x001F,
-            MODE_INTERPOLATED_POSITION,
-            "enable_ipm_active_after_prefill",
-        )
+        ok = self.sdo_write(IDX_CONTROLWORD, 0, 31, warn=False)
         time.sleep(0.05)
+
         sw = self.sdo_read(IDX_STATUSWORD, 0, warn=False)
-        ipm = self.sdo_read(IDX_INTERPOLATION_STATUS, 1, warn=False)
+        ipm_buf = self.sdo_read(IDX_INTERPOLATION_STATUS, 1, warn=False)
+
         self.get_logger().info(
             f"enable_ipm_active sw=0x{((sw or 0) & 0xFFFF):04X} "
-            f"ipm=0x{((ipm or 0) & 0xFFFF):04X} ok_sdo={ok_sdo} ok_rpdo2={ok_rpdo2}"
+            f"ipm=0x{((ipm_buf or 0) & 0xFFFF):04X}"
         )
-        return bool(ok_sdo and ok_rpdo2)
 
-    def _legacy_ipm_allowed(self, path_name: str) -> bool:
-        # Return True only when explicitly allowing old IPM hold-stream/test paths.
-        # Production motion should use the FollowJointTrajectory path:
-        # prepare_ipm_inactive -> prefill -> enable 0x001F -> stream -> dt=0 -> 0xFF/0x2062 hold.
-        try:
-            allowed = bool(self.get_parameter("allow_legacy_ipm_services").value)
-        except Exception:
-            allowed = False
-
-        if allowed:
-            self.get_logger().warning(
-                f"LEGACY IPM PATH ENABLED: {path_name}. "
-                "This path may stream stationary PVT hold records and is not production-safe."
-            )
-            return True
-
-        self.get_logger().error(
-            f"Legacy IPM path disabled: {path_name}. "
-            "Use FollowJointTrajectory or Maxon Position Mode hold; do not use IPM hold-stream services."
-        )
-        return False
-
-    def read_fault_snapshot(self, label: str = "fault") -> Dict[str, int]:
-        """Read the objects that disambiguate an IPM fault from stale warning bits."""
-        reads = [
-            (IDX_STATUSWORD, 0, "6041_statusword"),
-            (IDX_MODES_OF_OPERATION_DISPLAY, 0, "6061_mode_display"),
-            (IDX_ERROR_CODE, 0, "603F_error_code"),
-            (IDX_ERROR_REGISTER, 0, "1001_error_register"),
-            (IDX_ERROR_HISTORY, 0, "1003_00_error_count"),
-            (IDX_ERROR_HISTORY, 1, "1003_01_latest"),
-            (IDX_ERROR_HISTORY, 2, "1003_02"),
-            (IDX_ERROR_HISTORY, 3, "1003_03"),
-            (IDX_INTERPOLATION_STATUS, 1, "20C4_01_ipm_status"),
-            (IDX_INTERPOLATION_DATA_CONFIG, 4, "60C4_04_fifo_level"),
-            (IDX_POSITION_DEMAND, 0, "6062_pos_demand"),
-            (IDX_POSITION_ACTUAL, 0, "6064_pos_actual"),
-            (IDX_VELOCITY_ACTUAL, 0, "606C_vel_actual"),
-            (IDX_FOLLOWING_ERROR_ACTUAL, 0, "20F4_following_error"),
-        ]
-        snap: Dict[str, int] = {}
-        for idx, sub, name in reads:
-            val = self.sdo_read(idx, sub, warn=False)
-            if val is not None:
-                snap[name] = int(val)
-
-        parts = []
-        for name, val in snap.items():
-            if name.startswith(("6041", "6061", "603F", "1001", "1003", "20C4", "60C4")):
-                parts.append(f"{name}=0x{val & 0xFFFFFFFF:X}")
-            else:
-                parts.append(f"{name}={to_signed_32(val)}")
-        self.get_logger().error(f"{label} snapshot: " + " ".join(parts))
-        return snap
-
-    def prepare_ipm_inactive(self) -> bool:
-        """Prepare IPM FIFO/configuration but do not assert controlword bit 4 yet."""
-        self.get_logger().info("Preparing EPOS2 IPM session inactive; no hold-stream")
-        self.ipm_armed = False
-        self._set_bridge_state(BridgeState.IDLE, "preparing IPM inactive")
-
-        try:
-            sw0 = self.sdo_read(IDX_STATUSWORD, 0, warn=False)
-            if sw0 is not None and ((sw0 >> SW_FAULT_BIT) & 0x1):
-                if not self.clear_fault():
-                    self.get_logger().error("clear_fault failed during prepare_ipm_inactive")
-                    self._set_bridge_state(BridgeState.FAULTED, "clear_fault failed")
-                    return False
-                time.sleep(0.05)
-
-            # Make absolutely sure IPM-active bit 4 is low before touching the FIFO.
-            self.sdo_write(IDX_CONTROLWORD, 0, 0x000F, warn=False)
-            try:
-                self.command_control_mode(0x000F, MODE_INTERPOLATED_POSITION, "prepare_or_clear_ipm_bit4_low")
-            except Exception:
-                pass
-            time.sleep(0.02)
-
-            if not self.sdo_write(IDX_MODES_OF_OPERATION, 0, MODE_INTERPOLATED_POSITION, warn=False):
-                self.get_logger().error("Failed to set mode of operation to IPM")
-                self._set_bridge_state(BridgeState.FAULTED, "failed to set IPM mode")
-                return False
-
-            if not self.enable_operation():
-                self.get_logger().error("enable_operation failed during prepare_ipm_inactive")
-                self._set_bridge_state(BridgeState.FAULTED, "enable_operation failed")
-                return False
-
-            # Cubic PVT, 1 ms units. 0xFFFF represents -1, 0xFD represents -3.
-            self.sdo_write(IDX_INTERPOLATION_SUBMODE, 0, 0xFFFF, warn=False)
-            self.sdo_write(IDX_INTERPOLATION_TIME_PERIOD, 1, 1, warn=False)
-            self.sdo_write(IDX_INTERPOLATION_TIME_PERIOD, 2, 0xFD, warn=False)
-
-            # Raise warning thresholds during triage so legal cubic segments do not spam bit 2/3.
-            dbg_vel = int(self.get_parameter("ipm_debug_profile_velocity_rpm").value)
-            dbg_acc = int(self.get_parameter("ipm_debug_profile_acceleration_rpm_s").value)
-            self.sdo_write(IDX_PROFILE_VELOCITY, 0, dbg_vel, warn=False)
-            self.sdo_write(IDX_PROFILE_ACCELERATION, 0, dbg_acc, warn=False)
-
-            ok0, ok1, ipm_pre = self.clear_and_enable_ipm_buffer()
-            if not (ok0 and ok1):
-                self.get_logger().warning(
-                    f"IPM FIFO clear/enable returned ok0={ok0} ok1={ok1}; continuing with status check"
-                )
-
-            current_pos = self.sdo_read(IDX_POSITION_ACTUAL, 0, warn=False)
-            if current_pos is not None:
-                self.last_hold_qc = to_signed_32(current_pos)
-
-            sw = self.sdo_read(IDX_STATUSWORD, 0, warn=False)
-            ipm_buf = self.sdo_read(IDX_INTERPOLATION_STATUS, 1, warn=False)
-            mode_disp = self.sdo_read(IDX_MODES_OF_OPERATION_DISPLAY, 0, warn=False)
-            self.get_logger().info(
-                "IPM prepared inactive: "
-                f"sw=0x{((sw or 0) & 0xFFFF):04X} "
-                f"mode=0x{((mode_disp or 0) & 0xFF):02X} "
-                f"ipm=0x{((ipm_buf or 0) & 0xFFFF):04X} "
-                f"warn_thresh_vel={dbg_vel}rpm warn_thresh_acc={dbg_acc}rpm/s"
-            )
-
-            if sw is not None and ((sw >> SW_FAULT_BIT) & 0x1):
-                self.read_fault_snapshot("prepare_ipm_inactive_fault")
-                self._set_bridge_state(BridgeState.FAULTED, "fault during IPM prepare")
-                return False
-
-            self.ipm_armed = True  # means prepared/allowed to stream; IPM-active is still false here.
-            self._set_bridge_state(BridgeState.IPM_ARMED, "IPM prepared inactive")
-            return True
-
-        except Exception as exc:
-            self.get_logger().error(f"prepare_ipm_inactive() exception: {exc}")
-            self.read_fault_snapshot("prepare_ipm_inactive_exception")
-            self._set_bridge_state(BridgeState.FAULTED, "prepare_ipm_inactive exception")
-            self.ipm_armed = False
+        if not ok:
             return False
-
-    def enter_position_mode_hold(
-        self,
-        hold_qc: Optional[int] = None,
-        skip_bit4_clear: bool = False,
-    ) -> bool:
-        """Hold in Maxon Position Mode 0xFF using 0x2062.
-
-        PATCH2: write 0x6060=0xFF _before_ 0x2062. Maxon EPOS2 accepts
-        0x2062 only in Mode 0xFF; writing it while still in IPM (0x07) returns
-        an SDO abort that surfaces as a PyCapsule exception.
-        """
-        try:
-            if hold_qc is None:
-                pos = self.sdo_read(IDX_POSITION_ACTUAL, 0, warn=False)
-                if pos is None:
-                    self.get_logger().error("Cannot enter position hold: failed reading actual position")
-                    return False
-                hold_qc = to_signed_32(pos)
-            else:
-                hold_qc = to_signed_32(hold_qc)
-
-            self.ipm_armed = False
-
-            if not skip_bit4_clear:
-                self.sdo_write(IDX_CONTROLWORD, 0, 0x000F, warn=False)
-                try:
-                    self.command_control_mode(
-                        0x000F, MODE_INTERPOLATED_POSITION, "prepare_or_clear_ipm_bit4_low"
-                    )
-                except Exception:
-                    pass
-                time.sleep(0.02)
-
-            # Diagnostic: snapshot the drive state before we start switching modes.
-            pre_mode = self.sdo_read(IDX_MODES_OF_OPERATION_DISPLAY, 0, warn=False)
-            pre_demand = self.sdo_read(IDX_POSITION_DEMAND, 0, warn=False)
-            pre_actual = self.sdo_read(IDX_POSITION_ACTUAL, 0, warn=False)
-            # EPOS2 70/10 drives fault with 0x8150 when switching to Maxon Position Mode 0xFF
-            # after IPM termination. Leave them in IPM-inactive/READY instead.
-            if str(getattr(self, "joint_id", "")).lower() in ("j2", "j3"):
-                self.get_logger().info("Skipping Maxon Position Mode hold for EPOS2 70/10; leaving IPM inactive after terminator")
-                self._set_bridge_state(BridgeState.READY, "IPM terminated; skipped 0xFF hold for EPOS2 70/10")
-                return True
-
-            self.get_logger().info(
-                f"PPM entry pre-state: mode=0x{((pre_mode or 0) & 0xFF):02X} "
-                f"demand={to_signed_32(pre_demand or 0)} "
-                f"actual={to_signed_32(pre_actual or 0)} "
-                f"hold_qc={hold_qc}"
-            )
-
-            # Step 1: switch the drive to Maxon Position Mode (0xFF) FIRST.
-            # 0x2062 is only accepted in this mode.
-            mode_sdo_ok = False
-            for attempt in range(3):
-                try:
-                    if self.sdo_write(IDX_MODES_OF_OPERATION, 0, MODE_MAXON_POSITION, warn=(attempt == 2)):
-                        mode_sdo_ok = True
-                        break
-                    time.sleep(0.03)
-                except Exception as exc:
-                    self.get_logger().warning(f"Mode-to-0xFF attempt {attempt+1}/3 raised: {exc}")
-                    time.sleep(0.03)
-
-            # RPDO2 to reinforce the mode change (and keep bus in sync).
-            try:
-                self.command_control_mode(0x000F, MODE_MAXON_POSITION, "enter_maxon_position_mode_hold")
-            except Exception:
-                pass
-            time.sleep(0.03)
-
-            # Poll mode_display until it confirms 0xFF, up to 200ms.
-            mode_deadline = time.monotonic() + 0.20
-            mode_disp = None
-            while time.monotonic() < mode_deadline:
-                mode_disp = self.sdo_read(IDX_MODES_OF_OPERATION_DISPLAY, 0, warn=False)
-                if mode_disp is not None and (mode_disp & 0xFF) == MODE_MAXON_POSITION:
-                    break
-                time.sleep(0.01)
-
-            if mode_disp is None or (mode_disp & 0xFF) != MODE_MAXON_POSITION:
-                self.get_logger().warning(
-                    f"Mode did not confirm 0xFF before 0x2062 write; "
-                    f"mode_display=0x{((mode_disp or 0) & 0xFF):02X}. Continuing anyway."
-                )
-
-            # Step 2: _NOW_ write 0x2062 with the signed-masked hold target.
-            setpoint_ok = False
-            for attempt in range(3):
-                try:
-                    if self.sdo_write(IDX_POSITION_MODE_SETTING_VALUE, 0, hold_qc, warn=(attempt == 2)):
-                        setpoint_ok = True
-                        break
-                    time.sleep(0.03)
-                except Exception as exc:
-                    self.get_logger().warning(f"0x2062 write attempt {attempt+1}/3 raised: {exc}")
-                    time.sleep(0.03)
-
-            if not (mode_sdo_ok and setpoint_ok):
-                self.get_logger().error(
-                    f"Position Mode hold setup failed: mode_set={mode_sdo_ok} "
-                    f"setpoint_set={setpoint_ok}"
-                )
-                self.read_fault_snapshot("position_hold_sdo_failed")
-                self._set_bridge_state(BridgeState.FAULTED, "position hold SDO failed")
-                return False
-
-            # Final controlword reassert.
-            ctl_ok = self.sdo_write(IDX_CONTROLWORD, 0, 0x000F, warn=False)
-
-            # Verify.
-            time.sleep(0.03)
-            sw = self.sdo_read(IDX_STATUSWORD, 0, warn=False)
-            post_mode = self.sdo_read(IDX_MODES_OF_OPERATION_DISPLAY, 0, warn=False)
-            post_demand = self.sdo_read(IDX_POSITION_DEMAND, 0, warn=False)
-            post_actual = self.sdo_read(IDX_POSITION_ACTUAL, 0, warn=False)
-
-            self.get_logger().info(
-                f"PPM entry post-state: mode=0x{((post_mode or 0) & 0xFF):02X} "
-                f"demand={to_signed_32(post_demand or 0)} "
-                f"actual={to_signed_32(post_actual or 0)} "
-                f"hold_qc={hold_qc}"
-            )
-
-            if sw is not None and ((sw >> SW_FAULT_BIT) & 0x1):
-                self.read_fault_snapshot("position_hold_fault")
-                self._set_bridge_state(BridgeState.FAULTED, "fault entering Position Mode hold")
-                return False
-
-            self.last_hold_qc = hold_qc
-            self._set_bridge_state(BridgeState.READY, "holding in Maxon Position Mode")
-            self.get_logger().info(
-                f"Position Mode hold active: hold_qc={hold_qc} "
-                f"sw=0x{((sw or 0) & 0xFFFF):04X} "
-                f"mode=0x{((post_mode or 0) & 0xFF):02X} ok={ctl_ok}"
-            )
-            return bool(ctl_ok and mode_sdo_ok and setpoint_ok)
-        except Exception as exc:
-            self.get_logger().error(f"enter_position_mode_hold() exception: {exc}")
-            self.read_fault_snapshot("position_hold_exception")
-            self._set_bridge_state(BridgeState.FAULTED, "position hold exception")
+        if sw is not None and ((sw >> SW_FAULT_BIT) & 0x1):
             return False
-    def _wait_for_ipm_endpoint(
-        self,
-        target_qc: int,
-        tol_qc: int = 50,
-        vel_tol_rpm: int = 5,
-        total_timeout_sec: float = 8.0,
-        topup_period_ms: int = 100,
-    ) -> bool:
-        """Wait until the EPOS drive's pos_demand reaches target_qc with zero velocity.
-
-        # PATCH3: ipm-endpoint-wait-before-termination
-        If the drive's trajectory generator stops short -- because dt=0 was
-        interpreted as 'stop now' or the last segment underflowed the FIFO --
-        this method tops up the FIFO with stationary hold records at
-        target_qc to give the trajectory generator a valid endpoint to track,
-        and continues polling. Returns True when pos_demand and pos_actual
-        are both within tol_qc of target_qc and velocity is near zero.
-        Returns False on timeout (caller may proceed with termination anyway
-        and log a warning).
-        """
-        target_qc = to_signed_32(int(target_qc))
-        deadline = time.monotonic() + total_timeout_sec
-        next_topup = time.monotonic() + (topup_period_ms / 1000.0) * 0.9
-        last_demand = None
-        last_actual = None
-        last_vel = None
-        last_fifo = None
-        topups_sent = 0
-        polls = 0
-        start_t = time.monotonic()
-
-        while time.monotonic() < deadline:
-            demand = self.sdo_read(IDX_POSITION_DEMAND, 0, warn=False)
-            actual = self.sdo_read(IDX_POSITION_ACTUAL, 0, warn=False)
-            vel = self.sdo_read(IDX_VELOCITY_ACTUAL, 0, warn=False)
-            fifo = self.sdo_read(IDX_INTERPOLATION_DATA_CONFIG, 4, warn=False)
-            polls += 1
-
-            if demand is not None and actual is not None and vel is not None:
-                last_demand = to_signed_32(demand)
-                last_actual = to_signed_32(actual)
-                last_vel = self._to_signed_16(vel)
-                last_fifo = (fifo & 0xFFFF) if fifo is not None else None
-
-                demand_at_target = abs(last_demand - target_qc) <= tol_qc
-                actual_at_target = abs(last_actual - target_qc) <= tol_qc
-                vel_stopped = abs(last_vel) <= vel_tol_rpm
-
-                if demand_at_target and actual_at_target and vel_stopped:
-                    elapsed = time.monotonic() - start_t
-                    self.get_logger().info(
-                        f"IPM endpoint reached after {elapsed*1000:.0f}ms: "
-                        f"demand={last_demand} actual={last_actual} "
-                        f"vel={last_vel}rpm fifo={last_fifo} "
-                        f"topups_sent={topups_sent} polls={polls}"
-                    )
-                    return True
-
-            # Top up the FIFO with a stationary hold record at target_qc.
-            # This serves two purposes: (a) gives the drive's trajectory
-            # generator a valid endpoint to track if the last real segment
-            # underflowed, and (b) keeps the FIFO from going empty, which
-            # would trigger the drive's internal abort behavior.
-            if time.monotonic() >= next_topup:
-                # Only top up when the FIFO is close to empty. If FIFO is already
-                # large, adding more target records hides the real remaining
-                # trajectory time and can keep the endpoint wait from converging.
-                if last_fifo is None or last_fifo <= 4:
-                    try:
-                        self.send_rpdo1_interpolation_record(
-                            PVTPoint(time_ms=topup_period_ms, velocity_rpm=0,
-                                     position_qc=target_qc),
-                            verbose=False,
-                        )
-                        topups_sent += 1
-                    except Exception as exc:
-                        self.get_logger().warning(
-                            f"IPM endpoint top-up send raised: {exc}"
-                        )
-                next_topup = time.monotonic() + (topup_period_ms / 1000.0) * 0.9
-
-            time.sleep(0.02)
-
-        self.get_logger().warning(
-            f"IPM endpoint wait TIMEOUT after {total_timeout_sec:.2f}s: "
-            f"demand={last_demand} actual={last_actual} vel={last_vel}rpm "
-            f"target={target_qc} "
-            f"delta_demand={(last_demand or 0) - target_qc}qc "
-            f"delta_actual={(last_actual or 0) - target_qc}qc "
-            f"fifo={last_fifo} topups_sent={topups_sent} polls={polls}"
-        )
-        return False
-
-    def terminate_ipm_and_enter_position_hold(self, target_qc: int, final_dt_ms: int = 20) -> bool:
-        """Official IPM exit: wait for endpoint convergence, send final records,
-        dt=0 terminator, clear bit-4, then enter 0xFF hold.
-
-        # PATCH3: ipm-endpoint-wait-before-termination
-        The endpoint wait MUST happen before dt=0 / bit-4 clear. Waiting
-        after them only observes that the drive already stopped short.
-        """
-        target_qc = to_signed_32(target_qc)
-        final_dt_ms = max(1, min(255, int(final_dt_ms)))
-        try:
-            # Send one normal final record to give the drive a clean last
-            # segment ending exactly at target_qc with zero velocity.
-            self.send_rpdo1_interpolation_record(
-                PVTPoint(time_ms=final_dt_ms, velocity_rpm=0, position_qc=target_qc),
-                verbose=True,
-            )
-            time.sleep(min(0.05, final_dt_ms / 1000.0 * 0.25))
-
-            # PATCH3: wait for the drive to actually reach target_qc with
-            # zero velocity, topping up the FIFO with stationary records as
-            # needed. This is the critical change: without it, the dt=0
-            # terminator below latches the drive's internal pos_demand
-            # wherever the trajectory generator decided to stop, which has
-            # been observed up to 8000+qc short of the commanded endpoint.
-            endpoint_ok = self._wait_for_ipm_endpoint(
-                target_qc,
-                tol_qc=50,
-                vel_tol_rpm=5,
-                total_timeout_sec=8.0,
-                topup_period_ms=100,
-            )
-            if not endpoint_ok:
-                actual_now = self.sdo_read(IDX_POSITION_ACTUAL, 0, warn=False)
-                demand_now = self.sdo_read(IDX_POSITION_DEMAND, 0, warn=False)
-
-                if actual_now is not None:
-                    safe_stop_qc = to_signed_32(actual_now)
-                elif demand_now is not None:
-                    safe_stop_qc = to_signed_32(demand_now)
-                else:
-                    safe_stop_qc = target_qc
-
-                self.get_logger().error(
-                    "IPM endpoint wait timed out; aborting trajectory instead of "
-                    f"claiming success. safe_stop_qc={safe_stop_qc} target_qc={target_qc}"
-                )
-
-                try:
-                    # Terminate at the current/near-current position, not the
-                    # commanded endpoint. This avoids forcing a discontinuous
-                    # snap to a target the drive did not physically reach.
-                    self.send_rpdo1_interpolation_record(
-                        PVTPoint(time_ms=0, velocity_rpm=0, position_qc=safe_stop_qc),
-                        verbose=True,
-                    )
-                    self.ipm_armed = False
-                    time.sleep(0.05)
-                    self.sdo_write(IDX_CONTROLWORD, 0, 0x000F, warn=False)
-                    try:
-                        self.command_control_mode(
-                            0x000F, MODE_INTERPOLATED_POSITION,
-                            "endpoint_timeout_abort_bit4_low"
-                        )
-                    except Exception:
-                        pass
-                finally:
-                    return False
-
-            # Maxon IPM terminator: delta-T / time byte zero. After the
-            # endpoint wait this records the actual settled position.
-            self.send_rpdo1_interpolation_record(
-                PVTPoint(time_ms=0, velocity_rpm=0, position_qc=target_qc),
-                verbose=True,
-            )
-            self.ipm_armed = False
-            time.sleep(0.05)
-
-            # Clear IPM-active bit 4 ONCE. enter_position_mode_hold(
-            # skip_bit4_clear=True) will NOT redo this.
-            self.sdo_write(IDX_CONTROLWORD, 0, 0x000F, warn=False)
-            try:
-                self.command_control_mode(
-                    0x000F, MODE_INTERPOLATED_POSITION, "prepare_or_clear_ipm_bit4_low"
-                )
-            except Exception:
-                pass
-
-            # Poll IPM inactive (bit 15 low). Do not fail solely on this.
-            deadline = time.monotonic() + 0.35
-            last_ipm = None
-            while time.monotonic() < deadline:
-                ipm = self.sdo_read(IDX_INTERPOLATION_STATUS, 1, warn=False)
-                if ipm is not None:
-                    last_ipm = ipm & 0xFFFF
-                    if not ((last_ipm >> IPM_ACTIVE) & 0x1):
-                        break
-                time.sleep(0.02)
-            self.get_logger().info(
-                f"IPM terminator observed status=0x{((last_ipm or 0) & 0xFFFF):04X}"
-            )
-
-            # Post-termination telemetry (parity with prior patches).
-            post_actual = self.sdo_read(IDX_POSITION_ACTUAL, 0, warn=False)
-            post_vel = self.sdo_read(IDX_VELOCITY_ACTUAL, 0, warn=False)
-            if post_actual is not None:
-                settle_err = to_signed_32(post_actual) - target_qc
-                msg = (
-                    f"Pre-hold settle: actual={to_signed_32(post_actual)} "
-                    f"target={target_qc} delta={settle_err}qc "
-                    f"vel={self._to_signed_16(post_vel or 0)}rpm"
-                )
-                if abs(settle_err) <= 50:
-                    self.get_logger().info(msg)
-                else:
-                    self.get_logger().warning(msg)
-
-            return self.enter_position_mode_hold(target_qc, skip_bit4_clear=True)
-        except Exception as exc:
-            self.get_logger().error(
-                f"terminate_ipm_and_enter_position_hold() exception: {exc}"
-            )
-            self.read_fault_snapshot("ipm_terminate_exception")
-            self._set_bridge_state(BridgeState.FAULTED, "IPM terminate exception")
+        if ipm_buf is None:
             return False
+        if not ((ipm_buf >> IPM_BUF_ENABLED) & 0x1):
+            return False
+        if not ((ipm_buf >> IPM_ACTIVE) & 0x1):
+            return False
+        return True
+
+
     def read_error_summary(self) -> Dict[str, int]:
         result = {
             "error_register": self.sdo_read(IDX_ERROR_REGISTER, 0, warn=False) or 0,
@@ -1373,9 +812,6 @@ class Epos2JointBridge(Node):
         }
         return result
     def startup_ipm(self) -> bool:
-        if not self._legacy_ipm_allowed("startup_ipm"):
-            return False
-
         self.get_logger().info("Arming IPM with staged hold points")
         self.ipm_armed = False
         self._set_bridge_state(BridgeState.IDLE, "starting arm sequence")
@@ -1478,9 +914,6 @@ class Epos2JointBridge(Node):
             self.ipm_armed = False
             return False
     def arm_ipm_hold(self) -> bool:
-        if not self._legacy_ipm_allowed("arm_ipm_hold"):
-            return False
-
         return self.startup_ipm()
 
     
@@ -1522,9 +955,6 @@ class Epos2JointBridge(Node):
         return ok
 
     def send_test_move_delta(self, delta_rad: float) -> bool:
-        if not self._legacy_ipm_allowed("send_test_move_delta"):
-            return False
-
         if not self.ipm_armed:
             self.get_logger().warning("IPM not armed; call arm_ipm_hold() first")
             return False
@@ -1603,9 +1033,6 @@ class Epos2JointBridge(Node):
             return False
 
     def _reduced_traj_cb(self, msg: Float64MultiArray) -> None:
-        if not self._legacy_ipm_allowed("_reduced_traj_cb"):
-            return
-
         data = list(msg.data)
         if len(data) == 0 or (len(data) % 2) != 0:
             self.get_logger().warning(
@@ -1710,17 +1137,6 @@ class Epos2JointBridge(Node):
         v[-1] = 0.0
         return v
 
-    def _j2_pvt_cap_ms(self) -> int:
-        if str(getattr(self, "joint_id", "")).lower() == "j2":
-            return int(self.get_parameter("j2_active_pvt_cap_ms").value)
-        return 255
-
-    def _j2_pvt_record_cap_n(self, default_n: int) -> int:
-        if str(getattr(self, "joint_id", "")).lower() == "j2":
-            # 3 s / 100 ms needs ~30 records; leave headroom.
-            return max(default_n, 60)
-        return default_n
-
     def _hermite_pos_vel_acc(
         self,
         q0: float,
@@ -1761,77 +1177,98 @@ class Epos2JointBridge(Node):
         v1_rad_s: float,
         duration_sec: float,
     ) -> List[PVTPoint]:
-        T = max(0.03, float(duration_sec))
+        """Duration-preserving adaptive Hermite segmentation.
+
+        The old adaptive path could produce too few PVT points for a long ROS
+        time_from_start, so the drive consumed the queued points far earlier
+        than the requested trajectory duration. This version treats duration_sec
+        as hard timing: sum(PVT.time_ms) should approximately equal duration_sec.
+        """
+        T = max(0.001, float(duration_sec))
 
         min_seg_ms = int(self.get_parameter("traj_internal_min_seg_ms").value)
-        max_seg_ms = int(self.get_parameter("traj_internal_max_seg_ms").value)
+        cfg_max_seg_ms = int(self.get_parameter("traj_internal_max_seg_ms").value)
         max_step_rad = float(self.get_parameter("traj_internal_max_step_rad").value)
         max_dv_rad_s = float(self.get_parameter("traj_internal_max_dv_rad_s").value)
         max_accel_rad_s2 = float(self.get_parameter("traj_internal_max_accel_rad_s2").value)
 
-        min_seg_ms = max(10, min_seg_ms)
-        max_seg_ms = max(min_seg_ms, max_seg_ms)
-        max_seg_s = max_seg_ms / 1000.0
+        try:
+            max_total_points = int(self.get_parameter("traj_internal_max_total_points").value)
+        except Exception:
+            max_total_points = 48
 
-        _, _, a0 = self._hermite_pos_vel_acc(q0_rad, q1_rad, v0_rad_s, v1_rad_s, T, 0.0)
-        _, _, am = self._hermite_pos_vel_acc(q0_rad, q1_rad, v0_rad_s, v1_rad_s, T, 0.5)
-        _, _, a1 = self._hermite_pos_vel_acc(q0_rad, q1_rad, v0_rad_s, v1_rad_s, T, 1.0)
-        a_peak = max(abs(a0), abs(am), abs(a1))
+        min_seg_ms = max(1, min(255, min_seg_ms))
+        cfg_max_seg_ms = max(min_seg_ms, min(255, cfg_max_seg_ms))
+        max_total_points = max(4, max_total_points)
 
-        n_time = max(1, int(math.ceil(T / max_seg_s)))
+        # EPOS PVT time is one record's segment time, not ROS absolute time.
+        # Keep under 255 ms while trying to stay within the old point budget.
+        budget_ms = int(math.ceil(T * 1000.0 / max_total_points))
+        effective_max_ms = max(cfg_max_seg_ms, budget_ms)
+        effective_max_ms = max(min_seg_ms, min(255, effective_max_ms))
+
+        n_time = max(1, int(math.ceil(T * 1000.0 / effective_max_ms)))
         n_step = max(1, int(math.ceil(abs(q1_rad - q0_rad) / max_step_rad))) if max_step_rad > 0 else 1
         n_dv = max(1, int(math.ceil(abs(v1_rad_s - v0_rad_s) / max_dv_rad_s))) if max_dv_rad_s > 0 else 1
-        n_acc = max(1, int(math.ceil(a_peak / max_accel_rad_s2))) if max_accel_rad_s2 > 0 else 1
+
+        # Coarse acceleration estimate. We do not cap below n_time, because that
+        # would violate duration preservation.
+        avg_v = (q1_rad - q0_rad) / T
+        accel_est = max(abs(avg_v - v0_rad_s), abs(v1_rad_s - avg_v)) / max(T * 0.5, 1e-3)
+        n_acc = max(1, int(math.ceil(accel_est / max_accel_rad_s2))) if max_accel_rad_s2 > 0 else 1
 
         n = max(n_time, n_step, n_dv, n_acc)
-        n = max(1, min(self._j2_pvt_record_cap_n(12), n))
+
+        if n > max_total_points:
+            # Keep timing legal. Do not reduce below n_time.
+            if n_time <= max_total_points:
+                self.get_logger().warning(
+                    f"Adaptive segmentation capped dynamic constraints from n={n} to "
+                    f"max_total_points={max_total_points}, preserving n_time={n_time}"
+                )
+                n = max(n_time, max_total_points)
+            else:
+                self.get_logger().warning(
+                    f"Adaptive segmentation requires n_time={n_time} > max_total_points={max_total_points}; "
+                    "preserving legal PVT timing anyway"
+                )
+                n = n_time
 
         dt_sub = T / n
-        cap_ms = self._j2_pvt_cap_ms()
-        time_ms = max(min_seg_ms, min(cap_ms, int(round(dt_sub * 1000.0))))
+        time_ms_nominal = int(round(dt_sub * 1000.0))
+        time_ms_nominal = max(min_seg_ms, min(255, time_ms_nominal))
 
         pts: List[PVTPoint] = []
-        prev_qc = self.kin.joint_rad_to_motor_qc(q0_rad)
+        total_ms = 0
 
         for k in range(1, n + 1):
             u = k / n
-            q_rad, v_rad_s, _ = self._hermite_pos_vel_acc(q0_rad, q1_rad, v0_rad_s, v1_rad_s, T, u)
-
-            pos_qc = self.kin.joint_rad_to_motor_qc(q_rad)
-            vel_rpm = self.kin.joint_rad_s_to_motor_rpm(v_rad_s)
-
-            delta_qc = pos_qc - prev_qc
-            if abs(delta_qc) <= 1 and abs(vel_rpm) <= 1:
-                continue
-
-            if delta_qc != 0 and abs(vel_rpm) < 2:
-                vel_rpm = 2 if delta_qc > 0 else -2
-
-            pts.append(
-                PVTPoint(
-                    time_ms=time_ms,
-                    velocity_rpm=int(vel_rpm),
-                    position_qc=int(pos_qc),
-                )
+            q_rad, v_rad_s, _ = self._hermite_pos_vel_acc(
+                q0_rad, q1_rad, v0_rad_s, v1_rad_s, T, u
             )
-            prev_qc = pos_qc
 
-        if not pts:
-            pts.append(
-                PVTPoint(
-                    time_ms=time_ms,
-                    velocity_rpm=0,
-                    position_qc=self.kin.joint_rad_to_motor_qc(q1_rad),
-                )
-            )
+            # Preserve total duration despite integer ms rounding.
+            remaining_records = n - k + 1
+            target_total_ms = int(round(T * 1000.0))
+            remaining_ms = target_total_ms - total_ms
+            time_ms = int(round(remaining_ms / remaining_records))
+            time_ms = max(1, min(255, time_ms))
+            total_ms += time_ms
+
+            pts.append(PVTPoint(
+                time_ms=time_ms,
+                velocity_rpm=self.kin.joint_rad_s_to_motor_rpm(v_rad_s),
+                position_qc=self.kin.joint_rad_to_motor_qc(q_rad),
+            ))
+
+        self.get_logger().info(
+            f"Adaptive duration-preserving segment: T={T:.3f}s n={len(pts)} "
+            f"total_pvt_ms={sum(p.time_ms for p in pts)} effective_max_ms={effective_max_ms}"
+        )
 
         return pts
 
-
     def execute_reduced_trajectory(self, target_rads: List[float], duration_secs: List[float]) -> bool:
-        if not self._legacy_ipm_allowed("execute_reduced_trajectory"):
-            return False
-
         if not self.ipm_armed:
             self.get_logger().warning("IPM not armed; call arm_ipm first")
             return False
@@ -1921,9 +1358,6 @@ class Epos2JointBridge(Node):
                 return False
 
     def execute_reduced_trajectory(self, target_rads: List[float], duration_secs: List[float]) -> bool:
-        if not self._legacy_ipm_allowed("execute_reduced_trajectory"):
-            return False
-
         if not self.ipm_armed:
             self.get_logger().warning("IPM not armed; call arm_ipm first")
             return False
@@ -2038,199 +1472,8 @@ class Epos2JointBridge(Node):
                 self._set_bridge_state(BridgeState.FAULTED, "reduced trajectory exception")
                 return False
 
-    def _reduced_traj_cb_native(self, msg: Float64MultiArray) -> None:
-        if not self._legacy_ipm_allowed("_reduced_traj_cb_native"):
-            return
-
-        data = list(msg.data)
-        if len(data) == 0:
-            self.get_logger().warning("Ignoring /reduced_traj: empty payload")
-            return
-
-        # Preferred native format: [q, v, dt, q, v, dt, ...]
-        if (len(data) % 3) == 0:
-            target_rads = [float(data[i]) for i in range(0, len(data), 3)]
-            target_vels = [float(data[i]) for i in range(1, len(data), 3)]
-            durations = [float(data[i]) for i in range(2, len(data), 3)]
-            ok = self.execute_pvt_trajectory(target_rads, target_vels, durations)
-            self.get_logger().info(f"/reduced_traj(native-pvt) result={ok}")
-            return
-
-        # Backward-compatible fallback: [q, dt, q, dt, ...]
-        if (len(data) % 2) == 0:
-            self.get_logger().warning(
-                "Legacy /reduced_traj pair payload detected; interpreting as [q, dt] with v=0"
-            )
-            target_rads = [float(data[i]) for i in range(0, len(data), 2)]
-            durations = [float(data[i]) for i in range(1, len(data), 2)]
-            target_vels = [0.0 for _ in target_rads]
-            ok = self.execute_pvt_trajectory(target_rads, target_vels, durations)
-            self.get_logger().info(f"/reduced_traj(legacy-pairs) result={ok}")
-            return
-
-        self.get_logger().warning(
-            "Ignoring /reduced_traj: expected [q,v,dt,...] or legacy [q,dt,...]"
-        )
-
-    def execute_pvt_trajectory(
-        self,
-        target_rads: List[float],
-        target_vel_rad_s: List[float],
-        duration_secs: List[float],
-    ) -> bool:
-        if not self._legacy_ipm_allowed("execute_pvt_trajectory"):
-            return False
-
-        if not self.ipm_armed:
-            self.get_logger().warning("IPM not armed; call arm_ipm first")
-            return False
-
-        if not target_rads or len(target_rads) != len(target_vel_rad_s) or len(target_rads) != len(duration_secs):
-            self.get_logger().error("execute_pvt_trajectory got mismatched or empty arrays")
-            return False
-
-        with self.stream_lock:
-            if self.bridge_state not in (BridgeState.IPM_ARMED, BridgeState.MOVING):
-                self.get_logger().warning(f"Refusing native PVT trajectory in state {self.bridge_state.name}")
-                return False
-
-            current_pos = self.sdo_read(IDX_POSITION_ACTUAL, 0, warn=False)
-            if current_pos is None:
-                self.get_logger().error("Failed reading current position for native PVT trajectory")
-                return False
-
-            current_qc = to_signed_32(current_pos)
-            current_rad = self.kin.motor_qc_to_joint_rad(current_qc)
-
-            all_points: List[PVTPoint] = []
-
-            prev_q = current_rad
-            prev_v = 0.0
-
-            for q, v, dt in zip(target_rads, target_vel_rad_s, duration_secs):
-                q = float(q)
-                v = float(v)
-                dt = max(0.03, float(dt))
-
-                # Only split if the drive time field would overflow.
-                n = max(1, math.ceil(dt / 0.255))
-
-                for k in range(1, n + 1):
-                    frac = k / n
-                    qk = prev_q + frac * (q - prev_q)
-                    vk = prev_v + frac * (v - prev_v)
-                    dtk = dt / n
-
-                    pos_qc = self.kin.joint_rad_to_motor_qc(qk)
-                    vel_rpm = int(round(self.kin.joint_rad_s_to_motor_rpm(vk)))
-
-                    prev_qc = all_points[-1].position_qc if all_points else current_qc
-                    delta_qc = pos_qc - prev_qc
-                    if delta_qc != 0 and abs(vel_rpm) < 2:
-                        vel_rpm = 2 if delta_qc > 0 else -2
-
-                    all_points.append(
-                        PVTPoint(
-                            time_ms=max(20, min(self._j2_pvt_cap_ms(), int(round(dtk * 1000.0)))),
-                            velocity_rpm=int(vel_rpm),
-                            position_qc=int(pos_qc),
-                        )
-                    )
-
-                prev_q = q
-                prev_v = v
-
-            if not all_points:
-                self.get_logger().warning("Native PVT trajectory produced no executable points")
-                return False
-
-            self.get_logger().info(
-                f"Native PVT packetization: {len(target_rads)} knots -> {len(all_points)} PVT records"
-            )
-
-            self._set_bridge_state(BridgeState.MOVING, "executing native PVT trajectory")
-
-            try:
-                lead = PVTPoint(time_ms=40, velocity_rpm=0, position_qc=current_qc)
-                self.send_rpdo1_interpolation_record(lead, verbose=True)
-                time.sleep(0.002)
-
-                for i, pt in enumerate(all_points):
-                    self.send_rpdo1_interpolation_record(pt, verbose=(i < 8))
-                    time.sleep(0.002)
-
-                final_qc = all_points[-1].position_qc
-                self.last_hold_qc = final_qc
-
-                hold = PVTPoint(time_ms=40, velocity_rpm=0, position_qc=final_qc)
-                for _ in range(8):
-                    self.send_rpdo1_interpolation_record(hold, verbose=False)
-                    time.sleep(0.002)
-
-                total_wait = sum(max(0.03, float(d)) for d in duration_secs) + 1.0
-                deadline = time.monotonic() + max(total_wait, 1.5)
-                final_target_rad = float(target_rads[-1])
-
-                while time.monotonic() < deadline:
-                    sw = self.sdo_read(IDX_STATUSWORD, 0, warn=False)
-                    if sw is not None and ((sw >> SW_FAULT_BIT) & 0x1):
-                        self.get_logger().error(f"Fault during native PVT trajectory, sw=0x{sw:04X}")
-                        self.ipm_armed = False
-                        self._set_bridge_state(BridgeState.FAULTED, "fault during native PVT trajectory")
-                        return False
-
-                    pos = self.sdo_read(IDX_POSITION_ACTUAL, 0, warn=False)
-                    if pos is None:
-                        time.sleep(0.02)
-                        continue
-
-                    pos_qc = to_signed_32(pos)
-                    pos_rad = self.kin.motor_qc_to_joint_rad(pos_qc)
-                    err_rad = final_target_rad - pos_rad
-
-                    if abs(err_rad) <= 0.03:
-                        self._set_bridge_state(BridgeState.IPM_ARMED, "native PVT trajectory complete")
-                        return True
-
-                    time.sleep(0.02)
-
-                self.get_logger().error("Native PVT trajectory timed out before reaching final tolerance")
-                self._set_bridge_state(BridgeState.IPM_ARMED, "native PVT trajectory timeout")
-                return False
-
-            except Exception as exc:
-                self.get_logger().error(f"Native PVT trajectory exception: {exc}")
-                self.ipm_armed = False
-                self._set_bridge_state(BridgeState.FAULTED, "native PVT trajectory exception")
-                return False
-
-
 
     # ---------------- PDO runtime ----------------
-    def command_control_mode(self, controlword: int, mode: int, reason: str = "unspecified") -> bool:
-        """Single tracked writer for RPDO2: 0x6040 controlword + 0x6060 mode."""
-        cw = int(controlword) & 0xFFFF
-        mode_u8 = int(mode) & 0xFF
-
-        try:
-            self.last_commanded_controlword = cw
-            self.last_commanded_mode = mode_u8
-            self.last_command_reason = str(reason)
-            self.last_command_time = time.monotonic()
-
-            self.get_logger().info(
-                f"RPDO2 command reason={reason} cw=0x{cw:04X} mode=0x{mode_u8:02X}"
-            )
-
-            self.send_rpdo2_control_mode(cw, mode_u8)
-            return True
-
-        except Exception as exc:
-            self.get_logger().error(
-                f"RPDO2 command failed reason={reason} cw=0x{cw:04X} mode=0x{mode_u8:02X}: {exc}"
-            )
-            return False
-
     def send_rpdo2_control_mode(self, controlword: int, mode: int) -> None:
         # RPDO2 mapping: 0x6040 (16b) + 0x6060 (8b)
         data = struct.pack("<HB", controlword & 0xFFFF, mode & 0xFF)
@@ -2247,11 +1490,27 @@ class Epos2JointBridge(Node):
         self.can.send(self.cob_rpdo1, payload)
 
     def _ipm_keepalive_cb(self) -> None:
-        # Disabled for EPOS2 IPM: do not keep IPM alive with repeated zero-velocity
-        # PVT records. IPM is activated only for active trajectories, terminated with
-        # a dt=0 PVT record, then held in Maxon Position Mode 0xFF / object 0x2062.
-        return
+        if not self.ipm_armed:
+            return
 
+        if self.bridge_state != BridgeState.IPM_ARMED:
+            return
+
+        seg_ms = int(self.get_parameter("ipm_default_segment_ms").value)
+        if seg_ms < 20:
+            seg_ms = 20
+
+        hold = PVTPoint(
+            time_ms=seg_ms,
+            velocity_rpm=0,
+            position_qc=self.last_hold_qc,
+        )
+
+        try:
+            self.send_rpdo1_interpolation_record(hold, verbose=False)
+        except Exception as exc:
+            self.get_logger().error(f"IPM keepalive send failed: {exc}")
+    
     def _can_rx_loop(self) -> None:
         while self.rx_thread_running:
             try:
@@ -2404,7 +1663,7 @@ class Epos2JointBridge(Node):
         arr.header.stamp = self.get_clock().now().to_msg()
 
         status = DiagnosticStatus()
-        status.name = "epos2/j3"
+        status.name = "epos2/j2"
         if st.faulted():
             status.level = DiagnosticStatus.ERROR
             status.message = "Drive faulted"
@@ -2462,9 +1721,6 @@ class Epos2JointBridge(Node):
         self.send_test_move_delta(delta_rad)
 
     def _arm_ipm_cb(self, msg: Bool) -> None:
-        if not self._legacy_ipm_allowed("_arm_ipm_cb"):
-            return
-
         if not msg.data:
             return
         ok = self.arm_ipm_hold()
@@ -2496,12 +1752,112 @@ class Epos2JointBridge(Node):
     def _cancel_callback(self, goal_handle) -> int:
         return CancelResponse.ACCEPT
 
+    # ---------------- IPM lifecycle FSM ----------------
+    #
+    # This FSM is intentionally separate from BridgeState. BridgeState is a
+    # coarse ROS-facing summary. ipm_lifecycle_state is the strict EPOS motion
+    # contract that prevents unsafe sequencing bugs:
+    #
+    #   READY -> PREPARING -> PREBUFFERING -> PREBUFFERED -> ACTIVE
+    #          -> SETTLING -> DISARMING -> READY
+    #
+    # Fault paths go to FAULTED and must be explicitly recovered.
+    #
+    IPM_FSM_ALLOWED = {
+        "UNINITIALIZED": {"READY", "FAULTED"},
+        "READY": {"PREPARING", "FAULTED"},
+        "PREPARING": {"PREBUFFERING", "FAULTED", "READY"},
+        "PREBUFFERING": {"PREBUFFERED", "FAULTED", "DISARMING"},
+        "PREBUFFERED": {"ACTIVE", "FAULTED", "DISARMING"},
+        "ACTIVE": {"SETTLING", "FAULTED", "DISARMING"},
+        "SETTLING": {"DISARMING", "FAULTED"},
+        "DISARMING": {"READY", "FAULTED"},
+        "FAULTED": {"PREPARING", "READY"},
+    }
+
+    def _ipm_fsm_get(self) -> str:
+        return str(getattr(self, "ipm_lifecycle_state", "READY"))
+
+    def _ipm_fsm_set(self, new_state: str, reason: str = "") -> None:
+        old_state = self._ipm_fsm_get()
+        allowed = self.IPM_FSM_ALLOWED.get(old_state, set())
+
+        if new_state != old_state and new_state not in allowed:
+            msg = (
+                f"ILLEGAL IPM FSM transition {old_state} -> {new_state}"
+                + (f" ({reason})" if reason else "")
+            )
+            self.get_logger().error(msg)
+            raise RuntimeError(msg)
+
+        self.ipm_lifecycle_state = new_state
+        if new_state != old_state:
+            self.get_logger().info(
+                f"IPM FSM {old_state} -> {new_state}"
+                + (f" ({reason})" if reason else "")
+            )
+
+    def _ipm_fsm_require(self, *states: str, reason: str = "") -> None:
+        cur = self._ipm_fsm_get()
+        if cur not in states:
+            msg = (
+                f"IPM FSM guard failed: state={cur}, expected={states}"
+                + (f" ({reason})" if reason else "")
+            )
+            self.get_logger().error(msg)
+            raise RuntimeError(msg)
+
+    def _ipm_fsm_fault(self, reason: str = "") -> None:
+        try:
+            self._ipm_fsm_set("FAULTED", reason)
+        except Exception:
+            self.ipm_lifecycle_state = "FAULTED"
+            self.get_logger().error(f"IPM FSM forced to FAULTED ({reason})")
+
+    def _ipm_status_word(self) -> int:
+        st = self.sdo_read(IDX_INTERPOLATION_STATUS, 1, warn=False)
+        return int(st or 0) & 0xFFFF
+
+    def _ipm_is_active_now(self) -> bool:
+        return bool((self._ipm_status_word() >> IPM_ACTIVE) & 0x1)
+
+    def _ipm_is_buffer_enabled_now(self) -> bool:
+        return bool((self._ipm_status_word() >> IPM_BUF_ENABLED) & 0x1)
+
+    def _assert_ipm_inactive(self, reason: str = "") -> None:
+        ipm = self._ipm_status_word()
+        if (ipm >> IPM_ACTIVE) & 0x1:
+            raise RuntimeError(
+                f"Expected IPM inactive but status=0x{ipm:04X}"
+                + (f" ({reason})" if reason else "")
+            )
+
+    def _assert_ipm_active(self, reason: str = "") -> None:
+        ipm = self._ipm_status_word()
+        if not ((ipm >> IPM_ACTIVE) & 0x1):
+            raise RuntimeError(
+                f"Expected IPM active but status=0x{ipm:04X}"
+                + (f" ({reason})" if reason else "")
+            )
+
     async def _execute_follow_joint_trajectory(self, goal_handle):
-        """FollowJointTrajectory execution with:
-        - Sync-start gating via header.stamp (cross-joint coordination)
-        - Buffer-level paced streaming (EPOS 0x20C4.01 underflow/overflow bits)
-        - Hold-stream through convergence + 2s post-settle window
-        - Mid-execution cancel handling
+        """FollowJointTrajectory using strict EPOS IPM lifecycle FSM.
+
+        Legal sequence:
+          READY
+            -> PREPARING      : clear faults, set mode, enable operation
+            -> PREBUFFERING   : clear/enable FIFO while IPM inactive
+            -> PREBUFFERED    : complete legal PVT plan is loaded into FIFO
+            -> ACTIVE         : assert controlword bit 4 once
+            -> SETTLING       : wait planned duration + convergence
+            -> DISARMING      : leave active IPM state
+            -> READY
+
+        This prevents:
+          - activating before the buffer is loaded
+          - declaring success before planned duration elapses
+          - carrying active/stale IPM state into the next MoveIt goal
+          - silently continuing after illegal sequencing
         """
         with self.active_goal_lock:
             self.active_goal_handle = goal_handle
@@ -2510,210 +1866,172 @@ class Epos2JointBridge(Node):
         feedback = FollowJointTrajectory.Feedback()
         feedback.joint_names = [self.kin.joint_name]
 
-        # ---- IPM setup ----
-        if not self.prepare_ipm_inactive():
+        points = list(goal_handle.request.trajectory.points)
+        if not points:
             result.error_code = FollowJointTrajectory.Result.INVALID_GOAL
-            result.error_string = "Failed prepare_ipm_inactive sequence"
+            result.error_string = "No trajectory points"
             goal_handle.abort()
             return result
 
-        # ---- Convert MoveIt trajectory to PVT records (preserves time_from_start) ----
-        points = list(goal_handle.request.trajectory.points)
-        if len(points) == 0:
-            result.error_code = FollowJointTrajectory.Result.INVALID_GOAL
-            result.error_string = "Empty trajectory"
-            goal_handle.abort()
-            return result
-        if len(points) == 1:
-            points = [points[0], points[0]]
+        target_rads = []
+        durations = []
+        prev_t = 0.0
+
+        for i, pt in enumerate(points):
+            if len(pt.positions) != 1:
+                result.error_code = FollowJointTrajectory.Result.INVALID_GOAL
+                result.error_string = f"Point {i} must have exactly one position"
+                goal_handle.abort()
+                return result
+
+            t = self._duration_msg_to_sec(pt.time_from_start)
+            dt = t - prev_t
+            if dt <= 0.0:
+                dt = float(self.get_parameter("ipm_default_segment_ms").value) / 1000.0
+
+            target_rads.append(float(pt.positions[0]))
+            durations.append(float(dt))
+            prev_t = t
+
+        planned_duration = float(sum(durations))
+
+        self.get_logger().info(
+            f"FJT FSM prebuffer dispatch: {len(points)} ROS points -> "
+            f"{len(target_rads)} reduced knots, total_dt={planned_duration:.3f}s"
+        )
+
+        final_qc = None
 
         try:
-            all_pvt = self._convert_trajectory_points_to_pvt(points)
-        except Exception as exc:
-            result.error_code = FollowJointTrajectory.Result.INVALID_GOAL
-            result.error_string = f"Trajectory conversion failed: {exc}"
-            goal_handle.abort()
-            return result
+            # Refuse to start if previous goal left the drive active.
+            self._ipm_fsm_require("READY", "FAULTED", reason="new FJT goal entry")
+            if self._ipm_is_active_now():
+                raise RuntimeError("Refusing new FJT goal: IPM is still active at entry")
 
-        if len(all_pvt) < 2:
-            result.error_code = FollowJointTrajectory.Result.INVALID_GOAL
-            result.error_string = "Need at least 2 PVT points for IPM streaming"
-            goal_handle.abort()
-            return result
+            self._ipm_fsm_set("PREPARING", "FJT setup")
+            self._set_bridge_state(BridgeState.IDLE, "FJT FSM preparing")
 
-        final_target_qc = all_pvt[-1].position_qc
-        final_target_rad = self.kin.motor_qc_to_joint_rad(final_target_qc)
-        default_seg_ms = max(20, int(self.get_parameter("ipm_default_segment_ms").value))
-        if str(getattr(self, "joint_id", "")).lower() == "j2":
+            if not self.clear_fault():
+                raise RuntimeError("clear_fault failed")
+            if not self.set_mode(MODE_INTERPOLATED_POSITION):
+                raise RuntimeError("set_mode(IPM) failed")
+            if not self.enable_operation():
+                raise RuntimeError("enable_operation failed")
+
+            self._assert_ipm_inactive("before FIFO clear")
+            self._ipm_fsm_set("PREBUFFERING", "clear and enable FIFO")
+
+            ok0, ok1, ipm_buf = self.clear_and_enable_ipm_buffer()
+            if not (ok0 and ok1):
+                raise RuntimeError(f"clear_and_enable_ipm_buffer failed ok0={ok0} ok1={ok1}")
+
+            ipm_buf = self._ipm_status_word()
+            if not ((ipm_buf >> IPM_BUF_ENABLED) & 0x1):
+                raise RuntimeError(f"IPM buffer not enabled after clear, status=0x{ipm_buf:04X}")
+            if (ipm_buf >> IPM_ACTIVE) & 0x1:
+                raise RuntimeError(f"IPM became active during prebuffer setup, status=0x{ipm_buf:04X}")
+
+            current_pos = self.sdo_read(IDX_POSITION_ACTUAL, 0, warn=False)
+            if current_pos is None:
+                raise RuntimeError("failed to read current position")
+
+            current_qc = to_signed_32(current_pos)
+            current_rad = self.kin.motor_qc_to_joint_rad(current_qc)
+
+            all_points: List[PVTPoint] = []
+            all_points.append(PVTPoint(time_ms=40, velocity_rpm=0, position_qc=current_qc))
+
+            q_prev = current_rad
+            v_prev = 0.0
+
+            for q_target, dt in zip(target_rads, durations):
+                seg = self._segment_points_between_adaptive(
+                    q_prev, q_target, v_prev, 0.0, dt
+                )
+                all_points.extend(seg)
+                q_prev = q_target
+                v_prev = 0.0
+
+            final_qc = self.kin.joint_rad_to_motor_qc(target_rads[-1])
+
+            # Hold tail: keeps FIFO from underflowing immediately after endpoint.
+            for _ in range(10):
+                all_points.append(PVTPoint(time_ms=100, velocity_rpm=0, position_qc=final_qc))
+
+            total_pvt_ms = sum(int(p.time_ms) for p in all_points)
+
+            if len(all_points) > 62:
+                raise RuntimeError(
+                    f"prebuffer trajectory too large for single-shot FIFO: "
+                    f"{len(all_points)} records, total_pvt_ms={total_pvt_ms}; "
+                    "requires future low-watermark feeder"
+                )
+
             self.get_logger().info(
-                f"J2 all active PVT packetizers capped: max active record time_ms={self._j2_pvt_cap_ms()}"
+                f"FJT FSM prebuffer: writing {len(all_points)} PVT records while inactive, "
+                f"total_pvt_ms={total_pvt_ms}, final_qc={final_qc}"
             )
 
-        # ---- Sync-start gating via header.stamp BEFORE IPM activation ----
-        # Do not enable IPM and then wait by streaming stationary hold records.
-        # Waiting here leaves the drive in non-IPM hold/idle until the actual start time.
-        header_stamp = goal_handle.request.trajectory.header.stamp
-        sync_start_set = (header_stamp.sec > 0 or header_stamp.nanosec > 0)
-        if sync_start_set:
-            target_ros = float(header_stamp.sec) + float(header_stamp.nanosec) * 1e-9
-            now_ros = self.get_clock().now().nanoseconds * 1e-9
-            sync_delay = target_ros - now_ros
-            if sync_delay > 0.0:
-                self.get_logger().info(
-                    f"Sync-start: waiting {sync_delay*1000:.1f}ms before IPM activation"
-                )
-                wait_end = time.monotonic() + sync_delay
-                while time.monotonic() < wait_end:
-                    if goal_handle.is_cancel_requested:
-                        goal_handle.canceled()
-                        result.error_code = FollowJointTrajectory.Result.PATH_TOLERANCE_VIOLATED
-                        result.error_string = "Goal canceled during pre-IPM sync-wait"
-                        return result
-                    with self.state_lock:
-                        if self.state.faulted():
-                            result.error_code = FollowJointTrajectory.Result.PATH_TOLERANCE_VIOLATED
-                            result.error_string = "Drive faulted during pre-IPM sync-wait"
-                            self.read_fault_snapshot("pre_ipm_sync_wait_fault")
-                            goal_handle.abort()
-                            return result
-                    time.sleep(0.01)
+            for i, pvt in enumerate(all_points):
+                self._ipm_fsm_require("PREBUFFERING", reason="writing PVT while inactive")
+                self._assert_ipm_inactive("during PVT prebuffer")
+                self.send_rpdo1_interpolation_record(pvt, verbose=(i < 8))
 
-        # ---- Stage initial records and enable IPM active ----
-        try:
-            with self.state_lock:
-                cur_qc = self.state.position_actual_qc
-            hold_lead = PVTPoint(time_ms=default_seg_ms, velocity_rpm=0,
-                                 position_qc=to_signed_32(cur_qc))
-            for _ in range(8):
-                self.send_rpdo1_interpolation_record(hold_lead)
-                time.sleep(0.002)
+            self._ipm_fsm_set("PREBUFFERED", "all PVT records loaded")
+            self._assert_ipm_inactive("before activation")
+
             if not self.enable_ipm_active():
-                raise RuntimeError("Failed to set controlword 0x001F (IPM active)")
+                raise RuntimeError("enable_ipm_active failed after prebuffer")
+
+            self._assert_ipm_active("after activation")
+            self._ipm_fsm_set("ACTIVE", "PVT execution active")
+            self._set_bridge_state(BridgeState.MOVING, "FJT FSM active")
+
         except Exception as exc:
+            self._ipm_fsm_fault(f"FJT setup/prebuffer failed: {exc}")
             result.error_code = FollowJointTrajectory.Result.INVALID_GOAL
-            result.error_string = f"Failed initial PVT staging: {exc}"
+            result.error_string = f"Failed FJT IPM FSM setup: {exc}"
+            self.get_logger().error(result.error_string)
+            try:
+                self.read_fault_snapshot("fjt_fsm_setup_failed")
+            except Exception:
+                pass
             goal_handle.abort()
             return result
 
-        # ---- Sync-start gating already handled before IPM activation ----
-        # Never hold-stream stationary PVT records while waiting for header.stamp.
-
-        # ---- Stream trajectory records, paced by buffer-status bits ----
-        streaming_start = time.monotonic()
-        record_idx = 0
-        last_fb_time = 0.0
         try:
-            while record_idx < len(all_pvt):
-                if goal_handle.is_cancel_requested:
-                    self.get_logger().warning(
-                        "Goal canceled mid-stream; terminating IPM with dt=0 and entering Position Mode hold"
-                    )
-                    try:
-                        # PATCH3: always use live 0x6064 actual for cancel hold,
-                        # not the last queued PVT record. The FIFO is typically
-                        # ahead of physical execution; using the queued record
-                        # would snap the motor forward to the FIFO head on cancel.
-                        with self.state_lock:
-                            cancel_hold_qc = to_signed_32(self.state.position_actual_qc)
+            self._ipm_fsm_require("ACTIVE", reason="before planned-duration wait")
 
-                        if not self.terminate_ipm_and_enter_position_hold(
-                            to_signed_32(cancel_hold_qc),
-                            final_dt_ms=default_seg_ms,
-                        ):
-                            self.get_logger().warning(
-                                "Cancel cleanup reported false; checking for fault snapshot"
-                            )
-                            with self.state_lock:
-                                cancel_faulted = self.state.faulted()
-                            if cancel_faulted:
-                                self.read_fault_snapshot("cancel_cleanup_fault")
+            if not self._wait_for_goal(goal_handle, feedback, min_wait_sec=planned_duration):
+                self._ipm_fsm_fault("goal wait failed")
+                result.error_code = FollowJointTrajectory.Result.GOAL_TOLERANCE_VIOLATED
+                result.error_string = "Failed to reach final target within tolerance"
+                goal_handle.abort()
+                return result
 
-                    except Exception as exc:
-                        self.get_logger().error(f"Cancel cleanup exception: {exc}")
-                        self.read_fault_snapshot("cancel_cleanup_exception")
+            self._ipm_fsm_set("SETTLING", "goal reached")
+            self._set_bridge_state(BridgeState.IPM_ARMED, "FJT FSM settling complete")
 
-                    goal_handle.canceled()
-                    result.error_code = FollowJointTrajectory.Result.SUCCESSFUL
-                    result.error_string = "Goal canceled; IPM terminated and Position Mode hold requested"
-                    return result
+            self._ipm_fsm_set("DISARMING", "trajectory complete")
+            self.disarm_ipm()
 
-                with self.state_lock:
-                    if self.state.faulted():
-                        ipm_st = self.state.interpolation_buffer_status
-                        raise RuntimeError(
-                            f"Drive faulted at record {record_idx}, ipm=0x{ipm_st:04X}"
-                        )
-                    buf_status = self.state.interpolation_buffer_status
+            if self._ipm_is_active_now():
+                raise RuntimeError("IPM still active after disarm_ipm")
 
-                # v4-time-paced-streaming: drive consumes 1 record per record.time_ms.
-                # Sleep 0.9*time_ms between sends so buffer holds 1-2 records steady.
-                # Overflow safety net remains in case the time-pace gets desynced.
-                if buf_status & 0x0002:
-                    time.sleep(0.005)
-                    continue
+            self._ipm_fsm_set("READY", "FJT complete")
+            self._set_bridge_state(BridgeState.READY, "FJT FSM trajectory complete")
 
-                p = all_pvt[record_idx]
-                send_time_before = time.monotonic()
-                self.send_rpdo1_interpolation_record(p)
-                record_idx += 1
-
-                # Feedback at 10Hz
-                now = time.monotonic()
-                if now - last_fb_time >= 0.1:
-                    with self.state_lock:
-                        actual_qc = to_signed_32(self.state.position_actual_qc)
-                        actual_rpm = self.state.velocity_actual_rpm
-                    actual_rad = self.kin.motor_qc_to_joint_rad(actual_qc)
-                    actual_rad_s = self.kin.motor_rpm_to_joint_rad_s(actual_rpm)
-                    feedback.actual = JointTrajectoryPoint(
-                        positions=[actual_rad],
-                        velocities=[actual_rad_s],
-                        time_from_start=Duration(seconds=now - streaming_start).to_msg(),
-                    )
-                    feedback.desired = JointTrajectoryPoint(positions=[final_target_rad])
-                    feedback.error = JointTrajectoryPoint(
-                        positions=[final_target_rad - actual_rad],
-                        velocities=[0.0 - actual_rad_s],
-                    )
-                    goal_handle.publish_feedback(feedback)
-                    last_fb_time = now
-
-                # Time-based pacing: sleep so that the next send happens at
-                # 0.9*time_ms after this one. Drive consumes 1/time_ms, we send
-                # 1/(0.9*time_ms). Buffer fill stays at 1-2 records.
-                target_period_s = p.time_ms / 1000.0 * 0.9
-                elapsed = time.monotonic() - send_time_before
-                remaining = target_period_s - elapsed
-                if remaining > 0.0:
-                    time.sleep(remaining)
         except Exception as exc:
-            self.get_logger().error(f"Trajectory streaming exception: {exc}")
-            self.read_fault_snapshot("streaming_exception")
+            self._ipm_fsm_fault(f"FJT execution failed: {exc}")
             result.error_code = FollowJointTrajectory.Result.PATH_TOLERANCE_VIOLATED
-            result.error_string = f"Streaming exception: {exc}"
+            result.error_string = f"FJT IPM FSM execution exception: {exc}"
+            self.get_logger().error(result.error_string)
+            try:
+                self.read_fault_snapshot("fjt_fsm_execution_failed")
+            except Exception:
+                pass
             goal_handle.abort()
             return result
-
-        # ---- EPOS2-correct end state: dt=0 terminator, bit4 low, Position Mode hold ----
-        try:
-            if not self.terminate_ipm_and_enter_position_hold(final_target_qc, final_dt_ms=default_seg_ms):
-                self.get_logger().warning("IPM termination / Position Mode hold reported false; checking for fault")
-                with self.state_lock:
-                    post_faulted = self.state.faulted()
-                if post_faulted:
-                    self.read_fault_snapshot("post_trajectory_hold_failed")
-                    result.error_code = FollowJointTrajectory.Result.PATH_TOLERANCE_VIOLATED
-                    result.error_string = "Drive faulted during IPM termination / Position Mode hold"
-                    goal_handle.abort()
-                    return result
-        except Exception as exc:
-            self.get_logger().error(f"Post-trajectory IPM termination exception: {exc}")
-            self.read_fault_snapshot("post_trajectory_exception")
-            result.error_code = FollowJointTrajectory.Result.PATH_TOLERANCE_VIOLATED
-            result.error_string = f"Post-trajectory IPM termination exception: {exc}"
-            goal_handle.abort()
-            return result
-
 
         goal_handle.succeed()
         result.error_code = FollowJointTrajectory.Result.SUCCESSFUL
@@ -2721,63 +2039,42 @@ class Epos2JointBridge(Node):
         return result
 
     def _convert_trajectory_points_to_pvt(self, points: List[JointTrajectoryPoint]) -> List[PVTPoint]:
-        import math
         out: List[PVTPoint] = []
-        default_seg_ms = int(self.get_parameter("ipm_default_segment_ms").value)
-
-        # Seed interpolation with the drive's current pose so the first
-        # MoveIt segment has a sensible starting position/velocity.
-        with self.state_lock:
-            prev_q = self.kin.motor_qc_to_joint_rad(
-                to_signed_32(self.state.position_actual_qc)
-            )
-        prev_v = 0.0
         prev_t = 0.0
-
+        default_seg_ms = int(self.get_parameter("ipm_default_segment_ms").value)
         for pt in points:
             if len(pt.positions) != 1:
                 raise ValueError("Each point must have exactly one position")
-            q = float(pt.positions[0])
-            v = float(pt.velocities[0]) if len(pt.velocities) == 1 else 0.0
+            target_qc = self.kin.joint_rad_to_motor_qc(pt.positions[0])
+            vel_rpm = 0
+            if len(pt.velocities) == 1:
+                vel_rpm = self.kin.joint_rad_s_to_motor_rpm(pt.velocities[0])
             t = self._duration_msg_to_sec(pt.time_from_start)
             dt = t - prev_t
             prev_t = t
-
-            if dt <= 0.0:
-                # Treat zero-dt as a single default-length hold step (rare;
-                # MoveIt usually produces monotonic time_from_start).
-                target_qc = self.kin.joint_rad_to_motor_qc(q)
-                vel_rpm = self.kin.joint_rad_s_to_motor_rpm(v)
-                out.append(PVTPoint(default_seg_ms, vel_rpm, target_qc))
-            else:
-                # EPOS2 time_ms is u8 (1..255). Subdivide longer segments
-                # into equal sub-segments and linearly interpolate position
-                # and velocity. Mirrors the Copley bridge subdivision.
-                n = max(1, math.ceil(dt / 0.255))
-                for k in range(1, n + 1):
-                    frac = k / n
-                    qk = prev_q + frac * (q - prev_q)
-                    vk = prev_v + frac * (v - prev_v)
-                    dtk = dt / n
-                    pos_qc = self.kin.joint_rad_to_motor_qc(qk)
-                    vel_rpm = self.kin.joint_rad_s_to_motor_rpm(vk)
-                    time_ms = max(1, min(255, int(round(dtk * 1000.0))))
-                    out.append(PVTPoint(time_ms=time_ms,
-                                        velocity_rpm=vel_rpm,
-                                        position_qc=pos_qc))
-
-            prev_q = q
-            prev_v = v
-
+            seg_ms = max(1, int(round(dt * 1000.0))) if dt > 0.0 else default_seg_ms
+            out.append(PVTPoint(seg_ms, vel_rpm, target_qc))
         return out
 
-    def _wait_for_goal(self, goal_handle, feedback: FollowJointTrajectory.Feedback) -> bool:
+    def _wait_for_goal(
+        self,
+        goal_handle,
+        feedback: FollowJointTrajectory.Feedback,
+        min_wait_sec: float = 0.0,
+    ) -> bool:
         tol_pos = float(self.get_parameter("goal_position_tolerance_rad").value)
-        timeout_s = 5.0
+        try:
+            tol_vel = float(self.get_parameter("goal_velocity_tolerance_rad_s").value)
+        except Exception:
+            tol_vel = 0.10
+
+        timeout_s = max(5.0, float(min_wait_sec) + 5.0)
         start = time.monotonic()
         final_target_rad = goal_handle.request.trajectory.points[-1].positions[0]
 
         while time.monotonic() - start < timeout_s:
+            elapsed = time.monotonic() - start
+
             with self.state_lock:
                 st = self.state
                 actual_rad = self.kin.motor_qc_to_joint_rad(st.position_actual_qc)
@@ -2788,7 +2085,7 @@ class Epos2JointBridge(Node):
             feedback.actual = JointTrajectoryPoint(
                 positions=[actual_rad],
                 velocities=[actual_vel],
-                time_from_start=Duration(seconds=time.monotonic() - start).to_msg(),
+                time_from_start=Duration(seconds=elapsed).to_msg(),
             )
             feedback.desired = goal_handle.request.trajectory.points[-1]
             feedback.error = JointTrajectoryPoint(
@@ -2800,9 +2097,27 @@ class Epos2JointBridge(Node):
             if faulted:
                 self.get_logger().error(f"Drive fault during execution, ipm_status=0x{ipm_status:04X}")
                 return False
-            if abs(final_target_rad - actual_rad) <= tol_pos:
+
+            pos_ok = abs(final_target_rad - actual_rad) <= tol_pos
+            vel_ok = abs(actual_vel) <= tol_vel
+
+            # Critical: do not declare success before the requested trajectory
+            # duration has elapsed. This prevents tiny moves with loose tolerance
+            # from returning before the drive has consumed the queued PVT plan.
+            if elapsed >= float(min_wait_sec) and pos_ok and vel_ok:
+                self.get_logger().info(
+                    f"Goal reached after {elapsed:.3f}s: target={final_target_rad:.6f} "
+                    f"actual={actual_rad:.6f} err={final_target_rad - actual_rad:.6f} "
+                    f"vel={actual_vel:.6f}"
+                )
                 return True
-            time.sleep(0.01)
+
+            time.sleep(0.02)
+
+        self.get_logger().error(
+            f"Goal wait timeout: min_wait={min_wait_sec:.3f}s target={final_target_rad:.6f} "
+            f"last_actual={actual_rad:.6f} last_vel={actual_vel:.6f}"
+        )
         return False
 
     @staticmethod
@@ -2830,12 +2145,9 @@ class Epos2JointBridge(Node):
             pass
         return super().destroy_node()
 
-# Phase 2 generic node note: this file is generated from the safe J3 bridge.
-# Topic/service/action names are generated from the topic_prefix parameter.
-# Generic launch files should no longer need /epos2/j3 remaps.
 def main(args=None) -> None:
     rclpy.init(args=args)
-    node = Epos2JointBridge()
+    node = Epos2J3Bridge()
     executor = MultiThreadedExecutor(num_threads=4)
     executor.add_node(node)
     try:
