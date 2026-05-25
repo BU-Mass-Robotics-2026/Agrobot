@@ -310,6 +310,11 @@ class Epos2J3Bridge(Node):
         self.declare_parameter("ipm_feeder_low_water_records", 16)
         self.declare_parameter("ipm_feeder_high_water_records", 48)
         self.declare_parameter("ipm_feeder_poll_period_sec", 0.05)
+        # RPDO prebuffer pacing/verification.
+        # Important for SLCAN/CANable when multiple EPOS bridges prebuffer simultaneously.
+        self.declare_parameter("ipm_rpdo_send_gap_sec", 0.002)
+        self.declare_parameter("ipm_prebuffer_verify_retries", 3)
+        self.declare_parameter("ipm_prebuffer_verify_settle_sec", 0.08)
 
         # FJT -> PVT velocity profile.
         # auto: use supplied MoveIt velocities if nonzero; otherwise cubic spline.
@@ -1521,7 +1526,8 @@ class Epos2J3Bridge(Node):
         payload = pack_interpolation_record(point)
         if verbose:
             self.get_logger().info(
-                f"RPDO1 0x20C1 send time_ms={point.time_ms} "
+                f"RPDO1 0x20C1 send cob=0x{self.cob_rpdo1:03X} "
+                f"node={self.drive_node_id} time_ms={point.time_ms} "
                 f"vel_rpm={point.velocity_rpm} pos_qc={point.position_qc} "
                 f"payload={payload.hex()}"
             )
@@ -2261,6 +2267,156 @@ class Epos2J3Bridge(Node):
 
         return vels, source
 
+    def _write_prebuffer_points_verified(self, prebuffer_points: List[PVTPoint]) -> bool:
+        """Write prebuffer PVT records while IPM is inactive and verify FIFO fill.
+
+        Direct single-joint motion can tolerate fast RPDO writes. Multi-EPOS
+        fanout over SLCAN can drop or fail to deliver a burst if multiple bridge
+        processes dump ~60 RPDO frames at once. This helper makes prebuffering
+        explicit and checked: records are paced, FIFO level is verified before
+        activation, and failed fills are retried after clearing the local FIFO.
+        """
+        expected = len(prebuffer_points)
+        if expected <= 0:
+            self.get_logger().error("Prebuffer verify called with zero records")
+            return False
+
+        try:
+            retries = int(self.get_parameter("ipm_prebuffer_verify_retries").value)
+        except Exception:
+            retries = 3
+        retries = max(1, retries)
+
+        try:
+            gap = float(self.get_parameter("ipm_rpdo_send_gap_sec").value)
+        except Exception:
+            gap = 0.002
+        gap = max(0.0, gap)
+
+        try:
+            settle = float(self.get_parameter("ipm_prebuffer_verify_settle_sec").value)
+        except Exception:
+            settle = 0.08
+        settle = max(0.0, settle)
+
+        for attempt in range(1, retries + 1):
+            if attempt > 1:
+                self.get_logger().warning(
+                    f"Retrying PVT prebuffer fill attempt {attempt}/{retries}; "
+                    "clearing/re-enabling IPM FIFO first"
+                )
+                ok0, ok1, ipm_buf = self.clear_and_enable_ipm_buffer()
+                if not (ok0 and ok1):
+                    self.get_logger().error(
+                        f"Prebuffer retry failed to clear/enable FIFO: ok0={ok0} ok1={ok1}"
+                    )
+                    return False
+
+            self._assert_ipm_inactive("during verified PVT prebuffer")
+
+            self.get_logger().info(
+                f"Verified PVT prebuffer attempt {attempt}/{retries}: "
+                f"writing {expected} records with gap={gap:.4f}s"
+            )
+
+            for i, pvt in enumerate(prebuffer_points):
+                self._ipm_fsm_require("PREBUFFERING", reason="verified PVT prebuffer")
+                self._assert_ipm_inactive("during verified PVT prebuffer")
+                self.send_rpdo1_interpolation_record(pvt, verbose=(i < 8 and attempt == 1))
+                if gap > 0.0:
+                    time.sleep(gap)
+
+            if settle > 0.0:
+                time.sleep(settle)
+
+            fifo = self._ipm_fifo_level_records()
+            ipm = self._ipm_status_word()
+
+            self.get_logger().info(
+                f"Verified PVT prebuffer attempt {attempt}/{retries} result: "
+                f"fifo={fifo} expected={expected} ipm=0x{ipm:04X}"
+            )
+
+            if fifo is not None and int(fifo) >= expected:
+                return True
+
+            self.get_logger().warning(
+                f"PVT prebuffer verification failed on attempt {attempt}/{retries}: "
+                f"fifo={fifo}, expected={expected}"
+            )
+
+        return False
+
+    def _enable_ipm_active_with_retry(self, attempts: int = 4, settle_sec: float = 0.04) -> bool:
+        """Activate IPM after prebuffer with status verification and retry.
+
+        Multi-EPOS fanout can cause several bridges to prebuffer/activate at
+        nearly the same time. A single failed/late activation status read should
+        not abort a valid prebuffered trajectory if the drive is not faulted and
+        the FIFO is still populated.
+        """
+        attempts = max(1, int(attempts))
+        settle_sec = max(0.0, float(settle_sec))
+
+        for attempt in range(1, attempts + 1):
+            try:
+                ipm_before = self._ipm_status_word()
+            except Exception:
+                ipm_before = -1
+
+            fifo_before = self._ipm_fifo_level_records()
+            self.get_logger().info(
+                f"enable_ipm_active attempt {attempt}/{attempts}: "
+                f"ipm_before=0x{(ipm_before & 0xFFFF):04X} fifo_before={fifo_before}"
+            )
+
+            if fifo_before is not None and int(fifo_before) <= 0:
+                self.get_logger().error(
+                    "enable_ipm_active refused: FIFO is empty before activation"
+                )
+                return False
+
+            ok = self.enable_ipm_active()
+            time.sleep(settle_sec)
+
+            try:
+                ipm_after = self._ipm_status_word()
+            except Exception:
+                ipm_after = -1
+
+            fifo_after = self._ipm_fifo_level_records()
+
+            with self.state_lock:
+                faulted = self.state.faulted()
+
+            active = bool((ipm_after >> IPM_ACTIVE) & 0x1) if ipm_after >= 0 else False
+
+            self.get_logger().info(
+                f"enable_ipm_active attempt {attempt}/{attempts} result: "
+                f"ok={ok} active={active} ipm_after=0x{(ipm_after & 0xFFFF):04X} "
+                f"fifo_after={fifo_after} faulted={faulted}"
+            )
+
+            if ok and active:
+                return True
+
+            if faulted:
+                self.get_logger().error("enable_ipm_active retry aborted: drive faulted")
+                return False
+
+            # If FIFO is empty, retrying activation is not useful.
+            if fifo_after is not None and int(fifo_after) <= 0:
+                self.get_logger().error("enable_ipm_active retry aborted: FIFO empty")
+                return False
+
+            time.sleep(0.08)
+
+        try:
+            self.read_fault_snapshot("enable_ipm_active_retry_failed")
+        except Exception:
+            pass
+        return False
+
     async def _execute_follow_joint_trajectory(self, goal_handle):
         """FollowJointTrajectory using strict EPOS IPM lifecycle FSM.
 
@@ -2440,15 +2596,15 @@ class Epos2J3Bridge(Node):
                 f"total_pvt_ms={total_pvt_ms}, final_qc={final_qc}"
             )
 
-            for i, pvt in enumerate(prebuffer_points):
-                self._ipm_fsm_require("PREBUFFERING", reason="writing PVT while inactive")
-                self._assert_ipm_inactive("during PVT prebuffer")
-                self.send_rpdo1_interpolation_record(pvt, verbose=(i < 8))
+            if not self._write_prebuffer_points_verified(prebuffer_points):
+                raise RuntimeError(
+                    f"PVT prebuffer verification failed: expected_records={len(prebuffer_points)}"
+                )
 
-            self._ipm_fsm_set("PREBUFFERED", "all PVT records loaded")
+            self._ipm_fsm_set("PREBUFFERED", "all PVT records loaded and FIFO verified")
             self._assert_ipm_inactive("before activation")
 
-            if not self.enable_ipm_active():
+            if not self._enable_ipm_active_with_retry():
                 raise RuntimeError("enable_ipm_active failed after prebuffer")
 
             self._assert_ipm_active("after activation")
