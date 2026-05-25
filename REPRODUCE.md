@@ -211,6 +211,54 @@ pose:
 
 ---
 
+### Rail-mounted camera — motion-compensated tracking
+
+The tracker subscribes to `/agrobot/camera_motion` (`geometry_msgs/Vector3`)
+and pre-shifts every track centroid by `−Δ` before Hungarian matching. This
+keeps persistent IDs stable across step-and-shoot rail scans where the camera
+moves more than `match_threshold_m` (8 cm) per cycle and would otherwise
+destroy every track on each move.
+
+**Contract for the arm controller:**
+
+```
+Capture → publish detections → MOVE the rail → publish Vector3 to
+/agrobot/camera_motion with the displacement in camera optical frame →
+next capture begins.
+```
+
+Sign convention (camera optical frame, REP-103):
+| Axis | Direction | Use when camera moves… |
+|---|---|---|
+| `+x` | right in image | …sideways along a horizontal rail |
+| `+y` | down in image | …vertically along a vertical rail |
+| `+z` | forward (out of lens) | …toward the plant wall |
+
+Multiple Vector3 publishes between detection cycles are summed. The accumulator
+resets the moment the next `/agrobot/tomato_spatial` callback consumes it. The
+tracker logs `Applied camera motion compensation: Δ=(...)` whenever it consumes
+a non-zero vector.
+
+**Test the contract without the arm in the loop:**
+
+```bash
+# Terminal A — watch tracker logs (existing perception launch)
+ros2 launch agrobot_perception perception.launch.py ...
+
+# Terminal B — simulate a 0.66 m forward rail step
+python3 perception/tools/publish_camera_motion.py --dz 0.66
+
+# Verify the next tracker log line shows the compensation being applied:
+# [tomato_tracker] Applied camera motion compensation: Δ=(+0.000, +0.000, +0.660) m
+#   (|Δ|=66.0 cm) to 3 track(s) before matching.
+```
+
+If tracks survive across the simulated motion (same persistent_ids before and
+after), the path is working. If new tracks appear instead, the motion vector
+sign or axis convention is wrong for your physical rail setup.
+
+---
+
 ### Optional — Perception Dashboard (GUI on Mac via VNC)
 
 Run these three blocks in order at the start of each NucBox session.

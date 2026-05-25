@@ -115,9 +115,16 @@ _POLICY_PROMPTS = {
 }
 
 _SINGLE_PROMPT = (
-    "You are guiding an agricultural robot arm.\n"
-    "Here is the only visible tomato (distance={z:.2f}m, radius={r:.1f}cm):\n"
-    "Should this tomato be picked? Reply YES or NO with one sentence of reasoning."
+    "You are the vision expert for an autonomous tomato-harvesting robot.\n"
+    "Target distance: {z:.2f}m | Estimated radius: {r:.1f}cm\n\n"
+    "Analyze the tomato in the image and respond in EXACTLY this format "
+    "(2 sentences + 1 verdict line):\n\n"
+    "RIPENESS: Describe color (deep red, orange-red, partially green, etc.), "
+    "surface quality (smooth, blemished, glossy), and apparent firmness in 1 sentence.\n"
+    "PICK PATH: Describe approach difficulty — clear, partially occluded by leaves, "
+    "stem visible, or other obstacles in 1 sentence.\n"
+    "VERDICT: Reply with exactly one of: READY | NOT_READY | UNCERTAIN\n\n"
+    "Be specific to THIS tomato; do not give generic answers."
 )
 
 _MULTI_PROMPT_HEADER = (

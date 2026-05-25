@@ -137,11 +137,13 @@ def generate_launch_description() -> LaunchDescription:
     )
     mlp_conf_arg = DeclareLaunchArgument(
         "mlp_confidence_threshold",
-        default_value="0.25",
+        default_value="0.45",
         description=(
             "MLP output probability threshold [0,1]. GPU eval best: 0.40 (high precision). "
-            "Live default: 0.25 — more permissive to recover from scene variation and "
-            "avoid track loss at ~6s/frame cadence. Raise to 0.40 if false positives appear."
+            "Live default: 0.45 — strict precision setting for demos. Real ripe fruit "
+            "consistently scores 0.70+; this rejects 0.25–0.40 marginal proposals that "
+            "produced ghost tracks in foliage scenes. Drop to 0.30 if real fruit gets "
+            "missed; drop to 0.25 only for small/distant/occluded tomatoes."
         ),
     )
 

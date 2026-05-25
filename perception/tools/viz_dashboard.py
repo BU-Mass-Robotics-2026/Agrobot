@@ -105,8 +105,8 @@ from PyQt5.QtWidgets import (
 MODEL_INPUT_SIZE = 518      # DINOv2: 37 × 14 px — baked into preprocess_for_dino()
 MAX_LOG_ENTRIES  = 200
 CATALOG_COLS     = 4
-CARD_IMAGE_W, CARD_IMAGE_H = 120, 90
-CARD_W,       CARD_H       = 174, 214
+CARD_IMAGE_W, CARD_IMAGE_H = 72, 72
+CARD_W,       CARD_H       = 112, 158
 HEALTH_TIMEOUT_S = 10.0
 METRICS_WINDOW   = 30       # rolling window for per-frame detection rate
 # Demo-friendly catalog turnover: drop LOST cards 20 s after they go missing.
@@ -197,6 +197,30 @@ def _decode_b64_jpeg(b64: Optional[str]) -> Optional[np.ndarray]:
         return None
 
 
+def _parse_vlm_verdict(text: str) -> Tuple[str, str, str]:
+    """Extract a verdict label + colors from a VLM reasoning string.
+
+    The detector-side prompt requests a `VERDICT: READY|NOT_READY|UNCERTAIN`
+    line, but we also degrade gracefully on legacy "YES./NO." style responses
+    and on free-form text. Returns (label, fg_color, bg_color) ready for
+    direct QLabel styling.
+    """
+    upper = text.upper()
+    if "READY" in upper and "NOT_READY" not in upper and "NOT READY" not in upper:
+        return "✓  READY TO PICK", _QT_GREEN, "#0d2218"
+    if "NOT_READY" in upper or "NOT READY" in upper:
+        return "✗  NOT READY", _QT_RED, "#2a0d0d"
+    if "UNCERTAIN" in upper:
+        return "?  UNCERTAIN", _QT_AMBER, "#261a0d"
+    # Legacy compatibility: "YES." / "NO." at the start of the response.
+    head = upper.strip().split(".", 1)[0].strip()
+    if head == "YES":
+        return "✓  READY TO PICK", _QT_GREEN, "#0d2218"
+    if head == "NO":
+        return "✗  NOT READY", _QT_RED, "#2a0d0d"
+    return "↻  ANALYZING", _QT_AMBER, "#261a0d"
+
+
 def _placeholder_img() -> np.ndarray:
     """120×90 dark placeholder shown when a track has no clipped_image JPEG."""
     img = np.full((CARD_IMAGE_H, CARD_IMAGE_W, 3), 52, dtype=np.uint8)
@@ -260,6 +284,10 @@ class AgroVizNode(Node):
 
         # ── Misc UI state ─────────────────────────────────────────────────────
         self._safe_to_pick: bool = False
+        # Rolling history of the last few VLM responses for the dashboard
+        # bottom-right panel — newest first.
+        self._vlm_history: collections.deque = collections.deque(maxlen=4)
+        self._vlm_history_gen: int = 0
 
         # Panel 2: HTML log entries, newest first; generation counter avoids
         # a full string comparison on every tick
@@ -434,16 +462,21 @@ class AgroVizNode(Node):
             self._health["qwen_vl"] = time.monotonic()
 
     def _cb_vlm_reason(self, msg: String) -> None:
-        ts  = datetime.now().strftime("%H:%M:%S")
+        ts_str = datetime.now().strftime("%H:%M:%S")
         html = (
             f'<span style="color:{_QT_GRAY};font-style:italic;">'
-            f"[{ts}] VLM: {msg.data[:300]}</span>"
+            f"[{ts_str}] VLM: {msg.data[:300]}</span>"
         )
         with self._lock:
             self._vlm_reason = msg.data
             self._health["qwen_vl"] = time.monotonic()
             self._log_entries.appendleft(html)
             self._log_gen += 1
+            # History entry for the new VLM reasoning panel — newest first.
+            self._vlm_history.appendleft(
+                {"ts": ts_str, "text": msg.data, "pid": self._vlm_id}
+            )
+            self._vlm_history_gen += 1
 
     def _cb_vlm_select(self, msg: String) -> None:
         try:
@@ -491,8 +524,8 @@ class TomatoCard(QFrame):
         self.setFrameShape(QFrame.Box)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(6, 6, 6, 6)
-        layout.setSpacing(3)
+        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setSpacing(2)
 
         self._img_lbl = QLabel()
         self._img_lbl.setFixedSize(CARD_IMAGE_W, CARD_IMAGE_H)
@@ -501,22 +534,22 @@ class TomatoCard(QFrame):
         layout.addWidget(self._img_lbl, alignment=Qt.AlignHCenter)
 
         self._id_lbl = QLabel(f"#{pid}")
-        self._id_lbl.setFont(QFont("Monospace", 11, QFont.Bold))
+        self._id_lbl.setFont(QFont("Monospace", 9, QFont.Bold))
         self._id_lbl.setAlignment(Qt.AlignCenter)
         self._id_lbl.setStyleSheet("border:none;")
         layout.addWidget(self._id_lbl)
 
         self._info_lbl = QLabel()
-        self._info_lbl.setFont(QFont("Monospace", 8))
+        self._info_lbl.setFont(QFont("Monospace", 7))
         self._info_lbl.setAlignment(Qt.AlignCenter)
         self._info_lbl.setWordWrap(True)
         self._info_lbl.setStyleSheet("border:none;")
         layout.addWidget(self._info_lbl)
 
         self._badge = QLabel()
-        self._badge.setFont(QFont("Monospace", 8, QFont.Bold))
+        self._badge.setFont(QFont("Monospace", 7, QFont.Bold))
         self._badge.setAlignment(Qt.AlignCenter)
-        self._badge.setFixedHeight(18)
+        self._badge.setFixedHeight(15)
         layout.addWidget(self._badge)
 
     def refresh(
@@ -533,10 +566,18 @@ class TomatoCard(QFrame):
         lost = entry.get("_lost", False)
 
         raw = _decode_b64_jpeg(entry.get("clipped_image"))
-        img = cv2.resize(
-            raw if raw is not None else _placeholder_img(),
-            (CARD_IMAGE_W, CARD_IMAGE_H),
-        )
+        src = raw if raw is not None else _placeholder_img()
+        # Fit the source crop into the card thumbnail without squashing.
+        # Scale-to-fill + centre-crop keeps the tomato round; if the source
+        # is portrait-ish (typical for hanging fruit) the bottom/sides get
+        # gently cropped rather than horizontally distorted.
+        sh, sw = src.shape[:2]
+        scale = max(CARD_IMAGE_W / sw, CARD_IMAGE_H / sh)
+        new_w, new_h = max(1, int(sw * scale)), max(1, int(sh * scale))
+        scaled = cv2.resize(src, (new_w, new_h), interpolation=cv2.INTER_AREA)
+        cx = max(0, (new_w - CARD_IMAGE_W) // 2)
+        cy = max(0, (new_h - CARD_IMAGE_H) // 2)
+        img = scaled[cy:cy + CARD_IMAGE_H, cx:cx + CARD_IMAGE_W]
         self._img_lbl.setPixmap(QPixmap.fromImage(_bgr_to_qimage(img)))
         self._info_lbl.setText(
             f"z:{z:.2f}m  r:{r:.1f}cm\nconf:{conf:.2f}  age:{age}"
@@ -580,6 +621,7 @@ class MainWindow(QMainWindow):
         self._cards:   Dict[int, TomatoCard] = {}
         self._sort_order: List[int] = []     # last rendered sort order for Panel 3
         self._last_log_gen: int = -1         # last log generation rendered in Panel 2
+        self._last_vlm_history_gen: int = -1  # last VLM history gen rendered in Panel 4
 
         self.setWindowTitle(_APP_TITLE)
         self.setMinimumSize(1280, 800)
@@ -628,19 +670,34 @@ class MainWindow(QMainWindow):
     # ── Layout ────────────────────────────────────────────────────────────────
 
     def _build_ui(self) -> None:
+        # Two side-by-side vertical stacks instead of a 2×2 grid. This lets
+        # the LEFT column have its own vertical split (camera bigger, catalog
+        # smaller) while the RIGHT column keeps its own independent ratio
+        # (event stream / metrics) — QGridLayout's row stretch is shared
+        # across columns, so it can't model asymmetric splits.
         root = QWidget()
         self.setCentralWidget(root)
-        g = QGridLayout(root)
-        g.setSpacing(6)
-        g.setContentsMargins(6, 6, 6, 6)
-        g.setRowStretch(0, 3)
-        g.setRowStretch(1, 2)
-        g.setColumnStretch(0, 3)
-        g.setColumnStretch(1, 2)
-        g.addWidget(self._panel1(), 0, 0)
-        g.addWidget(self._panel2(), 0, 1)
-        g.addWidget(self._panel3(), 1, 0)
-        g.addWidget(self._panel4(), 1, 1)
+        outer = QHBoxLayout(root)
+        outer.setSpacing(6)
+        outer.setContentsMargins(6, 6, 6, 6)
+
+        left_col = QVBoxLayout()
+        left_col.setSpacing(6)
+        # 9:4 → camera ~69% of left-column height, catalog ~31%. Gives the
+        # catalog enough room for one row of cards without dominating.
+        left_col.addWidget(self._panel1(), stretch=9)
+        left_col.addWidget(self._panel3(), stretch=4)
+
+        right_col = QVBoxLayout()
+        right_col.setSpacing(6)
+        # Event stream and metrics keep an even split (unchanged from before).
+        right_col.addWidget(self._panel2(), stretch=3)
+        right_col.addWidget(self._panel4(), stretch=2)
+
+        # Left column wider than right so the 4:3 camera image lands closer
+        # to its native aspect ratio after letterboxing.
+        outer.addLayout(left_col, stretch=3)
+        outer.addLayout(right_col, stretch=2)
 
     def _titled_frame(self, title: str) -> Tuple[QFrame, QVBoxLayout]:
         f = QFrame()
@@ -762,13 +819,31 @@ class MainWindow(QMainWindow):
 
         v.addWidget(self._sep())
 
-        self._vlm_sel_lbl = QLabel("VLM last selection: —")
-        self._vlm_sel_lbl.setFont(QFont("Monospace", 8))
-        self._vlm_sel_lbl.setWordWrap(True)
-        self._vlm_sel_lbl.setTextFormat(Qt.RichText)
-        self._vlm_sel_lbl.setStyleSheet("border:none;color:#aaa;")
-        v.addWidget(self._vlm_sel_lbl)
-        v.addStretch()
+        # ── VLM Live Reasoning ────────────────────────────────────────────
+        vlm_header = QLabel("⚡  VLM LIVE REASONING")
+        vlm_header.setFont(QFont("Monospace", 9, QFont.Bold))
+        vlm_header.setStyleSheet(f"color:{_QT_CYAN};border:none;")
+        v.addWidget(vlm_header)
+
+        # Verdict badge — large, color-coded READY / NOT_READY / UNCERTAIN
+        self._vlm_verdict_lbl = QLabel("— awaiting first response —")
+        self._vlm_verdict_lbl.setFont(QFont("Monospace", 12, QFont.Bold))
+        self._vlm_verdict_lbl.setAlignment(Qt.AlignCenter)
+        self._vlm_verdict_lbl.setFixedHeight(34)
+        self._vlm_verdict_lbl.setStyleSheet(
+            "background:#252525;border:1px solid #3a3a3a;border-radius:4px;color:#888;"
+        )
+        v.addWidget(self._vlm_verdict_lbl)
+
+        # Reasoning text area — scrolls through last N responses
+        self._vlm_reasoning_area = QTextEdit()
+        self._vlm_reasoning_area.setReadOnly(True)
+        self._vlm_reasoning_area.setFont(QFont("Monospace", 9))
+        self._vlm_reasoning_area.setMinimumHeight(140)
+        self._vlm_reasoning_area.setStyleSheet(
+            "background:#111;border:1px solid #2a2a2a;color:#ccc;padding:4px;"
+        )
+        v.addWidget(self._vlm_reasoning_area, stretch=1)
         return f
 
     def _sep(self) -> QLabel:
@@ -915,7 +990,19 @@ class MainWindow(QMainWindow):
 
         lw, lh = self._cam_lbl.width(), self._cam_lbl.height()
         if lw > 10 and lh > 10:
-            display = cv2.resize(frame, (lw, lh))
+            # Scale-to-fill with centre crop: preserves native aspect (no
+            # tomato squashing) AND fills the label edge-to-edge (no dark
+            # bars). The tradeoff is a thin strip at the edges may be
+            # cropped when the panel aspect differs from the camera aspect.
+            # For a tomato-picking demo the subjects sit near the centre,
+            # so the crop is invisible.
+            fh, fw = frame.shape[:2]
+            scale = max(lw / fw, lh / fh)
+            new_w, new_h = max(1, int(fw * scale)), max(1, int(fh * scale))
+            display = cv2.resize(frame, (new_w, new_h), interpolation=cv2.INTER_AREA)
+            crop_x = max(0, (new_w - lw) // 2)
+            crop_y = max(0, (new_h - lh) // 2)
+            display = display[crop_y:crop_y + lh, crop_x:crop_x + lw]
             self._cam_lbl.setPixmap(QPixmap.fromImage(_bgr_to_qimage(display)))
 
         if safe:
@@ -1011,6 +1098,8 @@ class MainWindow(QMainWindow):
             health     = dict(self._node._health)
             vlm_id     = self._node._vlm_id
             vlm_reason = self._node._vlm_reason
+            vlm_history = list(self._node._vlm_history)
+            vlm_history_gen = self._node._vlm_history_gen
 
         # Detection rate
         if det_window:
@@ -1052,15 +1141,53 @@ class MainWindow(QMainWindow):
                 color = _QT_RED
             dot.setStyleSheet(f"color:{color};border:none;")
 
-        # VLM last selection
-        if vlm_id is not None:
-            short = (vlm_reason[:120] + "…") if len(vlm_reason) > 120 else vlm_reason
-            self._vlm_sel_lbl.setText(
-                f'<span style="color:{_QT_AMBER}">VLM last selection: #{vlm_id}</span><br>'
-                f'<span style="color:{_QT_GRAY};font-style:italic;">{short}</span>'
+        # ── VLM verdict badge (parsed from latest response) ────────────────
+        if vlm_reason:
+            label, fg, bg = _parse_vlm_verdict(vlm_reason)
+            self._vlm_verdict_lbl.setText(label)
+            self._vlm_verdict_lbl.setStyleSheet(
+                f"background:{bg};color:{fg};border:1px solid {fg};border-radius:4px;"
             )
         else:
-            self._vlm_sel_lbl.setText("VLM last selection: —")
+            self._vlm_verdict_lbl.setText("— awaiting first response —")
+            self._vlm_verdict_lbl.setStyleSheet(
+                "background:#252525;border:1px solid #3a3a3a;border-radius:4px;color:#888;"
+            )
+
+        # ── VLM reasoning history — rebuild only when contents changed ─────
+        if vlm_history_gen != self._last_vlm_history_gen:
+            self._last_vlm_history_gen = vlm_history_gen
+            lines: list[str] = []
+            for entry in vlm_history:
+                pid_str = f"#{entry['pid']}" if entry["pid"] is not None else "—"
+                text = entry["text"].replace("\n", " ").strip()
+                # Lightly highlight the structured tags from the new prompt
+                for tag, color in (
+                    ("RIPENESS:", _QT_AMBER),
+                    ("PICK PATH:", _QT_CYAN),
+                    ("VERDICT:", _QT_GREEN),
+                ):
+                    text = text.replace(
+                        tag,
+                        f'<span style="color:{color};font-weight:bold;">{tag}</span>',
+                    )
+                lines.append(
+                    f'<div style="margin:0 0 6px 0;">'
+                    f'<span style="color:{_QT_AMBER};font-weight:bold;">'
+                    f'[{entry["ts"]}] target {pid_str}</span><br>'
+                    f'<span style="color:#cccccc;">{text}</span></div>'
+                )
+            if lines:
+                self._vlm_reasoning_area.setHtml(
+                    '<div style="font-family:monospace;font-size:9pt;line-height:1.4;">'
+                    + "".join(lines)
+                    + "</div>"
+                )
+            else:
+                self._vlm_reasoning_area.setPlainText(
+                    "Waiting for first VLM analysis... (Qwen-VL only runs on smoothed tracks, age ≥ 3)"
+                )
+            self._vlm_reasoning_area.verticalScrollBar().setValue(0)
 
     # ── Menu actions ──────────────────────────────────────────────────────────
 
@@ -1069,6 +1196,9 @@ class MainWindow(QMainWindow):
             self._node._catalog.clear()
             self._node._picked_ids.clear()
             self._node._vlm_id    = None
+            self._node._vlm_reason = ""
+            self._node._vlm_history.clear()
+            self._node._vlm_history_gen += 1
             self._node._seen_ids.clear()
             self._node._lost_count = 0
         for card in self._cards.values():

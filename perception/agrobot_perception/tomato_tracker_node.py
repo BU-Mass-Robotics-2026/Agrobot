@@ -21,6 +21,17 @@ of persistent tracks across frames so that:
      That track is then suppressed from /agrobot/tomato_tracks so Qwen-VL and
      the planner don't re-select an empty location on the next cycle.
 
+  4. Camera motion is compensated before matching.
+     For a rail-mounted camera doing step-and-shoot scanning, every tomato in
+     camera-frame coordinates appears to move by −Δ_camera between cycles. The
+     arm controller publishes its actual displacement on /agrobot/camera_motion
+     (geometry_msgs/Vector3 in camera optical frame) and the tracker accumulates
+     it. Before Hungarian matching, every existing track centroid is shifted by
+     −Δ_accumulated — putting it in the predicted location for the new frame.
+     This restores the diagonal-dominant cost matrix that Hungarian needs to
+     work, so persistent_ids survive the entire rail scan instead of being
+     destroyed on every move. The accumulator resets after each match cycle.
+
 Algorithm (Hungarian bipartite matching in 3D):
   Build cost matrix C[i][j] = Euclidean distance between track i and detection j.
   Set C[i][j] = INF (1e9) when distance exceeds match_threshold_m — these pairs
@@ -55,12 +66,19 @@ Data Flow
 Topics
 ------
   Subscribed:
-    /agrobot/tomato_spatial   std_msgs/String  Per-frame sphere-fit JSON
-    /agrobot/mark_picked      std_msgs/String  JSON {"persistent_id": N}
-                                               Published by arm planner after pick
+    /agrobot/tomato_spatial   std_msgs/String         Per-frame sphere-fit JSON
+    /agrobot/mark_picked      std_msgs/String         JSON {"persistent_id": N}
+                                                      Published by arm planner after pick
+    /agrobot/camera_motion    geometry_msgs/Vector3   Camera displacement in camera
+                                                      optical frame since last publish.
+                                                      Publish AFTER each rail move,
+                                                      BEFORE the next spatial frame.
+                                                      Multiple publishes between frames
+                                                      are summed (vector accumulation).
+    /agrobot/reset_tracker    std_msgs/String         Wipe all tracks + restart IDs (any payload)
 
   Published:
-    /agrobot/tomato_tracks    std_msgs/String  Tracked + smoothed JSON array
+    /agrobot/tomato_tracks    std_msgs/String         Tracked + smoothed JSON array
 
 Parameters
 ----------
@@ -76,12 +94,14 @@ from __future__ import annotations
 
 import json
 import math
+import threading
 
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
 import rclpy
 from rclpy.node import Node
+from geometry_msgs.msg import Vector3
 from std_msgs.msg import String
 
 
@@ -109,6 +129,22 @@ class Track:
         self.age = 1
         self._alpha = alpha
         self._obs = 1                                  # observations so far
+
+    def predict_motion(self, dx: float, dy: float, dz: float) -> None:
+        """Shift the track centroid by -(dx, dy, dz) to compensate for camera motion.
+
+        Sign convention: if the camera moved by +Δ in camera optical frame, every
+        static tomato in that frame appears at its previous position − Δ. We pre-shift
+        the track centroid to where we expect to see the tomato in the new frame,
+        so Hungarian matching can find the diagonal-dominant solution.
+
+        Pure translation only — the camera is assumed to keep its orientation between
+        captures (true for a linear rail). Rotational motion would need a full rigid
+        transform of the centroid vector.
+        """
+        self.centroid["x"] -= dx
+        self.centroid["y"] -= dy
+        self.centroid["z"] -= dz
 
     def update(self, tomato: dict) -> None:
         """Apply EMA update from a new matched observation."""
@@ -190,6 +226,14 @@ class TomatoTrackerNode(Node):
         # picked_ids: suppressed from output until track is naturally lost
         self._picked_ids: set[int] = set()
 
+        # Camera motion accumulator (camera optical frame, metres). Holds the
+        # cumulative displacement since the last spatial frame. Protected by a
+        # lock because motion and spatial messages arrive on different threads
+        # in MultiThreadedExecutor setups; under the default single-threaded
+        # executor the lock is essentially free.
+        self._motion_lock = threading.Lock()
+        self._pending_motion: list[float] = [0.0, 0.0, 0.0]
+
         # ── Subscriptions ─────────────────────────────────────────────────────
         self.create_subscription(
             String, spatial_topic, self._spatial_callback, 10
@@ -201,6 +245,12 @@ class TomatoTrackerNode(Node):
         # Dashboard reset button publishes here to wipe all tracks and restart IDs from 0.
         self.create_subscription(
             String, "/agrobot/reset_tracker", self._reset_callback, 10
+        )
+        # Arm controller publishes Vector3 camera displacement (camera optical frame,
+        # metres) after each rail move. Multiple publishes between spatial frames are
+        # summed. On the next spatial callback the accumulator is consumed and reset.
+        self.create_subscription(
+            Vector3, "/agrobot/camera_motion", self._camera_motion_callback, 10
         )
 
         # ── Publishers ────────────────────────────────────────────────────────
@@ -221,7 +271,16 @@ class TomatoTrackerNode(Node):
         self._picked_ids.clear()
         self._next_id = 0
         self._frame = 0
+        with self._motion_lock:
+            self._pending_motion = [0.0, 0.0, 0.0]
         self.get_logger().info("Tracker reset — all tracks cleared, IDs restart from 0.")
+
+    def _camera_motion_callback(self, msg: Vector3) -> None:
+        """Accumulate camera displacement since the last spatial callback."""
+        with self._motion_lock:
+            self._pending_motion[0] += float(msg.x)
+            self._pending_motion[1] += float(msg.y)
+            self._pending_motion[2] += float(msg.z)
 
     def _mark_picked_callback(self, msg: String) -> None:
         """Arm planner calls this to suppress a track after picking."""
@@ -245,6 +304,23 @@ class TomatoTrackerNode(Node):
             return
 
         self._frame += 1
+
+        # ── Step 0: prediction — compensate accumulated camera motion ──────
+        # Drain the motion accumulator atomically and shift every track by −Δ
+        # so its centroid sits where we expect to observe it in this frame.
+        # 1 mm threshold suppresses noise-level zero-motion publishes.
+        with self._motion_lock:
+            dx, dy, dz = self._pending_motion
+            self._pending_motion = [0.0, 0.0, 0.0]
+        motion_norm = math.sqrt(dx * dx + dy * dy + dz * dz)
+        if motion_norm > 1e-3 and self._tracks:
+            for track in self._tracks.values():
+                track.predict_motion(dx, dy, dz)
+            self.get_logger().info(
+                f"Applied camera motion compensation: "
+                f"Δ=({dx:+.3f}, {dy:+.3f}, {dz:+.3f}) m (|Δ|={motion_norm*100:.1f} cm) "
+                f"to {len(self._tracks)} track(s) before matching."
+            )
 
         # ── Step 1: Hungarian bipartite matching ───────────────────────────
         # Only consider non-picked active tracks as candidates.
