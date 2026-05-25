@@ -1,0 +1,64 @@
+options:
+  dcf_path: "/home/robotics-club/agrobot_ws/src/epos2_bridge/config/canopen"
+
+master:
+  node_id: 100
+  namespace: "/"
+  driver: "ros2_canopen::MasterDriver"
+  package: "canopen_master_driver"
+  sync_period: 20000
+
+node_2:
+  node_id: 2
+  namespace: "/"
+  vendor_id: 0x000000FB
+  product_code: 0x64200000
+  dcf: "epos2.eds"
+  driver: "ros2_canopen::ProxyDriver"
+  package: "canopen_proxy_driver"
+  polling: false
+  period: 1000
+
+node_7:
+  node_id: 7
+  namespace: "/"
+  vendor_id: 0x000000FB
+  product_code: 0x64200000
+  dcf: "epos2.eds"
+  driver: "ros2_canopen::ProxyDriver"
+  package: "canopen_proxy_driver"
+  polling: false
+  period: 1000
+
+node_113:
+  node_id: 113
+  namespace: "/"
+  vendor_id: 0x000000FB
+  product_code: 0x63220000
+  dcf: "epos2.eds"
+  driver: "ros2_canopen::ProxyDriver"
+  package: "canopen_proxy_driver"
+  polling: false
+  period: 1000
+
+node_3:
+  node_id: 3
+  namespace: "/"
+  vendor_id: 0x000000FB
+  product_code: 0x63220000
+  dcf: "epos2.eds"
+  driver: "ros2_canopen::ProxyDriver"
+  package: "canopen_proxy_driver"
+  polling: false
+  period: 1000
+
+node_24:
+  node_id: 24
+  namespace: "/"
+  vendor_id: 0x000000FB
+  product_code: 0x63220000
+  dcf: "epos2.eds"
+  driver: "ros2_canopen::ProxyDriver"
+  package: "canopen_proxy_driver"
+  polling: false
+  period: 1000

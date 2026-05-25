@@ -23,8 +23,8 @@
         <joint name="joint0"/>
     </group>
 
-    <!-- Anthro: arm joints J1-J5. Chain base_link->link6 includes joint1..joint6;
-         joint6 is a FIXED joint so it adds no DOF — effective movable set is J1-J5.
+    <!-- Anthro: arm joints J1-J6. Chain base_link->link6 includes joint1..joint6;
+         joint6 is now an active revolute joint.
          Rail (joint0) and gripper excluded. -->
     <group name="anthro">
         <chain base_link="base_link" tip_link="link6"/>

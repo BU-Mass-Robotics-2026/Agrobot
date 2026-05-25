@@ -1,0 +1,2744 @@
+[DeviceComissioning]
+NodeID=100
+NodeName=
+NodeRefd=
+Baudrate=1000
+NetNumber=1
+NetworkName=
+NetRefd=
+CANopenManager=1
+LSS_SerialNumber=0x00000000
+
+[DeviceInfo]
+VendorName=
+VendorNumber=0x00000000
+ProductName=
+ProductNumber=0x00000000
+RevisionNumber=0x00000000
+OrderCode=
+BaudRate_10=1
+BaudRate_20=1
+BaudRate_50=1
+BaudRate_125=1
+BaudRate_250=1
+BaudRate_500=1
+BaudRate_800=1
+BaudRate_1000=1
+SimpleBootUpMaster=1
+SimpleBootUpSlave=0
+Granularity=1
+DynamicChannelsSupported=0
+GroupMessaging=0
+NrOfRxPDO=5
+NrOfTxPDO=20
+LSS_Supported=1
+
+[DummyUsage]
+Dummy0001=1
+Dummy0002=1
+Dummy0003=1
+Dummy0004=1
+Dummy0005=1
+Dummy0006=1
+Dummy0007=1
+Dummy0010=1
+Dummy0012=1
+Dummy0013=1
+Dummy0014=1
+Dummy0015=1
+Dummy0016=1
+Dummy0018=1
+Dummy0019=1
+Dummy001A=1
+Dummy001B=1
+
+[MandatoryObjects]
+SupportedObjects=3
+1=0x1000
+2=0x1001
+3=0x1018
+
+[OptionalObjects]
+SupportedObjects=76
+1=0x1003
+2=0x1005
+3=0x1006
+4=0x1007
+5=0x1012
+6=0x1013
+7=0x1014
+8=0x1015
+9=0x1016
+10=0x1017
+11=0x1019
+12=0x1028
+13=0x1029
+14=0x102A
+15=0x1400
+16=0x1401
+17=0x1402
+18=0x1403
+19=0x1404
+20=0x1600
+21=0x1601
+22=0x1602
+23=0x1603
+24=0x1604
+25=0x1800
+26=0x1801
+27=0x1802
+28=0x1803
+29=0x1804
+30=0x1805
+31=0x1806
+32=0x1807
+33=0x1808
+34=0x1809
+35=0x180A
+36=0x180B
+37=0x180C
+38=0x180D
+39=0x180E
+40=0x180F
+41=0x1810
+42=0x1811
+43=0x1812
+44=0x1813
+45=0x1A00
+46=0x1A01
+47=0x1A02
+48=0x1A03
+49=0x1A04
+50=0x1A05
+51=0x1A06
+52=0x1A07
+53=0x1A08
+54=0x1A09
+55=0x1A0A
+56=0x1A0B
+57=0x1A0C
+58=0x1A0D
+59=0x1A0E
+60=0x1A0F
+61=0x1A10
+62=0x1A11
+63=0x1A12
+64=0x1A13
+65=0x1F25
+66=0x1F55
+67=0x1F80
+68=0x1F81
+69=0x1F82
+70=0x1F84
+71=0x1F85
+72=0x1F86
+73=0x1F87
+74=0x1F88
+75=0x1F89
+76=0x1F8A
+
+[ManufacturerObjects]
+SupportedObjects=75
+1=0x2000
+2=0x2001
+3=0x2002
+4=0x2003
+5=0x2004
+6=0x2200
+7=0x2201
+8=0x2202
+9=0x2203
+10=0x2204
+11=0x2205
+12=0x2206
+13=0x2207
+14=0x2208
+15=0x2209
+16=0x220A
+17=0x220B
+18=0x220C
+19=0x220D
+20=0x220E
+21=0x220F
+22=0x2210
+23=0x2211
+24=0x2212
+25=0x2213
+26=0x5800
+27=0x5801
+28=0x5802
+29=0x5803
+30=0x5804
+31=0x5A00
+32=0x5A01
+33=0x5A02
+34=0x5A03
+35=0x5A04
+36=0x5C00
+37=0x5C01
+38=0x5C02
+39=0x5C03
+40=0x5C04
+41=0x5C05
+42=0x5C06
+43=0x5C07
+44=0x5C08
+45=0x5C09
+46=0x5C0A
+47=0x5C0B
+48=0x5C0C
+49=0x5C0D
+50=0x5C0E
+51=0x5C0F
+52=0x5C10
+53=0x5C11
+54=0x5C12
+55=0x5C13
+56=0x5E00
+57=0x5E01
+58=0x5E02
+59=0x5E03
+60=0x5E04
+61=0x5E05
+62=0x5E06
+63=0x5E07
+64=0x5E08
+65=0x5E09
+66=0x5E0A
+67=0x5E0B
+68=0x5E0C
+69=0x5E0D
+70=0x5E0E
+71=0x5E0F
+72=0x5E10
+73=0x5E11
+74=0x5E12
+75=0x5E13
+
+[1000]
+ParameterName=Device type
+DataType=0x0007
+AccessType=ro
+DefaultValue=0x00000000
+
+[1001]
+ParameterName=Error register
+DataType=0x0005
+AccessType=ro
+
+[1003]
+ParameterName=Pre-defined error field
+ObjectType=0x08
+DataType=0x0007
+AccessType=ro
+CompactSubObj=254
+
+[1005]
+ParameterName=COB-ID SYNC message
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x40000080
+
+[1006]
+ParameterName=Communication cycle period
+DataType=0x0007
+AccessType=rw
+DefaultValue=20000
+
+[1007]
+ParameterName=Synchronous window length
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+
+[1012]
+ParameterName=COB-ID time stamp object
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000100
+
+[1013]
+ParameterName=High resolution time stamp
+DataType=0x0007
+AccessType=rw
+PDOMapping=1
+
+[1014]
+ParameterName=COB-ID EMCY
+DataType=0x0007
+AccessType=rw
+DefaultValue=$NODEID+0x80
+
+[1015]
+ParameterName=Inhibit time EMCY
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1016]
+ParameterName=Consumer heartbeat time
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=127
+
+[1016Value]
+NrOfEntries=0
+
+[1017]
+ParameterName=Producer heartbeat time
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1018]
+SubNumber=5
+ParameterName=Identity Object
+ObjectType=0x09
+
+[1018sub0]
+ParameterName=Highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=4
+
+[1018sub1]
+ParameterName=Vendor-ID
+DataType=0x0007
+AccessType=ro
+DefaultValue=0x00000000
+
+[1018sub2]
+ParameterName=Product code
+DataType=0x0007
+AccessType=ro
+DefaultValue=0x00000000
+
+[1018sub3]
+ParameterName=Revision number
+DataType=0x0007
+AccessType=ro
+DefaultValue=0x00000000
+
+[1018sub4]
+ParameterName=Serial number
+DataType=0x0007
+AccessType=ro
+
+[1019]
+ParameterName=Synchronous counter overflow value
+DataType=0x0005
+AccessType=rw
+DefaultValue=0
+
+[1028]
+ParameterName=Emergency consumer object
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x80000000
+CompactSubObj=127
+
+[1028Value]
+NrOfEntries=5
+2=0x00000082
+7=0x00000087
+113=0x000000F1
+3=0x00000083
+24=0x00000098
+
+[1029]
+ParameterName=Error behavior object
+ObjectType=0x08
+DataType=0x0005
+AccessType=rw
+CompactSubObj=254
+
+[1029Value]
+NrOfEntries=1
+1=0x00
+
+[102A]
+ParameterName=NMT inhibit time
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1400]
+SubNumber=6
+ParameterName=RPDO communication parameter
+ObjectType=0x09
+
+[1400sub0]
+ParameterName=highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=5
+
+[1400sub1]
+ParameterName=COB-ID used by RPDO
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x40000182
+
+[1400sub2]
+ParameterName=transmission type
+DataType=0x0005
+AccessType=rw
+DefaultValue=0xFF
+
+[1400sub3]
+ParameterName=inhibit time
+DataType=0x0006
+AccessType=rw
+
+[1400sub4]
+ParameterName=compatibility entry
+DataType=0x0005
+AccessType=rw
+
+[1400sub5]
+ParameterName=event-timer
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1401]
+SubNumber=6
+ParameterName=RPDO communication parameter
+ObjectType=0x09
+
+[1401sub0]
+ParameterName=highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=5
+
+[1401sub1]
+ParameterName=COB-ID used by RPDO
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x40000187
+
+[1401sub2]
+ParameterName=transmission type
+DataType=0x0005
+AccessType=rw
+DefaultValue=0xFF
+
+[1401sub3]
+ParameterName=inhibit time
+DataType=0x0006
+AccessType=rw
+
+[1401sub4]
+ParameterName=compatibility entry
+DataType=0x0005
+AccessType=rw
+
+[1401sub5]
+ParameterName=event-timer
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1402]
+SubNumber=6
+ParameterName=RPDO communication parameter
+ObjectType=0x09
+
+[1402sub0]
+ParameterName=highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=5
+
+[1402sub1]
+ParameterName=COB-ID used by RPDO
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x400001F1
+
+[1402sub2]
+ParameterName=transmission type
+DataType=0x0005
+AccessType=rw
+DefaultValue=0xFF
+
+[1402sub3]
+ParameterName=inhibit time
+DataType=0x0006
+AccessType=rw
+
+[1402sub4]
+ParameterName=compatibility entry
+DataType=0x0005
+AccessType=rw
+
+[1402sub5]
+ParameterName=event-timer
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1403]
+SubNumber=6
+ParameterName=RPDO communication parameter
+ObjectType=0x09
+
+[1403sub0]
+ParameterName=highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=5
+
+[1403sub1]
+ParameterName=COB-ID used by RPDO
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x40000183
+
+[1403sub2]
+ParameterName=transmission type
+DataType=0x0005
+AccessType=rw
+DefaultValue=0xFF
+
+[1403sub3]
+ParameterName=inhibit time
+DataType=0x0006
+AccessType=rw
+
+[1403sub4]
+ParameterName=compatibility entry
+DataType=0x0005
+AccessType=rw
+
+[1403sub5]
+ParameterName=event-timer
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1404]
+SubNumber=6
+ParameterName=RPDO communication parameter
+ObjectType=0x09
+
+[1404sub0]
+ParameterName=highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=5
+
+[1404sub1]
+ParameterName=COB-ID used by RPDO
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x40000198
+
+[1404sub2]
+ParameterName=transmission type
+DataType=0x0005
+AccessType=rw
+DefaultValue=0xFF
+
+[1404sub3]
+ParameterName=inhibit time
+DataType=0x0006
+AccessType=rw
+
+[1404sub4]
+ParameterName=compatibility entry
+DataType=0x0005
+AccessType=rw
+
+[1404sub5]
+ParameterName=event-timer
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1600]
+ParameterName=RPDO mapping parameter
+ObjectType=0x09
+DataType=0x0007
+AccessType=rw
+CompactSubObj=1
+
+[1600Value]
+NrOfEntries=1
+1=0x20000110
+
+[1601]
+ParameterName=RPDO mapping parameter
+ObjectType=0x09
+DataType=0x0007
+AccessType=rw
+CompactSubObj=1
+
+[1601Value]
+NrOfEntries=1
+1=0x20010110
+
+[1602]
+ParameterName=RPDO mapping parameter
+ObjectType=0x09
+DataType=0x0007
+AccessType=rw
+CompactSubObj=1
+
+[1602Value]
+NrOfEntries=1
+1=0x20020110
+
+[1603]
+ParameterName=RPDO mapping parameter
+ObjectType=0x09
+DataType=0x0007
+AccessType=rw
+CompactSubObj=1
+
+[1603Value]
+NrOfEntries=1
+1=0x20030110
+
+[1604]
+ParameterName=RPDO mapping parameter
+ObjectType=0x09
+DataType=0x0007
+AccessType=rw
+CompactSubObj=1
+
+[1604Value]
+NrOfEntries=1
+1=0x20040110
+
+[1800]
+SubNumber=7
+ParameterName=TPDO communication parameter
+ObjectType=0x09
+
+[1800sub0]
+ParameterName=highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=6
+
+[1800sub1]
+ParameterName=COB-ID used by TPDO
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000202
+
+[1800sub2]
+ParameterName=transmission type
+DataType=0x0005
+AccessType=rw
+DefaultValue=0xFF
+
+[1800sub3]
+ParameterName=inhibit time
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1800sub4]
+ParameterName=reserved
+DataType=0x0005
+AccessType=rw
+
+[1800sub5]
+ParameterName=event timer
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1800sub6]
+ParameterName=SYNC start value
+DataType=0x0005
+AccessType=rw
+DefaultValue=0
+
+[1801]
+SubNumber=7
+ParameterName=TPDO communication parameter
+ObjectType=0x09
+
+[1801sub0]
+ParameterName=highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=6
+
+[1801sub1]
+ParameterName=COB-ID used by TPDO
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000302
+
+[1801sub2]
+ParameterName=transmission type
+DataType=0x0005
+AccessType=rw
+DefaultValue=0xFF
+
+[1801sub3]
+ParameterName=inhibit time
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1801sub4]
+ParameterName=reserved
+DataType=0x0005
+AccessType=rw
+
+[1801sub5]
+ParameterName=event timer
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1801sub6]
+ParameterName=SYNC start value
+DataType=0x0005
+AccessType=rw
+DefaultValue=0
+
+[1802]
+SubNumber=7
+ParameterName=TPDO communication parameter
+ObjectType=0x09
+
+[1802sub0]
+ParameterName=highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=6
+
+[1802sub1]
+ParameterName=COB-ID used by TPDO
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000402
+
+[1802sub2]
+ParameterName=transmission type
+DataType=0x0005
+AccessType=rw
+DefaultValue=0xFF
+
+[1802sub3]
+ParameterName=inhibit time
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1802sub4]
+ParameterName=reserved
+DataType=0x0005
+AccessType=rw
+
+[1802sub5]
+ParameterName=event timer
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1802sub6]
+ParameterName=SYNC start value
+DataType=0x0005
+AccessType=rw
+DefaultValue=0
+
+[1803]
+SubNumber=7
+ParameterName=TPDO communication parameter
+ObjectType=0x09
+
+[1803sub0]
+ParameterName=highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=6
+
+[1803sub1]
+ParameterName=COB-ID used by TPDO
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000502
+
+[1803sub2]
+ParameterName=transmission type
+DataType=0x0005
+AccessType=rw
+DefaultValue=0xFF
+
+[1803sub3]
+ParameterName=inhibit time
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1803sub4]
+ParameterName=reserved
+DataType=0x0005
+AccessType=rw
+
+[1803sub5]
+ParameterName=event timer
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1803sub6]
+ParameterName=SYNC start value
+DataType=0x0005
+AccessType=rw
+DefaultValue=0
+
+[1804]
+SubNumber=7
+ParameterName=TPDO communication parameter
+ObjectType=0x09
+
+[1804sub0]
+ParameterName=highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=6
+
+[1804sub1]
+ParameterName=COB-ID used by TPDO
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000207
+
+[1804sub2]
+ParameterName=transmission type
+DataType=0x0005
+AccessType=rw
+DefaultValue=0xFF
+
+[1804sub3]
+ParameterName=inhibit time
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1804sub4]
+ParameterName=reserved
+DataType=0x0005
+AccessType=rw
+
+[1804sub5]
+ParameterName=event timer
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1804sub6]
+ParameterName=SYNC start value
+DataType=0x0005
+AccessType=rw
+DefaultValue=0
+
+[1805]
+SubNumber=7
+ParameterName=TPDO communication parameter
+ObjectType=0x09
+
+[1805sub0]
+ParameterName=highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=6
+
+[1805sub1]
+ParameterName=COB-ID used by TPDO
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000307
+
+[1805sub2]
+ParameterName=transmission type
+DataType=0x0005
+AccessType=rw
+DefaultValue=0xFF
+
+[1805sub3]
+ParameterName=inhibit time
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1805sub4]
+ParameterName=reserved
+DataType=0x0005
+AccessType=rw
+
+[1805sub5]
+ParameterName=event timer
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1805sub6]
+ParameterName=SYNC start value
+DataType=0x0005
+AccessType=rw
+DefaultValue=0
+
+[1806]
+SubNumber=7
+ParameterName=TPDO communication parameter
+ObjectType=0x09
+
+[1806sub0]
+ParameterName=highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=6
+
+[1806sub1]
+ParameterName=COB-ID used by TPDO
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000407
+
+[1806sub2]
+ParameterName=transmission type
+DataType=0x0005
+AccessType=rw
+DefaultValue=0xFF
+
+[1806sub3]
+ParameterName=inhibit time
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1806sub4]
+ParameterName=reserved
+DataType=0x0005
+AccessType=rw
+
+[1806sub5]
+ParameterName=event timer
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1806sub6]
+ParameterName=SYNC start value
+DataType=0x0005
+AccessType=rw
+DefaultValue=0
+
+[1807]
+SubNumber=7
+ParameterName=TPDO communication parameter
+ObjectType=0x09
+
+[1807sub0]
+ParameterName=highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=6
+
+[1807sub1]
+ParameterName=COB-ID used by TPDO
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000507
+
+[1807sub2]
+ParameterName=transmission type
+DataType=0x0005
+AccessType=rw
+DefaultValue=0xFF
+
+[1807sub3]
+ParameterName=inhibit time
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1807sub4]
+ParameterName=reserved
+DataType=0x0005
+AccessType=rw
+
+[1807sub5]
+ParameterName=event timer
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1807sub6]
+ParameterName=SYNC start value
+DataType=0x0005
+AccessType=rw
+DefaultValue=0
+
+[1808]
+SubNumber=7
+ParameterName=TPDO communication parameter
+ObjectType=0x09
+
+[1808sub0]
+ParameterName=highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=6
+
+[1808sub1]
+ParameterName=COB-ID used by TPDO
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000271
+
+[1808sub2]
+ParameterName=transmission type
+DataType=0x0005
+AccessType=rw
+DefaultValue=0xFF
+
+[1808sub3]
+ParameterName=inhibit time
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1808sub4]
+ParameterName=reserved
+DataType=0x0005
+AccessType=rw
+
+[1808sub5]
+ParameterName=event timer
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1808sub6]
+ParameterName=SYNC start value
+DataType=0x0005
+AccessType=rw
+DefaultValue=0
+
+[1809]
+SubNumber=7
+ParameterName=TPDO communication parameter
+ObjectType=0x09
+
+[1809sub0]
+ParameterName=highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=6
+
+[1809sub1]
+ParameterName=COB-ID used by TPDO
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000371
+
+[1809sub2]
+ParameterName=transmission type
+DataType=0x0005
+AccessType=rw
+DefaultValue=0xFF
+
+[1809sub3]
+ParameterName=inhibit time
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1809sub4]
+ParameterName=reserved
+DataType=0x0005
+AccessType=rw
+
+[1809sub5]
+ParameterName=event timer
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1809sub6]
+ParameterName=SYNC start value
+DataType=0x0005
+AccessType=rw
+DefaultValue=0
+
+[180A]
+SubNumber=7
+ParameterName=TPDO communication parameter
+ObjectType=0x09
+
+[180Asub0]
+ParameterName=highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=6
+
+[180Asub1]
+ParameterName=COB-ID used by TPDO
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000471
+
+[180Asub2]
+ParameterName=transmission type
+DataType=0x0005
+AccessType=rw
+DefaultValue=0xFF
+
+[180Asub3]
+ParameterName=inhibit time
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[180Asub4]
+ParameterName=reserved
+DataType=0x0005
+AccessType=rw
+
+[180Asub5]
+ParameterName=event timer
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[180Asub6]
+ParameterName=SYNC start value
+DataType=0x0005
+AccessType=rw
+DefaultValue=0
+
+[180B]
+SubNumber=7
+ParameterName=TPDO communication parameter
+ObjectType=0x09
+
+[180Bsub0]
+ParameterName=highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=6
+
+[180Bsub1]
+ParameterName=COB-ID used by TPDO
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000571
+
+[180Bsub2]
+ParameterName=transmission type
+DataType=0x0005
+AccessType=rw
+DefaultValue=0xFF
+
+[180Bsub3]
+ParameterName=inhibit time
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[180Bsub4]
+ParameterName=reserved
+DataType=0x0005
+AccessType=rw
+
+[180Bsub5]
+ParameterName=event timer
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[180Bsub6]
+ParameterName=SYNC start value
+DataType=0x0005
+AccessType=rw
+DefaultValue=0
+
+[180C]
+SubNumber=7
+ParameterName=TPDO communication parameter
+ObjectType=0x09
+
+[180Csub0]
+ParameterName=highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=6
+
+[180Csub1]
+ParameterName=COB-ID used by TPDO
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000203
+
+[180Csub2]
+ParameterName=transmission type
+DataType=0x0005
+AccessType=rw
+DefaultValue=0xFF
+
+[180Csub3]
+ParameterName=inhibit time
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[180Csub4]
+ParameterName=reserved
+DataType=0x0005
+AccessType=rw
+
+[180Csub5]
+ParameterName=event timer
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[180Csub6]
+ParameterName=SYNC start value
+DataType=0x0005
+AccessType=rw
+DefaultValue=0
+
+[180D]
+SubNumber=7
+ParameterName=TPDO communication parameter
+ObjectType=0x09
+
+[180Dsub0]
+ParameterName=highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=6
+
+[180Dsub1]
+ParameterName=COB-ID used by TPDO
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000303
+
+[180Dsub2]
+ParameterName=transmission type
+DataType=0x0005
+AccessType=rw
+DefaultValue=0xFF
+
+[180Dsub3]
+ParameterName=inhibit time
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[180Dsub4]
+ParameterName=reserved
+DataType=0x0005
+AccessType=rw
+
+[180Dsub5]
+ParameterName=event timer
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[180Dsub6]
+ParameterName=SYNC start value
+DataType=0x0005
+AccessType=rw
+DefaultValue=0
+
+[180E]
+SubNumber=7
+ParameterName=TPDO communication parameter
+ObjectType=0x09
+
+[180Esub0]
+ParameterName=highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=6
+
+[180Esub1]
+ParameterName=COB-ID used by TPDO
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000403
+
+[180Esub2]
+ParameterName=transmission type
+DataType=0x0005
+AccessType=rw
+DefaultValue=0xFF
+
+[180Esub3]
+ParameterName=inhibit time
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[180Esub4]
+ParameterName=reserved
+DataType=0x0005
+AccessType=rw
+
+[180Esub5]
+ParameterName=event timer
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[180Esub6]
+ParameterName=SYNC start value
+DataType=0x0005
+AccessType=rw
+DefaultValue=0
+
+[180F]
+SubNumber=7
+ParameterName=TPDO communication parameter
+ObjectType=0x09
+
+[180Fsub0]
+ParameterName=highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=6
+
+[180Fsub1]
+ParameterName=COB-ID used by TPDO
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000503
+
+[180Fsub2]
+ParameterName=transmission type
+DataType=0x0005
+AccessType=rw
+DefaultValue=0xFF
+
+[180Fsub3]
+ParameterName=inhibit time
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[180Fsub4]
+ParameterName=reserved
+DataType=0x0005
+AccessType=rw
+
+[180Fsub5]
+ParameterName=event timer
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[180Fsub6]
+ParameterName=SYNC start value
+DataType=0x0005
+AccessType=rw
+DefaultValue=0
+
+[1810]
+SubNumber=7
+ParameterName=TPDO communication parameter
+ObjectType=0x09
+
+[1810sub0]
+ParameterName=highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=6
+
+[1810sub1]
+ParameterName=COB-ID used by TPDO
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000218
+
+[1810sub2]
+ParameterName=transmission type
+DataType=0x0005
+AccessType=rw
+DefaultValue=0xFF
+
+[1810sub3]
+ParameterName=inhibit time
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1810sub4]
+ParameterName=reserved
+DataType=0x0005
+AccessType=rw
+
+[1810sub5]
+ParameterName=event timer
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1810sub6]
+ParameterName=SYNC start value
+DataType=0x0005
+AccessType=rw
+DefaultValue=0
+
+[1811]
+SubNumber=7
+ParameterName=TPDO communication parameter
+ObjectType=0x09
+
+[1811sub0]
+ParameterName=highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=6
+
+[1811sub1]
+ParameterName=COB-ID used by TPDO
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000318
+
+[1811sub2]
+ParameterName=transmission type
+DataType=0x0005
+AccessType=rw
+DefaultValue=0xFF
+
+[1811sub3]
+ParameterName=inhibit time
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1811sub4]
+ParameterName=reserved
+DataType=0x0005
+AccessType=rw
+
+[1811sub5]
+ParameterName=event timer
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1811sub6]
+ParameterName=SYNC start value
+DataType=0x0005
+AccessType=rw
+DefaultValue=0
+
+[1812]
+SubNumber=7
+ParameterName=TPDO communication parameter
+ObjectType=0x09
+
+[1812sub0]
+ParameterName=highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=6
+
+[1812sub1]
+ParameterName=COB-ID used by TPDO
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000418
+
+[1812sub2]
+ParameterName=transmission type
+DataType=0x0005
+AccessType=rw
+DefaultValue=0xFF
+
+[1812sub3]
+ParameterName=inhibit time
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1812sub4]
+ParameterName=reserved
+DataType=0x0005
+AccessType=rw
+
+[1812sub5]
+ParameterName=event timer
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1812sub6]
+ParameterName=SYNC start value
+DataType=0x0005
+AccessType=rw
+DefaultValue=0
+
+[1813]
+SubNumber=7
+ParameterName=TPDO communication parameter
+ObjectType=0x09
+
+[1813sub0]
+ParameterName=highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=6
+
+[1813sub1]
+ParameterName=COB-ID used by TPDO
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000518
+
+[1813sub2]
+ParameterName=transmission type
+DataType=0x0005
+AccessType=rw
+DefaultValue=0xFF
+
+[1813sub3]
+ParameterName=inhibit time
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1813sub4]
+ParameterName=reserved
+DataType=0x0005
+AccessType=rw
+
+[1813sub5]
+ParameterName=event timer
+DataType=0x0006
+AccessType=rw
+DefaultValue=0
+
+[1813sub6]
+ParameterName=SYNC start value
+DataType=0x0005
+AccessType=rw
+DefaultValue=0
+
+[1A00]
+ParameterName=TPDO mapping parameter
+ObjectType=0x09
+DataType=0x0007
+AccessType=rw
+CompactSubObj=1
+
+[1A00Value]
+NrOfEntries=1
+1=0x22000110
+
+[1A01]
+ParameterName=TPDO mapping parameter
+ObjectType=0x09
+DataType=0x0007
+AccessType=rw
+CompactSubObj=2
+
+[1A01Value]
+NrOfEntries=2
+1=0x22000110
+2=0x22010108
+
+[1A02]
+ParameterName=TPDO mapping parameter
+ObjectType=0x09
+DataType=0x0007
+AccessType=rw
+CompactSubObj=2
+
+[1A02Value]
+NrOfEntries=2
+1=0x22000110
+2=0x22020120
+
+[1A03]
+ParameterName=TPDO mapping parameter
+ObjectType=0x09
+DataType=0x0007
+AccessType=rw
+CompactSubObj=2
+
+[1A03Value]
+NrOfEntries=2
+1=0x22000110
+2=0x22030120
+
+[1A04]
+ParameterName=TPDO mapping parameter
+ObjectType=0x09
+DataType=0x0007
+AccessType=rw
+CompactSubObj=1
+
+[1A04Value]
+NrOfEntries=1
+1=0x22040110
+
+[1A05]
+ParameterName=TPDO mapping parameter
+ObjectType=0x09
+DataType=0x0007
+AccessType=rw
+CompactSubObj=2
+
+[1A05Value]
+NrOfEntries=2
+1=0x22040110
+2=0x22050108
+
+[1A06]
+ParameterName=TPDO mapping parameter
+ObjectType=0x09
+DataType=0x0007
+AccessType=rw
+CompactSubObj=2
+
+[1A06Value]
+NrOfEntries=2
+1=0x22040110
+2=0x22060120
+
+[1A07]
+ParameterName=TPDO mapping parameter
+ObjectType=0x09
+DataType=0x0007
+AccessType=rw
+CompactSubObj=2
+
+[1A07Value]
+NrOfEntries=2
+1=0x22040110
+2=0x22070120
+
+[1A08]
+ParameterName=TPDO mapping parameter
+ObjectType=0x09
+DataType=0x0007
+AccessType=rw
+CompactSubObj=1
+
+[1A08Value]
+NrOfEntries=1
+1=0x22080110
+
+[1A09]
+ParameterName=TPDO mapping parameter
+ObjectType=0x09
+DataType=0x0007
+AccessType=rw
+CompactSubObj=2
+
+[1A09Value]
+NrOfEntries=2
+1=0x22080110
+2=0x22090108
+
+[1A0A]
+ParameterName=TPDO mapping parameter
+ObjectType=0x09
+DataType=0x0007
+AccessType=rw
+CompactSubObj=2
+
+[1A0AValue]
+NrOfEntries=2
+1=0x22080110
+2=0x220A0120
+
+[1A0B]
+ParameterName=TPDO mapping parameter
+ObjectType=0x09
+DataType=0x0007
+AccessType=rw
+CompactSubObj=2
+
+[1A0BValue]
+NrOfEntries=2
+1=0x22080110
+2=0x220B0120
+
+[1A0C]
+ParameterName=TPDO mapping parameter
+ObjectType=0x09
+DataType=0x0007
+AccessType=rw
+CompactSubObj=1
+
+[1A0CValue]
+NrOfEntries=1
+1=0x220C0110
+
+[1A0D]
+ParameterName=TPDO mapping parameter
+ObjectType=0x09
+DataType=0x0007
+AccessType=rw
+CompactSubObj=2
+
+[1A0DValue]
+NrOfEntries=2
+1=0x220C0110
+2=0x220D0108
+
+[1A0E]
+ParameterName=TPDO mapping parameter
+ObjectType=0x09
+DataType=0x0007
+AccessType=rw
+CompactSubObj=2
+
+[1A0EValue]
+NrOfEntries=2
+1=0x220C0110
+2=0x220E0120
+
+[1A0F]
+ParameterName=TPDO mapping parameter
+ObjectType=0x09
+DataType=0x0007
+AccessType=rw
+CompactSubObj=2
+
+[1A0FValue]
+NrOfEntries=2
+1=0x220C0110
+2=0x220F0120
+
+[1A10]
+ParameterName=TPDO mapping parameter
+ObjectType=0x09
+DataType=0x0007
+AccessType=rw
+CompactSubObj=1
+
+[1A10Value]
+NrOfEntries=1
+1=0x22100110
+
+[1A11]
+ParameterName=TPDO mapping parameter
+ObjectType=0x09
+DataType=0x0007
+AccessType=rw
+CompactSubObj=2
+
+[1A11Value]
+NrOfEntries=2
+1=0x22100110
+2=0x22110108
+
+[1A12]
+ParameterName=TPDO mapping parameter
+ObjectType=0x09
+DataType=0x0007
+AccessType=rw
+CompactSubObj=2
+
+[1A12Value]
+NrOfEntries=2
+1=0x22100110
+2=0x22120120
+
+[1A13]
+ParameterName=TPDO mapping parameter
+ObjectType=0x09
+DataType=0x0007
+AccessType=rw
+CompactSubObj=2
+
+[1A13Value]
+NrOfEntries=2
+1=0x22100110
+2=0x22130120
+
+[1F25]
+ParameterName=Configuration request
+ObjectType=0x08
+DataType=0x0005
+AccessType=wo
+CompactSubObj=127
+
+[1F55]
+ParameterName=Expected software identification
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=127
+
+[1F80]
+ParameterName=NMT startup
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000001
+
+[1F81]
+ParameterName=NMT slave assignment
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=127
+
+[1F81Value]
+NrOfEntries=5
+2=0x00000001
+7=0x00000001
+113=0x00000001
+3=0x00000001
+24=0x00000001
+[1F82]
+ParameterName=Request NMT
+ObjectType=0x08
+DataType=0x0005
+AccessType=rw
+CompactSubObj=127
+
+[1F84]
+ParameterName=Device type identification
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=127
+
+[1F84Value]
+NrOfEntries=0
+
+[1F85]
+ParameterName=Vendor identification
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=127
+
+[1F85Value]
+NrOfEntries=5
+2=0x000000FB
+7=0x000000FB
+113=0x000000FB
+3=0x000000FB
+24=0x000000FB
+[1F86]
+ParameterName=Product code
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=127
+
+[1F86Value]
+NrOfEntries=5
+2=0x64200000
+7=0x64200000
+113=0x63220000
+3=0x63220000
+24=0x63220000
+[1F87]
+ParameterName=Revision_number
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=127
+
+[1F88]
+ParameterName=Serial number
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=127
+
+[1F89]
+ParameterName=Boot time
+DataType=0x0007
+AccessType=rw
+DefaultValue=0
+
+[1F8A]
+ParameterName=Restore configuration
+ObjectType=0x08
+DataType=0x0005
+AccessType=rw
+CompactSubObj=127
+
+[1F8AValue]
+NrOfEntries=0
+
+[2000]
+SubNumber=2
+ParameterName=Mapped application objects for RPDO 1
+ObjectType=0x09
+
+[2000sub0]
+ParameterName=Highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=1
+
+[2000sub1]
+ParameterName=node_2: Statusword
+DataType=0x0006
+AccessType=rww
+PDOMapping=1
+
+[2001]
+SubNumber=2
+ParameterName=Mapped application objects for RPDO 2
+ObjectType=0x09
+
+[2001sub0]
+ParameterName=Highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=1
+
+[2001sub1]
+ParameterName=node_7: Statusword
+DataType=0x0006
+AccessType=rww
+PDOMapping=1
+
+[2002]
+SubNumber=2
+ParameterName=Mapped application objects for RPDO 3
+ObjectType=0x09
+
+[2002sub0]
+ParameterName=Highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=1
+
+[2002sub1]
+ParameterName=node_113: Statusword
+DataType=0x0006
+AccessType=rww
+PDOMapping=1
+
+[2003]
+SubNumber=2
+ParameterName=Mapped application objects for RPDO 4
+ObjectType=0x09
+
+[2003sub0]
+ParameterName=Highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=1
+
+[2003sub1]
+ParameterName=node_3: Statusword
+DataType=0x0006
+AccessType=rww
+PDOMapping=1
+
+[2004]
+SubNumber=2
+ParameterName=Mapped application objects for RPDO 5
+ObjectType=0x09
+
+[2004sub0]
+ParameterName=Highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=1
+
+[2004sub1]
+ParameterName=node_24: Statusword
+DataType=0x0006
+AccessType=rww
+PDOMapping=1
+
+[2200]
+SubNumber=2
+ParameterName=Mapped application objects for TPDO 1
+ObjectType=0x09
+
+[2200sub0]
+ParameterName=Highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=1
+
+[2200sub1]
+ParameterName=node_2: Controlword
+DataType=0x0006
+AccessType=rwr
+PDOMapping=1
+
+[2201]
+SubNumber=2
+ParameterName=Mapped application objects for TPDO 2
+ObjectType=0x09
+
+[2201sub0]
+ParameterName=Highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=1
+
+[2201sub1]
+ParameterName=node_2: Modes of Operation
+DataType=0x0002
+AccessType=rwr
+PDOMapping=1
+
+[2202]
+SubNumber=2
+ParameterName=Mapped application objects for TPDO 3
+ObjectType=0x09
+
+[2202sub0]
+ParameterName=Highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=1
+
+[2202sub1]
+ParameterName=node_2: Target Position
+DataType=0x0004
+AccessType=rwr
+PDOMapping=1
+
+[2203]
+SubNumber=2
+ParameterName=Mapped application objects for TPDO 4
+ObjectType=0x09
+
+[2203sub0]
+ParameterName=Highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=1
+
+[2203sub1]
+ParameterName=node_2: Target Velocity
+DataType=0x0004
+AccessType=rwr
+PDOMapping=1
+
+[2204]
+SubNumber=2
+ParameterName=Mapped application objects for TPDO 5
+ObjectType=0x09
+
+[2204sub0]
+ParameterName=Highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=1
+
+[2204sub1]
+ParameterName=node_7: Controlword
+DataType=0x0006
+AccessType=rwr
+PDOMapping=1
+
+[2205]
+SubNumber=2
+ParameterName=Mapped application objects for TPDO 6
+ObjectType=0x09
+
+[2205sub0]
+ParameterName=Highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=1
+
+[2205sub1]
+ParameterName=node_7: Modes of Operation
+DataType=0x0002
+AccessType=rwr
+PDOMapping=1
+
+[2206]
+SubNumber=2
+ParameterName=Mapped application objects for TPDO 7
+ObjectType=0x09
+
+[2206sub0]
+ParameterName=Highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=1
+
+[2206sub1]
+ParameterName=node_7: Target Position
+DataType=0x0004
+AccessType=rwr
+PDOMapping=1
+
+[2207]
+SubNumber=2
+ParameterName=Mapped application objects for TPDO 8
+ObjectType=0x09
+
+[2207sub0]
+ParameterName=Highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=1
+
+[2207sub1]
+ParameterName=node_7: Target Velocity
+DataType=0x0004
+AccessType=rwr
+PDOMapping=1
+
+[2208]
+SubNumber=2
+ParameterName=Mapped application objects for TPDO 9
+ObjectType=0x09
+
+[2208sub0]
+ParameterName=Highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=1
+
+[2208sub1]
+ParameterName=node_113: Controlword
+DataType=0x0006
+AccessType=rwr
+PDOMapping=1
+
+[2209]
+SubNumber=2
+ParameterName=Mapped application objects for TPDO 10
+ObjectType=0x09
+
+[2209sub0]
+ParameterName=Highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=1
+
+[2209sub1]
+ParameterName=node_113: Modes of Operation
+DataType=0x0002
+AccessType=rwr
+PDOMapping=1
+
+[220A]
+SubNumber=2
+ParameterName=Mapped application objects for TPDO 11
+ObjectType=0x09
+
+[220Asub0]
+ParameterName=Highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=1
+
+[220Asub1]
+ParameterName=node_113: Target Position
+DataType=0x0004
+AccessType=rwr
+PDOMapping=1
+
+[220B]
+SubNumber=2
+ParameterName=Mapped application objects for TPDO 12
+ObjectType=0x09
+
+[220Bsub0]
+ParameterName=Highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=1
+
+[220Bsub1]
+ParameterName=node_113: Target Velocity
+DataType=0x0004
+AccessType=rwr
+PDOMapping=1
+
+[220C]
+SubNumber=2
+ParameterName=Mapped application objects for TPDO 13
+ObjectType=0x09
+
+[220Csub0]
+ParameterName=Highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=1
+
+[220Csub1]
+ParameterName=node_3: Controlword
+DataType=0x0006
+AccessType=rwr
+PDOMapping=1
+
+[220D]
+SubNumber=2
+ParameterName=Mapped application objects for TPDO 14
+ObjectType=0x09
+
+[220Dsub0]
+ParameterName=Highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=1
+
+[220Dsub1]
+ParameterName=node_3: Modes of Operation
+DataType=0x0002
+AccessType=rwr
+PDOMapping=1
+
+[220E]
+SubNumber=2
+ParameterName=Mapped application objects for TPDO 15
+ObjectType=0x09
+
+[220Esub0]
+ParameterName=Highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=1
+
+[220Esub1]
+ParameterName=node_3: Target Position
+DataType=0x0004
+AccessType=rwr
+PDOMapping=1
+
+[220F]
+SubNumber=2
+ParameterName=Mapped application objects for TPDO 16
+ObjectType=0x09
+
+[220Fsub0]
+ParameterName=Highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=1
+
+[220Fsub1]
+ParameterName=node_3: Target Velocity
+DataType=0x0004
+AccessType=rwr
+PDOMapping=1
+
+[2210]
+SubNumber=2
+ParameterName=Mapped application objects for TPDO 17
+ObjectType=0x09
+
+[2210sub0]
+ParameterName=Highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=1
+
+[2210sub1]
+ParameterName=node_24: Controlword
+DataType=0x0006
+AccessType=rwr
+PDOMapping=1
+
+[2211]
+SubNumber=2
+ParameterName=Mapped application objects for TPDO 18
+ObjectType=0x09
+
+[2211sub0]
+ParameterName=Highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=1
+
+[2211sub1]
+ParameterName=node_24: Modes of Operation
+DataType=0x0002
+AccessType=rwr
+PDOMapping=1
+
+[2212]
+SubNumber=2
+ParameterName=Mapped application objects for TPDO 19
+ObjectType=0x09
+
+[2212sub0]
+ParameterName=Highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=1
+
+[2212sub1]
+ParameterName=node_24: Target Position
+DataType=0x0004
+AccessType=rwr
+PDOMapping=1
+
+[2213]
+SubNumber=2
+ParameterName=Mapped application objects for TPDO 20
+ObjectType=0x09
+
+[2213sub0]
+ParameterName=Highest sub-index supported
+DataType=0x0005
+AccessType=const
+DefaultValue=1
+
+[2213sub1]
+ParameterName=node_24: Target Velocity
+DataType=0x0004
+AccessType=rwr
+PDOMapping=1
+
+[5800]
+ParameterName=Remote TPDO number and node-ID
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000102
+
+[5801]
+ParameterName=Remote TPDO number and node-ID
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000107
+
+[5802]
+ParameterName=Remote TPDO number and node-ID
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000171
+
+[5803]
+ParameterName=Remote TPDO number and node-ID
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000103
+
+[5804]
+ParameterName=Remote TPDO number and node-ID
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000118
+
+[5A00]
+ParameterName=Remote TPDO mapping parameter
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=1
+
+[5A00Value]
+NrOfEntries=1
+1=0x60410010
+
+[5A01]
+ParameterName=Remote TPDO mapping parameter
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=1
+
+[5A01Value]
+NrOfEntries=1
+1=0x60410010
+
+[5A02]
+ParameterName=Remote TPDO mapping parameter
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=1
+
+[5A02Value]
+NrOfEntries=1
+1=0x60410010
+
+[5A03]
+ParameterName=Remote TPDO mapping parameter
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=1
+
+[5A03Value]
+NrOfEntries=1
+1=0x60410010
+
+[5A04]
+ParameterName=Remote TPDO mapping parameter
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=1
+
+[5A04Value]
+NrOfEntries=1
+1=0x60410010
+
+[5C00]
+ParameterName=Remote RPDO number and node-ID
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000102
+
+[5C01]
+ParameterName=Remote RPDO number and node-ID
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000202
+
+[5C02]
+ParameterName=Remote RPDO number and node-ID
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000302
+
+[5C03]
+ParameterName=Remote RPDO number and node-ID
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000402
+
+[5C04]
+ParameterName=Remote RPDO number and node-ID
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000107
+
+[5C05]
+ParameterName=Remote RPDO number and node-ID
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000207
+
+[5C06]
+ParameterName=Remote RPDO number and node-ID
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000307
+
+[5C07]
+ParameterName=Remote RPDO number and node-ID
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000407
+
+[5C08]
+ParameterName=Remote RPDO number and node-ID
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000171
+
+[5C09]
+ParameterName=Remote RPDO number and node-ID
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000271
+
+[5C0A]
+ParameterName=Remote RPDO number and node-ID
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000371
+
+[5C0B]
+ParameterName=Remote RPDO number and node-ID
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000471
+
+[5C0C]
+ParameterName=Remote RPDO number and node-ID
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000103
+
+[5C0D]
+ParameterName=Remote RPDO number and node-ID
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000203
+
+[5C0E]
+ParameterName=Remote RPDO number and node-ID
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000303
+
+[5C0F]
+ParameterName=Remote RPDO number and node-ID
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000403
+
+[5C10]
+ParameterName=Remote RPDO number and node-ID
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000118
+
+[5C11]
+ParameterName=Remote RPDO number and node-ID
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000218
+
+[5C12]
+ParameterName=Remote RPDO number and node-ID
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000318
+
+[5C13]
+ParameterName=Remote RPDO number and node-ID
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000418
+
+[5E00]
+ParameterName=Remote RPDO mapping parameter
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=1
+
+[5E00Value]
+NrOfEntries=1
+1=0x60400010
+
+[5E01]
+ParameterName=Remote RPDO mapping parameter
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=2
+
+[5E01Value]
+NrOfEntries=2
+1=0x60400010
+2=0x60600008
+
+[5E02]
+ParameterName=Remote RPDO mapping parameter
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=2
+
+[5E02Value]
+NrOfEntries=2
+1=0x60400010
+2=0x607A0020
+
+[5E03]
+ParameterName=Remote RPDO mapping parameter
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=2
+
+[5E03Value]
+NrOfEntries=2
+1=0x60400010
+2=0x60FF0020
+
+[5E04]
+ParameterName=Remote RPDO mapping parameter
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=1
+
+[5E04Value]
+NrOfEntries=1
+1=0x60400010
+
+[5E05]
+ParameterName=Remote RPDO mapping parameter
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=2
+
+[5E05Value]
+NrOfEntries=2
+1=0x60400010
+2=0x60600008
+
+[5E06]
+ParameterName=Remote RPDO mapping parameter
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=2
+
+[5E06Value]
+NrOfEntries=2
+1=0x60400010
+2=0x607A0020
+
+[5E07]
+ParameterName=Remote RPDO mapping parameter
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=2
+
+[5E07Value]
+NrOfEntries=2
+1=0x60400010
+2=0x60FF0020
+
+[5E08]
+ParameterName=Remote RPDO mapping parameter
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=1
+
+[5E08Value]
+NrOfEntries=1
+1=0x60400010
+
+[5E09]
+ParameterName=Remote RPDO mapping parameter
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=2
+
+[5E09Value]
+NrOfEntries=2
+1=0x60400010
+2=0x60600008
+
+[5E0A]
+ParameterName=Remote RPDO mapping parameter
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=2
+
+[5E0AValue]
+NrOfEntries=2
+1=0x60400010
+2=0x607A0020
+
+[5E0B]
+ParameterName=Remote RPDO mapping parameter
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=2
+
+[5E0BValue]
+NrOfEntries=2
+1=0x60400010
+2=0x60FF0020
+
+[5E0C]
+ParameterName=Remote RPDO mapping parameter
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=1
+
+[5E0CValue]
+NrOfEntries=1
+1=0x60400010
+
+[5E0D]
+ParameterName=Remote RPDO mapping parameter
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=2
+
+[5E0DValue]
+NrOfEntries=2
+1=0x60400010
+2=0x60600008
+
+[5E0E]
+ParameterName=Remote RPDO mapping parameter
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=2
+
+[5E0EValue]
+NrOfEntries=2
+1=0x60400010
+2=0x607A0020
+
+[5E0F]
+ParameterName=Remote RPDO mapping parameter
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=2
+
+[5E0FValue]
+NrOfEntries=2
+1=0x60400010
+2=0x60FF0020
+
+[5E10]
+ParameterName=Remote RPDO mapping parameter
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=1
+
+[5E10Value]
+NrOfEntries=1
+1=0x60400010
+
+[5E11]
+ParameterName=Remote RPDO mapping parameter
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=2
+
+[5E11Value]
+NrOfEntries=2
+1=0x60400010
+2=0x60600008
+
+[5E12]
+ParameterName=Remote RPDO mapping parameter
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=2
+
+[5E12Value]
+NrOfEntries=2
+1=0x60400010
+2=0x607A0020
+
+[5E13]
+ParameterName=Remote RPDO mapping parameter
+ObjectType=0x08
+DataType=0x0007
+AccessType=rw
+CompactSubObj=2
+
+[5E13Value]
+NrOfEntries=2
+1=0x60400010
+2=0x60FF0020
