@@ -301,6 +301,14 @@ class Epos2J3Bridge(Node):
         self.declare_parameter("traj_internal_max_accel_rad_s2", 2.50)
         self.declare_parameter("traj_internal_max_total_points", 48)
 
+        # Active IPM low-watermark feeder.
+        # Used only when a trajectory exceeds the safe single-shot FIFO budget.
+        self.declare_parameter("ipm_fifo_capacity_records", 64)
+        self.declare_parameter("ipm_feeder_initial_records", 48)
+        self.declare_parameter("ipm_feeder_low_water_records", 16)
+        self.declare_parameter("ipm_feeder_high_water_records", 48)
+        self.declare_parameter("ipm_feeder_poll_period_sec", 0.05)
+
         self.drive_node_id = int(self.get_parameter("drive_node_id").value)
 
         self.kin = JointKinematics(
@@ -1814,6 +1822,58 @@ class Epos2J3Bridge(Node):
             self.ipm_lifecycle_state = "FAULTED"
             self.get_logger().error(f"IPM FSM forced to FAULTED ({reason})")
 
+    def _ipm_cleanup_after_abort(self, reason: str = "", snapshot_label: str = "ipm_abort") -> None:
+        """Best-effort cleanup for cancel/fault/timeout paths.
+
+        This helper is intentionally conservative:
+          - capture a fault snapshot when possible
+          - try to leave IPM non-active
+          - return FSM to READY only if the drive is not faulted and IPM is inactive
+          - otherwise leave FSM FAULTED so the next command must explicitly recover
+        """
+        self.get_logger().warning(f"IPM cleanup after abort: {reason}")
+
+        try:
+            self.read_fault_snapshot(snapshot_label)
+        except Exception as exc:
+            self.get_logger().warning(f"Fault snapshot failed during cleanup: {exc}")
+
+        try:
+            cur = self._ipm_fsm_get()
+            if cur in ("PREBUFFERING", "PREBUFFERED", "ACTIVE", "SETTLING"):
+                try:
+                    self._ipm_fsm_set("DISARMING", f"cleanup: {reason}")
+                except Exception:
+                    # If the FSM is already FAULTED or was force-moved, continue cleanup.
+                    pass
+
+            try:
+                self.disarm_ipm()
+            except Exception as exc:
+                self.get_logger().warning(f"disarm_ipm failed during cleanup: {exc}")
+
+            ipm_active = self._ipm_is_active_now()
+
+            with self.state_lock:
+                faulted = self.state.faulted()
+
+            if faulted or ipm_active:
+                self._ipm_fsm_fault(
+                    f"cleanup incomplete faulted={faulted} ipm_active={ipm_active}: {reason}"
+                )
+                self._set_bridge_state(BridgeState.FAULTED, f"cleanup incomplete: {reason}")
+            else:
+                # FAULTED -> READY is explicitly allowed for explicit recovery/cleanup.
+                if self._ipm_fsm_get() == "FAULTED":
+                    self._ipm_fsm_set("READY", f"cleanup recovered: {reason}")
+                elif self._ipm_fsm_get() != "READY":
+                    self._ipm_fsm_set("READY", f"cleanup complete: {reason}")
+                self._set_bridge_state(BridgeState.READY, f"cleanup complete: {reason}")
+
+        except Exception as exc:
+            self.get_logger().error(f"IPM cleanup failed: {exc}")
+            self._ipm_fsm_fault(f"cleanup exception: {exc}")
+
     def _ipm_status_word(self) -> int:
         st = self.sdo_read(IDX_INTERPOLATION_STATUS, 1, warn=False)
         return int(st or 0) & 0xFFFF
@@ -1839,6 +1899,83 @@ class Epos2J3Bridge(Node):
                 f"Expected IPM active but status=0x{ipm:04X}"
                 + (f" ({reason})" if reason else "")
             )
+
+    def _ipm_fifo_level_records(self) -> Optional[int]:
+        """Return EPOS IPM FIFO level in records.
+
+        0x60C4:04 has been used throughout this debug path as the FIFO level
+        readback. This first implementation uses low-rate SDO polling only
+        while ACTIVE. Later, this should be moved to a TPDO-backed cached value.
+        """
+        val = self.sdo_read(0x60C4, 4, warn=False)
+        if val is None:
+            return None
+        return int(val)
+
+    def _ipm_feed_low_watermark_if_needed(self) -> None:
+        """Feed queued PVT records during ACTIVE IPM when FIFO is low.
+
+        This extends the strict FSM architecture to long trajectories:
+
+          PREBUFFERING writes an initial chunk while inactive.
+          ACTIVE feeds only when FIFO level falls to low-watermark.
+          The feeder never activates IPM and never runs outside ACTIVE.
+        """
+        queue = list(getattr(self, "_active_pvt_feed_queue", []))
+        if not queue:
+            return
+
+        self._ipm_fsm_require("ACTIVE", reason="low-water feeder")
+
+        now = time.monotonic()
+        poll_period = 0.05
+        try:
+            poll_period = float(self.get_parameter("ipm_feeder_poll_period_sec").value)
+        except Exception:
+            pass
+        poll_period = max(0.01, poll_period)
+
+        if now < float(getattr(self, "_pvt_feeder_next_poll", 0.0)):
+            return
+        self._pvt_feeder_next_poll = now + poll_period
+
+        fifo = self._ipm_fifo_level_records()
+        if fifo is None:
+            self._pvt_feeder_sdo_failures = int(getattr(self, "_pvt_feeder_sdo_failures", 0)) + 1
+            if self._pvt_feeder_sdo_failures >= 5:
+                raise RuntimeError("low-water feeder could not read FIFO level for 5 polls")
+            return
+
+        self._pvt_feeder_sdo_failures = 0
+
+        try:
+            low = int(self.get_parameter("ipm_feeder_low_water_records").value)
+            high = int(self.get_parameter("ipm_feeder_high_water_records").value)
+            cap = int(self.get_parameter("ipm_fifo_capacity_records").value)
+        except Exception:
+            low, high, cap = 16, 48, 64
+
+        cap = max(8, cap)
+        high = max(2, min(high, cap - 2))
+        low = max(1, min(low, high - 1))
+
+        if fifo > low:
+            return
+
+        feed_count = min(max(0, high - fifo), len(queue))
+        if feed_count <= 0:
+            return
+
+        for i in range(feed_count):
+            self.send_rpdo1_interpolation_record(queue[i], verbose=(self._active_pvt_feed_sent < 8))
+            self._active_pvt_feed_sent += 1
+
+        self._active_pvt_feed_queue = queue[feed_count:]
+
+        self.get_logger().info(
+            f"IPM low-water feed: fifo={fifo} low={low} high={high} "
+            f"fed={feed_count} remaining={len(self._active_pvt_feed_queue)}"
+        )
 
     async def _execute_follow_joint_trajectory(self, goal_handle):
         """FollowJointTrajectory using strict EPOS IPM lifecycle FSM.
@@ -1894,6 +2031,12 @@ class Epos2J3Bridge(Node):
             prev_t = t
 
         planned_duration = float(sum(durations))
+
+        self._active_pvt_feed_queue = []  # reset feeder for this FJT goal
+        self._active_pvt_feed_total = 0
+        self._active_pvt_feed_sent = 0
+        self._pvt_feeder_next_poll = 0.0
+        self._pvt_feeder_sdo_failures = 0
 
         self.get_logger().info(
             f"FJT FSM prebuffer dispatch: {len(points)} ROS points -> "
@@ -1959,20 +2102,47 @@ class Epos2J3Bridge(Node):
                 all_points.append(PVTPoint(time_ms=100, velocity_rpm=0, position_qc=final_qc))
 
             total_pvt_ms = sum(int(p.time_ms) for p in all_points)
+            planned_ms = int(round(planned_duration * 1000.0))
 
-            if len(all_points) > 62:
+            try:
+                cap = int(self.get_parameter("ipm_fifo_capacity_records").value)
+                initial_records = int(self.get_parameter("ipm_feeder_initial_records").value)
+            except Exception:
+                cap, initial_records = 64, 48
+
+            cap = max(8, cap)
+            single_shot_budget = cap - 2
+            initial_records = max(4, min(initial_records, single_shot_budget))
+
+            if total_pvt_ms < planned_ms:
                 raise RuntimeError(
-                    f"prebuffer trajectory too large for single-shot FIFO: "
-                    f"{len(all_points)} records, total_pvt_ms={total_pvt_ms}; "
-                    "requires future low-watermark feeder"
+                    f"PVT duration underflow: total_pvt_ms={total_pvt_ms} planned_ms={planned_ms}"
                 )
 
+            if len(all_points) <= single_shot_budget:
+                prebuffer_points = list(all_points)
+                self._active_pvt_feed_queue = []
+            else:
+                prebuffer_points = list(all_points[:initial_records])
+                self._active_pvt_feed_queue = list(all_points[initial_records:])
+                self._active_pvt_feed_total = len(self._active_pvt_feed_queue)
+                self._active_pvt_feed_sent = 0
+                self._pvt_feeder_next_poll = 0.0
+                self._pvt_feeder_sdo_failures = 0
+
             self.get_logger().info(
-                f"FJT FSM prebuffer: writing {len(all_points)} PVT records while inactive, "
+                f"FJT FSM preflight ok: total_records={len(all_points)}, "
+                f"prebuffer_records={len(prebuffer_points)}, "
+                f"queued_feed_records={len(self._active_pvt_feed_queue)}, "
+                f"planned_ms={planned_ms}, total_pvt_ms={total_pvt_ms}, final_qc={final_qc}"
+            )
+
+            self.get_logger().info(
+                f"FJT FSM prebuffer: writing {len(prebuffer_points)} PVT records while inactive, "
                 f"total_pvt_ms={total_pvt_ms}, final_qc={final_qc}"
             )
 
-            for i, pvt in enumerate(all_points):
+            for i, pvt in enumerate(prebuffer_points):
                 self._ipm_fsm_require("PREBUFFERING", reason="writing PVT while inactive")
                 self._assert_ipm_inactive("during PVT prebuffer")
                 self.send_rpdo1_interpolation_record(pvt, verbose=(i < 8))
@@ -1992,20 +2162,36 @@ class Epos2J3Bridge(Node):
             result.error_code = FollowJointTrajectory.Result.INVALID_GOAL
             result.error_string = f"Failed FJT IPM FSM setup: {exc}"
             self.get_logger().error(result.error_string)
-            try:
-                self.read_fault_snapshot("fjt_fsm_setup_failed")
-            except Exception:
-                pass
+            self._ipm_cleanup_after_abort(
+                f"setup/prebuffer failed: {exc}",
+                snapshot_label="fjt_fsm_setup_failed",
+            )
             goal_handle.abort()
             return result
 
         try:
             self._ipm_fsm_require("ACTIVE", reason="before planned-duration wait")
+            self._last_goal_wait_reason = "unknown"
 
             if not self._wait_for_goal(goal_handle, feedback, min_wait_sec=planned_duration):
-                self._ipm_fsm_fault("goal wait failed")
+                wait_reason = str(getattr(self, "_last_goal_wait_reason", "unknown"))
+
+                if wait_reason == "cancel":
+                    self._ipm_cleanup_after_abort(
+                        "goal canceled by action client",
+                        snapshot_label="fjt_cancel",
+                    )
+                    result.error_code = FollowJointTrajectory.Result.PATH_TOLERANCE_VIOLATED
+                    result.error_string = "Goal canceled"
+                    goal_handle.canceled()
+                    return result
+
+                self._ipm_cleanup_after_abort(
+                    f"goal wait failed: {wait_reason}",
+                    snapshot_label=f"fjt_wait_failed_{wait_reason}",
+                )
                 result.error_code = FollowJointTrajectory.Result.GOAL_TOLERANCE_VIOLATED
-                result.error_string = "Failed to reach final target within tolerance"
+                result.error_string = f"Failed to reach final target within tolerance: {wait_reason}"
                 goal_handle.abort()
                 return result
 
@@ -2014,6 +2200,10 @@ class Epos2J3Bridge(Node):
 
             self._ipm_fsm_set("DISARMING", "trajectory complete")
             self.disarm_ipm()
+
+            self._active_pvt_feed_queue = []  # clear feeder after successful FJT
+            self._active_pvt_feed_total = 0
+            self._active_pvt_feed_sent = 0
 
             if self._ipm_is_active_now():
                 raise RuntimeError("IPM still active after disarm_ipm")
@@ -2026,10 +2216,10 @@ class Epos2J3Bridge(Node):
             result.error_code = FollowJointTrajectory.Result.PATH_TOLERANCE_VIOLATED
             result.error_string = f"FJT IPM FSM execution exception: {exc}"
             self.get_logger().error(result.error_string)
-            try:
-                self.read_fault_snapshot("fjt_fsm_execution_failed")
-            except Exception:
-                pass
+            self._ipm_cleanup_after_abort(
+                f"execution exception: {exc}",
+                snapshot_label="fjt_fsm_execution_failed",
+            )
             goal_handle.abort()
             return result
 
@@ -2069,6 +2259,7 @@ class Epos2J3Bridge(Node):
             tol_vel = 0.10
 
         timeout_s = max(5.0, float(min_wait_sec) + 5.0)
+        self._last_goal_wait_reason = "timeout"
         start = time.monotonic()
         final_target_rad = goal_handle.request.trajectory.points[-1].positions[0]
 
@@ -2094,8 +2285,21 @@ class Epos2J3Bridge(Node):
             )
             goal_handle.publish_feedback(feedback)
 
+            if goal_handle.is_cancel_requested:
+                self._last_goal_wait_reason = "cancel"
+                self.get_logger().warning("Goal cancel requested during ACTIVE IPM execution")
+                return False
+
             if faulted:
+                self._last_goal_wait_reason = "fault"
                 self.get_logger().error(f"Drive fault during execution, ipm_status=0x{ipm_status:04X}")
+                return False
+
+            try:
+                self._ipm_feed_low_watermark_if_needed()
+            except Exception as exc:
+                self._last_goal_wait_reason = "feeder_error"
+                self.get_logger().error(f"Low-water feeder failed during ACTIVE IPM: {exc}")
                 return False
 
             pos_ok = abs(final_target_rad - actual_rad) <= tol_pos
@@ -2105,6 +2309,7 @@ class Epos2J3Bridge(Node):
             # duration has elapsed. This prevents tiny moves with loose tolerance
             # from returning before the drive has consumed the queued PVT plan.
             if elapsed >= float(min_wait_sec) and pos_ok and vel_ok:
+                self._last_goal_wait_reason = "success"
                 self.get_logger().info(
                     f"Goal reached after {elapsed:.3f}s: target={final_target_rad:.6f} "
                     f"actual={actual_rad:.6f} err={final_target_rad - actual_rad:.6f} "
@@ -2114,6 +2319,7 @@ class Epos2J3Bridge(Node):
 
             time.sleep(0.02)
 
+        self._last_goal_wait_reason = "timeout"
         self.get_logger().error(
             f"Goal wait timeout: min_wait={min_wait_sec:.3f}s target={final_target_rad:.6f} "
             f"last_actual={actual_rad:.6f} last_vel={actual_vel:.6f}"
