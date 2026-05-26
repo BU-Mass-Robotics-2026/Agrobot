@@ -13,8 +13,8 @@ find_package(moveit_ros_planning_interface REQUIRED)
 
 # --- Generate the service interfaces ---
 rosidl_generate_interfaces(${PROJECT_NAME}
-  "srv/RailGoto.srv"
-  "srv/AnthroGoto.srv"
+  "srv/RailGoTo.srv"
+  "srv/AnthroGoTo.srv"
 )
 
 # Typesupport target for linking same-package interfaces into the nodes.

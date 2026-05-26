@@ -1,4 +1,4 @@
-# AnthroGoto.srv
+# AnthroGoTo.srv
 # Move the anthro group (arm joints J1-J5) to an absolute joint-space target.
 # The caller supplies 5 joint values in RADIANS, ordered [J1, J2, J3, J4, J5].
 #

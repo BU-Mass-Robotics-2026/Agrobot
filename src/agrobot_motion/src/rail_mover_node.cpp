@@ -1,182 +1,179 @@
-// rail_mover_node.cpp
-// ---------------------------------------------------------------------------
-// Service node that moves the rail joint (joint0, prismatic) to an absolute
-// coordinate using MoveIt's "rail" planning group.
-//
-// Exposes:  /rail_mover/goto   (agrobot_motion/srv/RailGoto)
-//
-// Usable rail range [0.05, 1.30] m, inset from URDF limits [0.0, 1.35] by a
-// 5 cm end-stop margin. Out-of-range targets are CLAMPED, not rejected, and
-// the response sets clamped=true (the supervisor uses that as END-OF-RAIL).
-// Velocity/accel scaling are ROS params (default 0.1).
-//
-// Uses a MultiThreadedExecutor + reentrant callback group: a service node
-// also running MoveGroupInterface deadlocks on a SingleThreadedExecutor.
-// ---------------------------------------------------------------------------
-
 #include <rclcpp/rclcpp.hpp>
 #include <moveit/move_group_interface/move_group_interface.hpp>
-#include "agrobot_motion/srv/rail_goto.hpp"
+#include "agrobot_motion/srv/rail_go_to.hpp"
 
 #include <algorithm>
 #include <cmath>
+#include <functional>
 #include <limits>
 #include <memory>
 #include <string>
 #include <vector>
 
+using MoveGroupInterface = moveit::planning_interface::MoveGroupInterface;
+using RailGoTo = agrobot_motion::srv::RailGoTo;
+
 namespace
 {
-constexpr double kRailMin = 0.05;
-constexpr double kRailMax = 1.30;
-constexpr char kPlanningGroup[] = "rail";
-constexpr char kRailJointName[] = "joint0";
-}  // namespace
+    constexpr double kRailMin = 0.05;
+    constexpr double kRailMax = 1.30;
+    constexpr char kPlanningGroup[] = "rail";
+    constexpr char kRailJointName[] = "joint0";
+}
 
 class RailMoverNode : public rclcpp::Node
 {
-public:
-  RailMoverNode()
-  : rclcpp::Node("rail_mover")
-  {
-    velocity_scaling_ =
-      this->declare_parameter<double>("rail_velocity_scaling", 0.1);
-    accel_scaling_ =
-      this->declare_parameter<double>("rail_acceleration_scaling", 0.1);
-    planning_time_ =
-      this->declare_parameter<double>("rail_planning_time", 5.0);
+  public:
 
-    RCLCPP_INFO(
-      this->get_logger(),
-      "rail_mover starting: vel_scale=%.2f accel_scale=%.2f plan_time=%.1fs "
-      "usable_range=[%.3f, %.3f] m",
-      velocity_scaling_, accel_scaling_, planning_time_, kRailMin, kRailMax);
+    // -------------------------------------------------------------------------------------------------
+    // Constructor
+    // -------------------------------------------------------------------------------------------------  
+    RailMoverNode() : rclcpp::Node("rail_mover")
+    {
+        velocity_scaling = this->declare_parameter<double>("rail_velocity_scaling", 0.1);
+        acceleration_scaling = this->declare_parameter<double>("rail_acceleration_scaling", 0.1);
+        planning_time = this->declare_parameter<double>("rail_planning_time", 5.0);
 
-    service_cb_group_ =
-      this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
-  }
+        RCLCPP_INFO(this->get_logger(), "rail_mover starting: velocity_scale = %.2f acceleration_scale = %.2f planning_time = %.1fs usable_range = [%.3f, %.3f] m", velocity_scaling, acceleration_scaling, planning_time, kRailMin, kRailMax);
 
-  void initMoveGroup()
-  {
-    move_group_ = std::make_shared<moveit::planning_interface::MoveGroupInterface>(
-      shared_from_this(), kPlanningGroup);
-
-    move_group_->setMaxVelocityScalingFactor(velocity_scaling_);
-    move_group_->setMaxAccelerationScalingFactor(accel_scaling_);
-    move_group_->setPlanningTime(planning_time_);
-
-    RCLCPP_INFO(
-      this->get_logger(),
-      "MoveGroupInterface ready for group '%s'. Planning frame: %s",
-      kPlanningGroup, move_group_->getPlanningFrame().c_str());
-
-    service_ = this->create_service<agrobot_motion::srv::RailGoto>(
-      "/rail_mover/goto",
-      std::bind(&RailMoverNode::handleGoto, this,
-                std::placeholders::_1, std::placeholders::_2),
-      rclcpp::ServicesQoS(),
-      service_cb_group_);
-
-    RCLCPP_INFO(this->get_logger(), "Service ready: /rail_mover/goto");
-  }
-
-private:
-  void handleGoto(
-    const std::shared_ptr<agrobot_motion::srv::RailGoto::Request> req,
-    std::shared_ptr<agrobot_motion::srv::RailGoto::Response> res)
-  {
-    const double requested = req->target_position;
-    res->requested_position = requested;
-
-    double target = requested;
-    bool clamped = false;
-
-    if (!std::isfinite(requested)) {
-      res->success = false;
-      res->clamped = false;
-      res->final_position = currentRailPosition();
-      res->message = "target is not a finite number";
-      RCLCPP_WARN(this->get_logger(), "%s", res->message.c_str());
-      return;
+        service_callback_group = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
     }
 
-    if (requested < kRailMin) {
-      target = kRailMin;
-      clamped = true;
-    } else if (requested > kRailMax) {
-      target = kRailMax;
-      clamped = true;
-    }
-    res->clamped = clamped;
+    // -------------------------------------------------------------------------------------------------
+    // MoveGroup initialization and service setup
+    // -------------------------------------------------------------------------------------------------
+    void initMoveGroup()
+    {
+        move_group = std::make_shared<MoveGroupInterface>(shared_from_this(), kPlanningGroup); // Initialize MoveGroupInterface for the specified planning group
 
-    if (clamped) {
-      RCLCPP_WARN(
-        this->get_logger(),
-        "Target %.4f outside [%.3f, %.3f] -> clamped to %.4f (END-OF-RAIL)",
-        requested, kRailMin, kRailMax, target);
-    }
-    RCLCPP_INFO(this->get_logger(),
-                "Goto: joint0 -> %.4f m%s",
-                target, clamped ? " (clamped)" : "");
+        // Set the default velocity and acceleration scaling factors for the MoveGroupInterface based on the node parameters
+        move_group->setMaxVelocityScalingFactor(velocity_scaling);
+        move_group->setMaxAccelerationScalingFactor(acceleration_scaling);
+        move_group->setPlanningTime(planning_time);
 
-    move_group_->setStartStateToCurrentState();
+        RCLCPP_INFO(this->get_logger(), "MoveGroupInterface ready for group '%s'. Planning frame: %s", kPlanningGroup, move_group->getPlanningFrame().c_str());
 
-    if (!move_group_->setJointValueTarget(kRailJointName, target)) {
-      res->success = false;
-      res->final_position = currentRailPosition();
-      res->message = "setJointValueTarget rejected the (clamped) target";
-      RCLCPP_ERROR(this->get_logger(), "%s", res->message.c_str());
-      return;
+        // Create the service with the appropriate callback and QoS settings
+        service = this->create_service<RailGoTo>(
+            "/rail_mover/goto",
+            std::bind(&RailMoverNode::handleGoTo, this, std::placeholders::_1, std::placeholders::_2),
+            rclcpp::ServicesQoS(),
+            service_callback_group);
+
+        RCLCPP_INFO(this->get_logger(), "Service '/rail_mover/goto' ready");
     }
 
-    moveit::planning_interface::MoveGroupInterface::Plan plan;
-    if (move_group_->plan(plan) != moveit::core::MoveItErrorCode::SUCCESS) {
-      res->success = false;
-      res->final_position = currentRailPosition();
-      res->message = "MoveIt planning failed";
-      RCLCPP_ERROR(this->get_logger(), "%s", res->message.c_str());
-      return;
-    }
+  private:
 
-    const bool executed =
-      (move_group_->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS);
-    res->final_position = currentRailPosition();
+    // Configurable parameters with defaults
+    double velocity_scaling;
+    double acceleration_scaling;
+    double planning_time;
 
-    if (!executed) {
-      res->success = false;
-      res->message = "MoveIt execution failed (final joint0=" +
-                     std::to_string(res->final_position) + ")";
-      RCLCPP_ERROR(this->get_logger(), "%s", res->message.c_str());
-      return;
-    }
+    // MoveIt and ROS service members
+    rclcpp::CallbackGroup::SharedPtr service_callback_group;
+    std::shared_ptr<MoveGroupInterface> move_group;
+    rclcpp::Service<RailGoTo>::SharedPtr service;
 
-    res->success = true;
-    res->message = clamped ? "ok (target was clamped to end of rail)" : "ok";
-    RCLCPP_INFO(this->get_logger(),
-                "Move complete: joint0 = %.4f m", res->final_position);
-  }
+    // -------------------------------------------------------------------------------------------------
+    // Service callback
+    // -------------------------------------------------------------------------------------------------
+    void handleGoTo(const std::shared_ptr<RailGoTo::Request> request, std::shared_ptr<RailGoTo::Response> response)
+    {
+      const double requested = request->target_position;
+      response->requested_position = requested;
 
-  double currentRailPosition()
-  {
-    try {
-      const std::vector<double> vals = move_group_->getCurrentJointValues();
-      if (!vals.empty()) {
-        return vals.front();
+      double target = requested;
+      bool clamped = false;
+
+      // --- Validate finiteness ---
+      if (!std::isfinite(requested))
+      {
+        response->success = false;
+        response->clamped = false;
+        response->final_position = currentRailPosition();
+        response->message = "Invalid target position: not finite";
+        RCLCPP_WARN(this->get_logger(), "%s", response->message.c_str());
+        return;
       }
-    } catch (const std::exception & e) {
-      RCLCPP_WARN(this->get_logger(),
-                  "Could not read current joint0: %s", e.what());
+
+      // --- Clamp to rail limits ---
+      if (requested < kRailMin) 
+      {
+        target = kRailMin;
+        clamped = true;
+      } 
+      else if (requested > kRailMax) 
+      {
+        target = kRailMax;
+        clamped = true;
+      }
+      response->clamped = clamped;
+
+      if (clamped)
+      {
+        RCLCPP_WARN(this->get_logger(), "Target %.4f outside [%.3f, %.3f] -> clamped to %.4f (END-OF-RAIL)", requested, kRailMin, kRailMax, target);
+      }
+      RCLCPP_INFO(this->get_logger(), "Go to: joint0 -> %.4f m%s", target, clamped ? " (clamped)" : "");
+
+      move_group->setStartStateToCurrentState();
+
+      // --- Set joint target ---
+      if (!move_group->setJointValueTarget(kRailJointName, target))
+      {
+        response->success = false;
+        response->final_position = currentRailPosition();
+        response->message = "setJointValueTarget rejected the (clamped) target";
+        RCLCPP_ERROR(this->get_logger(), "%s", response->message.c_str());
+        return;
+      }
+
+      // --- Plan ---
+      MoveGroupInterface::Plan plan;
+      if (move_group->plan(plan) != moveit::core::MoveItErrorCode::SUCCESS)
+      {
+        response->success = false;
+        response->final_position = currentRailPosition();
+        response->message = "Planning failed";
+        RCLCPP_ERROR(this->get_logger(), "%s", response->message.c_str());
+        return;
+      }
+
+      // --- Execute ---
+      const bool executed = (move_group->execute(plan) == moveit::core::MoveItErrorCode::SUCCESS);
+      response->final_position = currentRailPosition();
+
+      if (!executed)
+      {
+        response->success = false;
+        response->message = "MoveIt execution failed (final joint0=" + std::to_string(response->final_position) + ")";
+        RCLCPP_ERROR(this->get_logger(), "%s", response->message.c_str());
+        return;
+      }
+      response->message = clamped ? "ok (target was clamped to end of rail)" : "ok";
+      RCLCPP_INFO(this->get_logger(), "Move complete: joint0 = %.4f m", response->final_position);
     }
-    return std::numeric_limits<double>::quiet_NaN();
-  }
 
-  double velocity_scaling_;
-  double accel_scaling_;
-  double planning_time_;
+    // -------------------------------------------------------------------------------------------------
+    // Helper to read current rail position (joint0)
+    // -------------------------------------------------------------------------------------------------
+    double currentRailPosition()
+    {
+      try
+      {
+        const std::vector<double> current_values = move_group->getCurrentJointValues();
+        if (!current_values.empty())
+        {
+          return current_values.front();
+        }
+      }
 
-  rclcpp::CallbackGroup::SharedPtr service_cb_group_;
-  std::shared_ptr<moveit::planning_interface::MoveGroupInterface> move_group_;
-  rclcpp::Service<agrobot_motion::srv::RailGoto>::SharedPtr service_;
+      catch (const std::exception& e)
+      {
+        RCLCPP_WARN(this->get_logger(), "Could not read current joint0: %s", e.what());
+      }
+      return std::numeric_limits<double>::quiet_NaN();
+    }
 };
 
 int main(int argc, char ** argv)

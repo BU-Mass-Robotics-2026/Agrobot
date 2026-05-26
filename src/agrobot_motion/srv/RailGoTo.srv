@@ -1,4 +1,4 @@
-# RailGoto.srv
+# RailGoTo.srv
 # Move the rail joint (joint0, prismatic) to an absolute coordinate.
 # The caller (supervisor) computes the absolute target; this service executes it.
 #

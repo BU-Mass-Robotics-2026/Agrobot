@@ -3,10 +3,14 @@ trajectory_execution:
   allowed_goal_duration_margin: 1.5
   allowed_start_tolerance: 0.05
   execution_duration_monitoring: true
+
 moveit_controller_manager: moveit_simple_controller_manager/MoveItSimpleControllerManager
+
 moveit_simple_controller_manager:
   controller_names:
   - arm_controller
+  - rail_controller
+
   arm_controller:
     type: FollowJointTrajectory
     action_ns: follow_joint_trajectory
@@ -18,3 +22,10 @@ moveit_simple_controller_manager:
     - joint4
     - joint5
     - joint6
+
+  rail_controller:
+    type: FollowJointTrajectory
+    action_ns: follow_joint_trajectory
+    default: true
+    joints:
+    - joint0
