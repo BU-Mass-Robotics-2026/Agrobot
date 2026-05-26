@@ -106,47 +106,23 @@ class SupervisorNode(Node):
         super().__init__("agrobot_supervisor")
 
         # --- Parameters (all tunable at launch, no recompile) ---
-        # Rail geometry. The rail service clamps to [0.05, 1.30]; we keep our
-        # own copy of the start so RETURN knows where "home" is.
-        self.start_position = self.declare_parameter(
-            "start_position", 0.05).value
-        # Step-size fallback (m) used until camera intrinsics + a Z estimate
-        # are available. Also a hard floor so we never request a zero step.
-        self.fallback_step = self.declare_parameter(
-            "fallback_step", 0.15).value
+        self.start_position = self.declare_parameter("start_position", 0.05).value  # Rail geometry. The rail service clamps to [0.05, 1.30]; we keep our own copy of the start so RETURN knows where "home" is.
+        self.fallback_step = self.declare_parameter("fallback_step", 0.15).value    # Step-size fallback (m) used until camera intrinsics + a Z estimate are available. Also a hard floor so we never request a zero step.
         self.min_step = self.declare_parameter("min_step", 0.05).value
         self.max_step = self.declare_parameter("max_step", 0.40).value
-        # Fraction of frame width to advance per step (0.8 => 20% overlap).
-        self.overlap_factor = self.declare_parameter(
-            "overlap_factor", 0.8).value
-        # SETTLE dwell (s): cart mechanically still + fresh point cloud.
-        self.settle_seconds = self.declare_parameter(
-            "settle_seconds", 1.0).value
-        # How long to wait for a fresh tracks message during CAPTURE (s).
-        self.capture_timeout = self.declare_parameter(
-            "capture_timeout", 3.0).value
-        # Minimum age (frames) for a track to count — rejects one-frame noise.
-        self.min_track_age = self.declare_parameter("min_track_age", 2).value
-        # Minimum detection confidence for a track to be enqueued.
-        self.min_confidence = self.declare_parameter(
-            "min_confidence", 0.30).value
+        self.overlap_factor = self.declare_parameter("overlap_factor", 0.8).value
+        self.settle_seconds = self.declare_parameter("settle_seconds", 1.0).value   # SETTLE dwell (s): cart mechanically still + fresh point cloud.
+        self.capture_timeout = self.declare_parameter("capture_timeout", 3.0).value # How long to wait for a fresh tracks message during CAPTURE (s).
+        self.min_track_age = self.declare_parameter("min_track_age", 2).value       # Minimum age (frames) for a track to count — rejects one-frame noise.
+        self.min_confidence = self.declare_parameter("min_confidence", 0.30).value  # Minimum detection confidence for a track to be enqueued.
 
         # --- ROS interfaces ---
         cb = ReentrantCallbackGroup()
 
-        self.rail_client = self.create_client(
-            RailGoTo, "/rail_mover/goto", callback_group=cb)
-
-        self.anthro_client = self.create_client(
-            AnthroGoTo, "/anthro_mover/goto", callback_group=cb)
-
-        self.tracks_sub = self.create_subscription(
-            String, "/agrobot/tomato_tracks",
-            self._tracks_cb, 10, callback_group=cb)
-
-        self.caminfo_sub = self.create_subscription(
-            CameraInfo, "/camera/camera/color/camera_info",
-            self._caminfo_cb, 10, callback_group=cb)
+        self.rail_client = self.create_client(RailGoTo, "/rail_mover/goto", callback_group=cb)
+        self.anthro_client = self.create_client(AnthroGoTo, "/anthro_mover/goto", callback_group=cb)
+        self.tracks_sub = self.create_subscription(String, "/agrobot/tomato_tracks", self._tracks_cb, 10, callback_group=cb)
+        self.caminfo_sub = self.create_subscription(CameraInfo, "/camera/camera/color/camera_info", self._caminfo_cb, 10, callback_group=cb)
 
         # --- Runtime state ---
         self.state = State.IDLE
@@ -157,9 +133,7 @@ class SupervisorNode(Node):
         self.latest_tracks_stamp = None         # rclpy time of that msg
         self.logged_raw_once = False            # log raw JSON on first receipt
 
-        # Pick queue: persistent_id -> tomato dict. A dict keyed by
-        # persistent_id IS the dedup mechanism — re-seeing the same tomato at
-        # a later station just overwrites its entry, never double-queues it.
+        # Pick queue: persistent_id -> tomato dict. A dict keyed by persistent_id IS the dedup mechanism — re-seeing the same tomato at a later station just overwrites its entry, never double-queues it.
         self.pick_queue = {}
 
         self.station_index = 0
@@ -167,13 +141,9 @@ class SupervisorNode(Node):
         self._settle_deadline = None
         self._capture_deadline = None
         self._capture_started_stamp = None
+        self.timer = self.create_timer(0.1, self._tick, callback_group=cb) # Main tick — drives the state machine at 10 Hz.
 
-        # Main tick — drives the state machine at 10 Hz.
-        self.timer = self.create_timer(0.1, self._tick, callback_group=cb)
-
-        self.get_logger().info(
-            "agrobot_supervisor started. Waiting for /rail_mover/goto service "
-            "and camera_info before stepping.")
+        self.get_logger().info("agrobot_supervisor started. Waiting for /rail_mover/goto service and camera_info before stepping.")
 
     # ----------------------------------------------------------------------
     # Subscriptions
