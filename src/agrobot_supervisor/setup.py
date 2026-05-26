@@ -13,6 +13,7 @@ setup(
         ("share/" + package_name + "/launch", [
             "launch/supervisor.launch.py",
             "launch/sim.launch.py",
+            "launch/scene_setup.py"
         ]),
     ],
     install_requires=["setuptools"],
