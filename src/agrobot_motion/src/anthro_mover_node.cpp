@@ -63,6 +63,10 @@ class AnthroMoverNode : public rclcpp::Node
 
     private:
 
+        // -------------------------------------------------------------------------------------------------
+        // Private members
+        // -------------------------------------------------------------------------------------------------
+
         // Configurable parameters with defaults
         double velocity_scaling;
         double acceleration_scaling;

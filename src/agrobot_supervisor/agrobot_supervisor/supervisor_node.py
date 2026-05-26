@@ -51,8 +51,8 @@ from rclpy.executors import MultiThreadedExecutor
 from std_msgs.msg import String
 from sensor_msgs.msg import CameraInfo
 
-from agrobot_motion.srv import RailGoto
-from agrobot_motion.srv import AnthroGoto
+from agrobot_motion.srv import RailGoTo
+from agrobot_motion.srv import AnthroGoTo
 
 import math
 
@@ -135,10 +135,10 @@ class SupervisorNode(Node):
         cb = ReentrantCallbackGroup()
 
         self.rail_client = self.create_client(
-            RailGoto, "/rail_mover/goto", callback_group=cb)
+            RailGoTo, "/rail_mover/goto", callback_group=cb)
 
         self.anthro_client = self.create_client(
-            AnthroGoto, "/anthro_mover/goto", callback_group=cb)
+            AnthroGoTo, "/anthro_mover/goto", callback_group=cb)
 
         self.tracks_sub = self.create_subscription(
             String, "/agrobot/tomato_tracks",
@@ -283,7 +283,7 @@ class SupervisorNode(Node):
             f"-> {target:.3f} (step={step:.3f}m, wall_z="
             f"{wall_z:.3f}m)")
 
-        req = RailGoto.Request()
+        req = RailGoTo.Request()
         req.target_position = target
         self._rail_call_in_flight = True
         future = self.rail_client.call_async(req)
@@ -431,7 +431,7 @@ class SupervisorNode(Node):
             return
         self.get_logger().info(
             f"[RETURN] sending rail back to start ({self.start_position:.3f}).")
-        req = RailGoto.Request()
+        req = RailGoTo.Request()
         req.target_position = self.start_position
         self._rail_call_in_flight = True
         future = self.rail_client.call_async(req)
@@ -471,7 +471,7 @@ class SupervisorNode(Node):
               "[CELEBRATE] /anthro_mover/goto not available — skipping emote.")
           return False
    
-      req = AnthroGoto.Request()
+      req = AnthroGoTo.Request()
       req.joint_positions = [math.radians(d) for d in pose_deg]
       req.velocity_scaling = 0.5          # celebration: fast, no precision needed
    

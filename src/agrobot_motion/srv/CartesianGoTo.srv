@@ -1,0 +1,30 @@
+# CartesianGoTo.srv
+# Execute a straight-line Cartesian end-effector move using MoveIt computeCartesianPath.
+#
+# Target pose is interpreted in frame_id. If frame_id is empty, the mover uses
+# MoveIt's planning frame. If end_effector_link is empty, MoveIt's default link
+# for the group is used.
+
+string frame_id
+string end_effector_link
+geometry_msgs/Pose target
+
+# If false, compute/validate only; do not execute.
+bool execute
+
+# Cartesian interpolation resolution, meters. Typical: 0.005 to 0.02.
+float64 eef_step
+
+# Jump threshold. Use 0.0 to disable MoveIt's jump check.
+float64 jump_threshold
+
+# Required Cartesian completion fraction. For approach/retract use >= 0.95.
+float64 min_fraction
+
+# MoveIt velocity/accel scaling. If <=0, node defaults are used.
+float64 velocity_scaling
+float64 acceleration_scaling
+---
+bool success
+float64 fraction
+string message
